@@ -3,9 +3,52 @@ import unittest
 from bot import *
 
 
+class TestAttackReport(unittest.TestCase):
+    """
+    Tests for bot's AttackReport class.
+    Uses hardcoded paths to HTML report files.
+    """
+    
+    def setUp(self):
+        with open(r'test_html/single_report_green.html') as f:
+            s_green_report = f.read()
+        with open(r'test_html/single_report_yellow.html') as f:
+            s_yellow_report = f.read()
+        self.green_report = AttackReport(s_green_report)
+        self.yellow_report = AttackReport(s_yellow_report)
+    
+    def test_set_status(self):
+        self.assertEqual(self.green_report.status, 'green')
+        self.assertEqual(self.yellow_report.status, 'yellow')
+   
+    def test_set_t_of_attack(self):
+        # 'green' time: "Nov 03, 2013  14:01:57"
+        struct_t = time.struct_time((2013, 11, 3, 14, 1, 57, 0, 0, 0))
+        green_time = round(time.mktime(struct_t))
+        self.assertEqual(self.green_report.t_of_attack, green_time)
+        # 'yellow' time: "Nov 02, 2013  17:49:01"
+        struct_t = time.struct_time((2013, 11, 2, 17, 49, 1, 0, 0, 0))
+        yellow_time = round(time.mktime(struct_t))
+        self.assertEqual(self.yellow_report.t_of_attack, yellow_time)
+        
+    def test_set_mines_level(self):
+        green_levels = [9, 1, 2]
+        yellow_levels = [7, 4, 5]
+        self.assertEqual(self.green_report.mine_levels, green_levels)
+        self.assertEqual(self.yellow_report.mine_levels, yellow_levels) 
+    
+    def test_set_capacity(self):
+        green_loot = 2400
+        green_left = 1686
+        yellow_loot = 3120
+        yellow_left = 1656
+
+
 class TestVillage(unittest.TestCase):
     """
-    Tests for bot's Village class
+    Tests for bot's Village class. Uses stub object
+    instead of real AttackReport for .test_update_stats()
+    method.
     """
     
     def setUp(self):
@@ -73,7 +116,7 @@ class TestVillage(unittest.TestCase):
         
         self.barb.last_visited = None
         three_h_production = sum(x * 3 for x in self.barb.h_rates)
-        t = time.mktime(time.localtime())
+        t = time.mktime(time.gmtime())
         t_to_arrival = t + 10800
         self.assertEqual(self.barb.estimate_capacity(t_to_arrival), three_h_production)
         
