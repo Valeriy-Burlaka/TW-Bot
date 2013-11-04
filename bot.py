@@ -6,8 +6,68 @@ See "TribalWars Super.docx" design document for details.
 
 import time
 import re
+import random
 
 
+class ReportBuilder:
+    """
+    Component responsible for building AttackReport objects 
+    for new game reports. Collects coordinates & report URLs
+    for all "new" reports from report overview page and then
+    requests each report by URL.
+    Neither xml.etree.ElementTree nor xml.dom.minidom
+    in-build DOM parsers were able to parse TribalWars report page/
+    attack reports, so using regular expressions instead.
+    """
+    
+    def __init__(self, request_manager):
+        self.request_manager = request_manager  # instance of RequestManager
+    
+    def get_new_reports(self):
+        new_reports = {}
+        reports_page = self.request_manager.get_reports_page()
+        report_table_ptrn = re.compile(r'<table id="report_list"[\W\w]+?</table>')  # table with 12 reports
+        match = re.search(report_table_ptrn, reports_page)
+        reports = match.group()
+                
+        single_report_ptrn = re.compile(r'<input name="id_[\W\w]+?</tr>')
+        reports_list = re.findall(single_report_ptrn, reports)
+        reports_list = [x for x in reports_list if '(new)' in x]    # get reports marked as "new"
+        
+        href_ptrn = re.compile(r'<a href=[\W\w]+?>')
+        coords_ptrn = re.compile(r'(\d{3})\|(\d{3})')
+        for report in reports_list:
+            url = re.search(href_ptrn, report)
+            url = url.group()       
+            coords = re.search(coords_ptrn, report)
+            coords = (int(coords.group(1)), int(coords.group(2)))
+            report = self.request_manager.get_report(url)
+            new_reports[coords] = AttackReport(report)
+
+        return new_reports            
+    
+    
+class DummyRequestManager:
+    """
+    A stub for ReportBuilder & Map classes.
+    Provides methods that returns str_HTML from hardcoded
+    files instead of real server-response.
+    """
+    
+    def get_reports_page(self):
+        with open('test_html/report_page.html') as f:
+            html_data = f.read()
+        return html_data
+    
+    def get_report(self, url):
+        reports = []
+        with open('test_html/single_report_green.html') as f:
+            reports.append(f.read())
+        with open('test_html/single_report_yellow.html') as f:
+            reports.append(f.read())
+        
+        return random.choice(reports)
+     
 class AttackReport:
     """
     Extracts valuable data from a HTML string for

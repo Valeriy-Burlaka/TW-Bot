@@ -3,6 +3,30 @@ import unittest
 from bot import *
 
 
+class TestReportBuilder(unittest.TestCase):
+    """
+    Tests for ReportBuilder class.
+    Uses DummyRequestManager class as stub
+    """
+    
+    def setUp(self):
+        self.builder = ReportBuilder(DummyRequestManager())
+    
+    def test_get_new_reports(self):
+        new_reports = self.builder.get_new_reports()
+        self.assertTrue(isinstance(new_reports, dict))
+        self.assertEqual(len(new_reports), 3)
+        for key, value in new_reports.items():
+            self.assertTrue(isinstance(key, tuple))
+            self.assertTrue(isinstance(key[0], int))
+            self.assertTrue(isinstance(key[1], int))
+            self.assertTrue(isinstance(value, AttackReport))
+        
+        self.assertTrue((209,309) in new_reports)
+        self.assertTrue((214, 320) in new_reports)
+        self.assertTrue((215, 320) in new_reports)
+        
+        
 class TestAttackReport(unittest.TestCase):
     """
     Tests for bot's AttackReport class.
