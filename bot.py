@@ -65,17 +65,19 @@ class AttackReport:
         
         def get_haul_amount(s_resources):
             # <span class="icon header stone"> </span>800 
-            wood_pattern = re.compile(r'"icon header wood"> </span>(\d+)')
-            clay_pattern = re.compile(r'"icon header stone"> </span>(\d+)')
-            iron_pattern = re.compile(r'"icon header iron"> </span>(\d+)')
+            wood_pattern = re.compile(r'wood[\W\w]{1,200}stone')
+            clay_pattern = re.compile(r'stone[\W\w]{1,200}iron')
+            iron_pattern = re.compile(r'iron[\W\w]+?</td>')
             i_amount = 0
             for ptrn in (wood_pattern, clay_pattern, iron_pattern,):
                 match = re.search(ptrn, s_resources)
                 s_resource = match.group()
-                # floats look like "...wood"> </span>1 span class="grey">.</span>175"
+                # floats: "...wood"> </span>1 span class="grey">.</span>175"
                 amounts = re.findall(r'\d+', s_resource)
+                s_amount = ''
                 for s in amounts:
-                    i_amount += int(s)            
+                    s_amount += s
+                i_amount += int(s_amount)    
             return i_amount
         
         self.remaining_capacity = get_haul_amount(scouted)

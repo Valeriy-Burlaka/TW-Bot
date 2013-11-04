@@ -42,8 +42,32 @@ class TestAttackReport(unittest.TestCase):
         green_left = 1686
         yellow_loot = 3120
         yellow_left = 1656
-
-
+        self.assertEqual(self.green_report.looted_capacity, green_loot)
+        self.assertEqual(self.green_report.remaining_capacity, green_left)
+        self.assertEqual(self.yellow_report.looted_capacity, yellow_loot)
+        self.assertEqual(self.yellow_report.remaining_capacity, yellow_left)
+    
+    def test_integration_w_village(self):
+        villa = Village((200, 300), 10000)
+        villa.update_stats(self.green_report)
+        self.assertEqual(self.green_report.mine_levels, villa.mine_levels)
+        self.assertEqual(self.green_report.t_of_attack, villa.last_visited)
+        self.assertEqual(self.green_report.remaining_capacity, villa.remaining_capacity)
+        self.assertEqual(self.green_report.looted_capacity, villa.looted["total"])
+        self.assertEqual(self.green_report.t_of_attack, villa.looted["per_visit"][0][0])
+        self.assertEqual(self.green_report.looted_capacity, villa.looted["per_visit"][0][1])
+        
+        villa.update_stats(self.yellow_report)
+        self.assertEqual(self.yellow_report.mine_levels, villa.mine_levels)
+        self.assertEqual(self.yellow_report.t_of_attack, villa.last_visited)
+        self.assertEqual(self.yellow_report.remaining_capacity, villa.remaining_capacity)
+        total = self.green_report.looted_capacity + self.yellow_report.looted_capacity
+        self.assertEqual(total, villa.looted["total"])
+        self.assertEqual(self.yellow_report.t_of_attack, villa.looted["per_visit"][1][0])
+        self.assertEqual(self.yellow_report.looted_capacity, villa.looted["per_visit"][1][1])
+        
+        
+        
 class TestVillage(unittest.TestCase):
     """
     Tests for bot's Village class. Uses stub object
