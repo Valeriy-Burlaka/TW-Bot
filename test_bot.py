@@ -1,7 +1,139 @@
 import time
 import unittest
+import shelve
 from bot import *
 
+
+class TestMap(unittest.TestCase):
+    
+    def setUp(self):
+        self.mapfile = 'testmap'
+        self.build_dummy_villages()
+        self.build_valid_villages()
+        self.map = Map(211, 305, DummyRequestManager(), depth=3, mapfile=self.mapfile)        
+    
+    def build_dummy_villages(self):
+        """Create and save villages that should be filtered
+        out upon Map initialization (will not be found in map-HTML)
+        """
+        villa_min_min = Village((100, 100), 1)
+        villa_min_max = Village((100, 1000), 2)
+        villa_max_min = Village((1000, 100), 3)
+        villa_max_max = Village((1000, 1000), 4)
+        self.dummy_villages = (villa_min_min, villa_min_max,
+                   villa_max_min, villa_max_max)
+        self.save_villages(self.dummy_villages)
+           
+    def build_valid_villages(self):
+        """Create and save villages that exist in map-HTML.
+        These villages should retain their state in Map.villages
+        """
+        valid_bonus = Village((218, 305), 133228)
+        valid_bonus.mine_levels = (12, 12, 12)  # Add some state for valid villages
+        valid_bonus.remaining_capacity = 4000   # to check that it will be retained
+        valid_barb = Village((218, 307), 125319)
+        valid_barb.mine_levels = (13, 13, 13)
+        valid_barb.remaining_capacity = 2000
+        self.valid_villages = (valid_bonus, valid_barb)
+        self.save_villages(self.valid_villages)
+    
+    def save_villages(self, villages):
+        f = shelve.open(self.mapfile)
+        if f['villages']:
+            temp_villages = f['villages']
+        else:
+            temp_villages = {}        
+        for villa in villages:
+            temp_villages[villa.coords] = villa
+        f['villages'] = temp_villages
+        f.close()
+        
+    def test_base_workability(self):
+        self.assertEqual(self.mapfile, self.map.mapfile)
+        self.assertTrue(len(self.map.villages) > 0)
+        for coords, village_info in self.map.villages.items():   # {(x,y): {"village":Village, "distance":distance}, ...}
+            self.assertTrue(isinstance(coords, tuple))
+            self.assertTrue(isinstance(coords[0], int) and isinstance(coords[1], int))
+            self.assertTrue(isinstance(village_info["village"], Village))
+            self.assertTrue(isinstance(village_info["distance"], float))    
+    
+    def test_build_villages(self):
+        """Tests final state of self.map.villages and
+        of local mapfile.
+        """
+        in_test_map = [Village((211, 306), 135083), 
+                       Village((200, 306), 137156),
+                       Village((212, 289), 136936),
+                       Village((212, 318), 120821),
+                       Village((225, 304), 128693)]
+        not_in_test_map = [(211, 307), (210, 305),
+                           (227, 309), (217, 324)]
+        for villa in in_test_map:
+            self.assertTrue(villa.coords in self.map.villages)
+            self.assertEqual(villa.id, self.map.villages[villa.coords]["village"].id)
+        for coords in not_in_test_map:
+            self.assertTrue(coords not in self.map.villages)
+        f = shelve.open(self.mapfile)
+        for dummy in self.dummy_villages:
+            self.assertTrue(dummy.coords not in self.map.villages)  # Dummies were no included
+            self.assertTrue(dummy.coords not in f['villages'])  # Dummies were deleted upon Map init
+        for valid_villa in self.valid_villages:
+            coords = valid_villa.coords
+            self.assertTrue(coords in self.map.villages)
+            self.assertTrue(coords in f['villages'])
+            # Check state of valid villages in self.map.villages
+            in_map_valid_villa = self.map.villages[coords]['village']
+            self.assertEqual(valid_villa.mine_levels, in_map_valid_villa.mine_levels)
+            self.assertEqual(valid_villa.remaining_capacity, in_map_valid_villa.remaining_capacity)
+        f.close()
+        
+    def test_get_sector_corners(self):
+        """Inject dummies into Map.villages. Dummies coordinates
+        are certainly the corner points
+        """
+        dummy_coords = [x.coords for x in self.dummy_villages]
+        all_coords = [coords for coords in self.map.villages.keys()]
+        all_coords.extend(dummy_coords)
+        corners = self.map.get_sector_corners(all_coords)
+        self.assertEqual(len(corners), 4)
+        for dummy in self.dummy_villages:
+            self.assertTrue(dummy.coords in corners)
+    
+    def test_is_valid(self):
+        non_valid = [['110479', 7, 'Claus laaan', '952', '10155826', '100'],
+                     ['128694', 18, 'Bonus village', '313', 'M140', '100', ['100% higher clay production', 'bonus/stone.png']]
+                     ]
+        valid = [['129120', 4, 0, '138', '0', '100'], 
+                 ['129795', 16, 'Bonus village', '247', '0', '100', ['30% more resources are produced (all resource types)', 'bonus/all.png']]
+                 ]
+        for villa_data in non_valid:
+            self.assertFalse(self.map.is_valid(villa_data))
+        for villa_data in valid:
+            self.assertTrue(self.map.is_valid(villa_data))
+            
+    def test_get_village(self):
+        villa_data = ['129795', 16, 'Bonus village', '247', '0', '100', 
+                        ['30% more resources are produced (all resource types)', 'bonus/all.png']]
+        villa_coords = (100, 100)
+        villa = self.map.get_village(villa_coords, villa_data)
+        self.assertEqual(villa.coords, villa_coords)
+        self.assertEqual(villa.bonus, villa_data[6][0])
+    
+    def test_calculate_distance(self):
+        self.assertEqual(self.map.calculate_distance((100, 100)), 233.12)
+    
+    def test_get_villages_in_range(self):
+        in_range = self.map.get_villages_in_range(6)
+        self.assertTrue((215, 301) in in_range)
+        self.assertTrue((211, 311) in in_range)
+        self.assertFalse((205, 304) in in_range)
+        self.assertFalse((218, 305) in in_range)
+        in_range = self.map.get_villages_in_range(15)
+        self.assertTrue((225, 304) in in_range)
+        self.assertTrue((212, 318) in in_range)
+        self.assertFalse((212, 289) in in_range)
+        self.assertFalse((196, 306) in in_range)
+        
 
 class TestReportBuilder(unittest.TestCase):
     """
