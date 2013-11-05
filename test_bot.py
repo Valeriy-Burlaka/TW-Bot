@@ -86,6 +86,20 @@ class TestMap(unittest.TestCase):
             self.assertEqual(valid_villa.mine_levels, in_map_valid_villa.mine_levels)
             self.assertEqual(valid_villa.remaining_capacity, in_map_valid_villa.remaining_capacity)
         f.close()
+    
+    def test_update_saved_villages(self):
+        valid_copies = {}
+        for villa in self.valid_villages:
+            coords = villa.coords
+            valid_copies[coords] = villa
+            valid_copies[coords].mine_levels = (1, 1, 1)
+            valid_copies[coords].remaining_capacity = 1000
+        self.map.update_saved_villages(valid_copies)
+        f = shelve.open(self.mapfile)
+        for coords, villa in valid_copies.items():
+            self.assertTrue(coords in f['villages'])
+            self.assertEqual(villa.mine_levels, f['villages'][coords].mine_levels)
+            self.assertEqual(villa.remaining_capacity, f['villages'][coords].remaining_capacity)        
         
     def test_get_sector_corners(self):
         """Inject dummies into Map.villages. Dummies coordinates

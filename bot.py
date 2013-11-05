@@ -83,10 +83,13 @@ class Map:
         """Saves info about attacked villages in local file
         """
         f = shelve.open(self.mapfile)
-        if not 'villages' in f:
-            f['villages'] = {}
+        if 'villages' in f:
+            saved_villages = f['villages']
+        else:
+            saved_villages = {}
         for coords, village in villages.items():
-            f['villages'][coords] = village
+            saved_villages[coords] = village
+        f['villages'] = saved_villages
         f.close()
     
     def build_villages(self, x, y, depth):
