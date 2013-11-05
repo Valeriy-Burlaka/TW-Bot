@@ -21,7 +21,10 @@ class DummyRequestManager:
     """
     
     def get_reports_page(self):
-        with open('test_html/report_page.html') as f:
+        report_pages = ['report_page.html']
+        report_page_file = random.choice(report_pages)
+        report_page_path = os.path.join('test_html', report_page_file)
+        with open(report_page_path) as f:
             html_data = f.read()
         return html_data
     
@@ -30,8 +33,8 @@ class DummyRequestManager:
         report_file = random.choice(reports)
         report_path = os.path.join('test_html', report_file)
         with open(report_path) as f:
-            data = f.read()        
-        return data
+            html_data = f.read()        
+        return html_data
     
     def get_map_overview(self, x, y):
         files = ['map_overview_200_300.html', 'map_overview_200_327.html',
@@ -40,8 +43,8 @@ class DummyRequestManager:
         map_file = random.choice(files)
         map_path = os.path.join('test_html', map_file)
         with open(map_path) as f:
-            data = f.read()
-        return data
+            html_data = f.read()
+        return html_data
 
         
 class Map:
@@ -207,10 +210,15 @@ class ReportBuilder:
         single_report_ptrn = re.compile(r'<input name="id_[\W\w]+?</tr>')
         reports_list = re.findall(single_report_ptrn, reports)
         reports_list = [x for x in reports_list if '(new)' in x]    # get reports marked as "new"
+        battle_reports = []
+        for report in reports_list: # filter out all support/recon/red reports
+            match = re.search(r'<img src[\W\w]+?(yellow)|(green)\.png', report)
+            if match:
+                battle_reports.append(report)
         
         href_ptrn = re.compile(r'<a href=[\W\w]+?>')
         coords_ptrn = re.compile(r'(\d{3})\|(\d{3})')
-        for report in reports_list:
+        for report in battle_reports:
             url = re.search(href_ptrn, report)
             url = url.group()       
             coords = re.search(coords_ptrn, report)
@@ -241,7 +249,7 @@ class AttackReport:
         self.set_capacities()
     
     def set_status(self):
-        match = re.search(r'/graphic/dots/(\w+).png', self.data)    # green, yellow or red
+        match = re.search(r'/graphic/dots/(\w+).png', self.data)    # green, yellow
         self.status = match.group(1)
     
     def set_t_of_attack(self):        
