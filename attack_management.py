@@ -29,9 +29,9 @@ class AttackQueue:
         """Builds queue from villages that are ready for farm
         and sorts it ascending by distance (nearest=first)"""
         # v_data = {'village': Village, 'distance':distance]
-        queue = [v_data for v_data in self.villages.values() if self.is_ready_for_farm(v_data['village'])]
+        queue = [villa for villa in self.villages.values() if self.is_ready_for_farm(villa)]
         # assign queue sorted by distance
-        self.queue = sorted(queue, key=lambda x: x['distance'])
+        self.queue = sorted(queue, key=lambda x: x.dist_from_base)
 
     def is_ready_for_farm(self, village):
         return village.passes_threshold(self.threshold) or village.is_fresh_meat() or village.finished_rest(self.rest)
@@ -50,18 +50,18 @@ class AttackQueue:
         if not estimated_capacity: estimated_capacity = self.initial_capacity
         return round(estimated_capacity/unit.haul)
 
-    def is_attack_possible(self, v_data, troops_map):
+    def is_attack_possible(self, villa, troops_map):
         """Evaluates if there enough troops to loot all
         village resources at the time of arrival with current troops.
         Returns dict {Unit_obj: number to send}
         """
         for unit, count in troops_map.items():
-            if v_data['village'].is_fresh_meat():   # No info about last_visited & remaining_capacity
+            if villa.is_fresh_meat():   # No info about last_visited & remaining_capacity
                 units_needed = self.estimate_troops_needed(unit)
             else:
                 speed = unit.speed
-                t_of_arrival = self.estimate_arrival(v_data['distance'], speed)
-                estimated_capacity = v_data['village'].estimate_capacity(t_of_arrival)
+                t_of_arrival = self.estimate_arrival(villa.dist_from_base, speed)
+                estimated_capacity = villa.estimate_capacity(t_of_arrival)
                 units_needed = self.estimate_troops_needed(unit, estimated_capacity)
             if units_needed <= count:
                 return {unit: units_needed}
@@ -80,15 +80,15 @@ class AttackQueue:
             check = self.is_attack_possible(high_priority, troops_map)
             if check:
                 self.queue.remove(high_priority)
-                return (high_priority['village'].coords, check)
+                return (high_priority.coords, check)
             else:
                 next_priorities = self.queue[1:self.depth+1]
                 if next_priorities:
-                    for v_data in next_priorities:
-                        check = self.is_attack_possible(v_data, troops_map)
+                    for villa in next_priorities:
+                        check = self.is_attack_possible(villa, troops_map)
                         if check:
-                            self.queue.remove(v_data)
-                            return (v_data['village'].coords, check)
+                            self.queue.remove(villa)
+                            return (villa.coords, check)
 
         return
 
@@ -99,7 +99,7 @@ class AttackQueue:
             print(coords)
             print(report)
             print(self.villages[coords])
-            #self.villages[coords].update_stats(report)
+            self.villages[coords].update_stats(report)
         self.map.update_villages(self.villages)
         # Re-build self.queue basing on last information
         self.build_queue()

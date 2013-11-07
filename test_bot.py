@@ -20,11 +20,11 @@ class TestAttackQueue(unittest.TestCase):
 
     def test_build_queue(self):
         self.assertTrue(self.aq.queue)
-        self.assertIsInstance(self.aq.queue[0]['village'], Village)
-        self.assertIsInstance(self.aq.queue[0]['distance'], float)
-        coords = self.aq.queue[0]['village'].coords
+        self.assertIsInstance(self.aq.queue[0], Village)
+        self.assertIsInstance(self.aq.queue[0].dist_from_base, float)
+        coords = self.aq.queue[0].coords
         self.assertTrue(coords == (211,306) or coords == (212,305)) # 2 equally near villages in test data
-        coords = self.aq.queue[2]['village'].coords # certainly 3rd village in test data
+        coords = self.aq.queue[2].coords # certainly 3rd village in test data
         self.assertTrue(coords == (212,306))
 
     def test_is_ready_for_farm(self):
@@ -59,9 +59,9 @@ class TestAttackQueue(unittest.TestCase):
         self.assertFalse(axe in units_needed)
         self.assertEqual(units_needed[lc], 30)
 
-        villa['village'].remaining_capacity = 6000
-        villa['village'].last_visited = time.mktime(time.gmtime())
-        villa['village'].h_rates = [9, 9, 9]
+        villa.remaining_capacity = 6000
+        villa.last_visited = time.mktime(time.gmtime())
+        villa.h_rates = [9, 9, 9]
         troops_map = {lc:30, axe:600}   # 600 is not enough due to hour/rates
         units_needed = self.aq.is_attack_possible(villa, troops_map)
         self.assertFalse(units_needed)
@@ -72,7 +72,7 @@ class TestAttackQueue(unittest.TestCase):
         self.assertFalse(lc in units_needed)
 
     def test_get_next_attack_target(self):
-        villa = self.aq.queue[0]['village']
+        villa = self.aq.queue[0]
         lc = LightCavalry()
         axe = Axeman()
         troops_map = {lc:20, axe:310}
@@ -83,10 +83,10 @@ class TestAttackQueue(unittest.TestCase):
         self.assertEqual(get_attack[1][axe], 240)
 
         troops_map = {lc:20, axe:100}   #Not enough to loot first, should search deeper and find 'our' village
-        villa = self.aq.queue[self.aq.depth]['village']
-        self.aq.queue[self.aq.depth]['village'].remaining_capacity = 1200 # Modify queue in-place
-        self.aq.queue[self.aq.depth]['village'].last_visited = time.mktime(time.gmtime())
-        self.aq.queue[self.aq.depth]['village'].h_rates = [1, 1, 1]
+        villa = self.aq.queue[self.aq.depth]
+        self.aq.queue[self.aq.depth].remaining_capacity = 1200 # Modify queue in-place
+        self.aq.queue[self.aq.depth].last_visited = time.mktime(time.gmtime())
+        self.aq.queue[self.aq.depth].h_rates = [1, 1, 1]
         get_attack = self.aq.get_next_attack_target(troops_map)
         self.assertTrue(get_attack)
         self.assertEqual(villa.coords, get_attack[0])
@@ -149,11 +149,11 @@ class TestMap(unittest.TestCase):
     def test_base_workability(self):
         self.assertEqual(self.mapfile, self.map.mapfile)
         self.assertTrue(len(self.map.villages) > 0)
-        for coords, village_info in self.map.villages.items():   # {(x,y): {"village":Village, "distance":distance}, ...}
+        for coords, villa in self.map.villages.items():   # {(x,y): {"village":Village, "distance":distance}, ...}
             self.assertIsInstance(coords, tuple)
             self.assertTrue(isinstance(coords[0], int) and isinstance(coords[1], int))
-            self.assertIsInstance(village_info["village"], Village)
-            self.assertIsInstance(village_info["distance"], float)
+            self.assertIsInstance(villa, Village)
+            self.assertIsInstance(villa.dist_from_base, float)
     
     def test_build_villages(self):
         """Tests final state of self.map.villages and
@@ -168,7 +168,7 @@ class TestMap(unittest.TestCase):
                            (227, 309), (217, 324)]
         for villa in in_test_map:
             self.assertTrue(villa.coords in self.map.villages)
-            self.assertEqual(villa.id, self.map.villages[villa.coords]["village"].id)
+            self.assertEqual(villa.id, self.map.villages[villa.coords].id)
         for coords in not_in_test_map:
             self.assertTrue(coords not in self.map.villages)
         f = shelve.open(self.mapfile)
@@ -180,7 +180,7 @@ class TestMap(unittest.TestCase):
             self.assertTrue(coords in self.map.villages)
             self.assertTrue(coords in f['villages'])
             # Check state of valid villages in self.map.villages
-            in_map_valid_villa = self.map.villages[coords]['village']
+            in_map_valid_villa = self.map.villages[coords]
             self.assertEqual(valid_villa.mine_levels, in_map_valid_villa.mine_levels)
             self.assertEqual(valid_villa.remaining_capacity, in_map_valid_villa.remaining_capacity)
         f.close()
@@ -199,8 +199,8 @@ class TestMap(unittest.TestCase):
             self.assertEqual(villa.mine_levels, f['villages'][coords].mine_levels)
             self.assertEqual(villa.remaining_capacity, f['villages'][coords].remaining_capacity)
             self.assertTrue(coords in self.map.villages)
-            self.assertEqual(villa.mine_levels, self.map.villages[coords]['village'].mine_levels)
-            self.assertEqual(villa.remaining_capacity, self.map.villages[coords]['village'].remaining_capacity)
+            self.assertEqual(villa.mine_levels, self.map.villages[coords].mine_levels)
+            self.assertEqual(villa.remaining_capacity, self.map.villages[coords].remaining_capacity)
         f.close()
 
     def test_get_sector_corners(self):
@@ -231,9 +231,10 @@ class TestMap(unittest.TestCase):
         villa_data = ['129795', 16, 'Bonus village', '247', '0', '100', 
                         ['30% more resources are produced (all resource types)', 'bonus/all.png']]
         villa_coords = (100, 100)
-        villa = self.map.get_village(villa_coords, villa_data)
+        villa = self.map.get_village(villa_coords, villa_data, 100)
         self.assertEqual(villa.coords, villa_coords)
         self.assertEqual(villa.bonus, villa_data[6][0])
+        self.assertEqual(villa.dist_from_base, 100)
     
     def test_calculate_distance(self):
         self.assertEqual(self.map.calculate_distance((100, 100)), 233.12)

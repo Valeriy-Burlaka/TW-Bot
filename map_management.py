@@ -34,7 +34,8 @@ class Map:
             for coords, village in f['villages'].items():
                 if coords in self.villages: # Saved village remained Bonus/Barbarian
                     distance = self.calculate_distance(coords)
-                    self.villages[coords] = {"village":village, "distance": distance}   #Update with saved data
+                    village.dist_from_base = distance
+                    self.villages[coords] = village  #Update with saved data
                     still_valid[coords] = village
             f['villages'] = still_valid
         f.close()
@@ -48,18 +49,17 @@ class Map:
             saved_villages = f['villages']
         else:
             saved_villages = {}
-        for coords, v_data in villages.items():
-            # Not storing distance in shelve: f['villages'] = {(x,y): Village, ..}
-            saved_villages[coords] = v_data
-            self.villages[coords]['village'] = v_data
+        for coords, village in villages.items():
+            saved_villages[coords] = village
+            self.villages[coords] = village
         f['villages'] = saved_villages
         f.close()
 
     def build_villages(self, x, y, depth):
         """Extracts village's data from sector data.
         Constructs Villages and fills self.villages.
-        If depth > 1, requests sector's data & repeats Villages
-        construction for sector's corners recursively.
+        If depth > 1, requests sector's data & recursively repeats
+        Villages construction for sector's corners.
         """
         depth -= 1
         map_html = self.request_manager.get_map_overview(x, y)
@@ -68,7 +68,7 @@ class Map:
             sector_x = sector['x']
             sector_y = sector['y']
             sector_coords = []  # hold coords of villages found, need to determine sector's corners
-            sector_villages = sector['data']['villages']    # list, index = relative x coord.
+            sector_villages = sector['data']['villages']    # list; index is a x coord (relative to sector_x)
             for x, y_axis in enumerate(sector_villages): # y_axis is a dict of villages
                 for y, village_data in y_axis.items():
                     if self.is_valid(village_data): # check if village is Bonus/Barbarian
@@ -77,9 +77,9 @@ class Map:
                         villa_coords = (villa_x, villa_y)
                         sector_coords.append(villa_coords)
                         if not villa_coords in self.villages:
-                            village = self.get_village(villa_coords, village_data)
-                            distance = self.calculate_distance(villa_coords)
-                            self.villages[villa_coords] = {"village":village, "distance":distance}
+                            distance_from_base = self.calculate_distance(villa_coords)
+                            village = self.get_village(villa_coords, village_data, distance_from_base)
+                            self.villages[villa_coords] = village
 
             if depth:
                 sector_corners = self.get_sector_corners(sector_coords)
@@ -92,22 +92,22 @@ class Map:
         Returns list of 4 points ( [(x=min,y=min), (x=max, y=max), etc.])
         """
         corners = []
-        sorted_coords = sorted(sector_coords)
-        min_min = sorted_coords[0]
-        max_max = sorted_coords[-1]
+        sector_coords = sorted(sector_coords)
+        min_min = sector_coords[0]
+        max_max = sector_coords[-1]
         corners.extend([min_min, max_max])
-        w_min_x = [x for x in sorted_coords if x[0] == min_min[0]]
+        w_min_x = [x for x in sector_coords if x[0] == min_min[0]]
         if len(w_min_x) > 1:    # if this village is not single on it's axis
             min_max = sorted(w_min_x)[-1]
             corners.append(min_max)
-        w_max_x = [x for x in sorted_coords if x[0] == max_max[0]]
+        w_max_x = [x for x in sector_coords if x[0] == max_max[0]]
         if len(w_max_x) > 1:
             max_min = sorted(w_max_x)[0]
             corners.append(max_min)
 
         return corners
 
-    def get_village(self, villa_coords, village_data):
+    def get_village(self, villa_coords, village_data, dist_from_base):
         """Constructs a Village obj from given data
         """
         id = int(village_data[0])
@@ -117,6 +117,7 @@ class Map:
         else:
             village = Village(villa_coords, id)
 
+        village.dist_from_base = dist_from_base
         return village
 
     def is_valid(self, village_data):
@@ -148,7 +149,7 @@ class Map:
         return res
 
     def get_villages_in_range(self, distance):
-        in_range = {key:value for key, value in self.villages.items() if value["distance"] <= distance}
+        in_range = {coords:villa for coords, villa in self.villages.items() if villa.dist_from_base <= distance}
         return in_range
 
 
@@ -165,6 +166,7 @@ class Village:
         self.mine_levels = None #list [wood, clay, iron], integers
         self.h_rates = None
         self.last_visited = None
+        self.dist_from_base = None
         self.remaining_capacity = 0
         self.looted = {"total": 0, "per_visit": []}
 
