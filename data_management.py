@@ -53,7 +53,9 @@ class ReportBuilder:
         battle_reports = self.get_reports_from_table(reports_table)
         for report_data in battle_reports:
             html_report, coords = self.get_single_report(report_data)
-            new_reports[coords] = AttackReport(html_report)
+            attack_report = AttackReport(html_report)
+            if attack_report.is_valid_report:
+                new_reports[coords] = attack_report
 
         return new_reports
 
@@ -69,17 +71,27 @@ class AttackReport:
 
     def __init__(self, str_html):
         self.data = str_html
+        self.is_valid_report = True
         self.build_report()
 
     def build_report(self):
-        self.set_status()
-        self.set_t_of_attack()
-        self.set_mines_level()
-        self.set_capacities()
+        """
+        Invokes each method that sets field and checks
+        if self.is_valid_report is still True.
+        Returns if any of fields was not set (non-valid battle report)
+        """
+        field_setters = [self.set_status, self.set_t_of_attack,
+                         self.set_mines_level, self.set_capacities]
+        for setter in field_setters:
+            if self.is_valid_report:
+                setter()
+            else: return
 
     def set_status(self):
         match = re.search(r'/graphic/dots/(\w+).png', self.data)    # green, yellow
-        self.status = match.group(1)
+        if match:
+            self.status = match.group(1)
+        else: self.is_valid_report = False
 
     def set_t_of_attack(self):
         months = {"Jan":1, "Feb":2, "Mar":3, "Apr":4, "May":5,
@@ -89,16 +101,16 @@ class AttackReport:
         # "Nov 03, 2013  14:01:57"
         pattern = re.compile(r'(\w{3})\s(\d\d),\s(\d{4})\s\s(\d\d):(\d\d):(\d\d)')
         match = re.search(pattern, self.data)
-        month = months[match.group(1)]
-        day = int(match.group(2))
-        year = int(match.group(3))
-        hour = int(match.group(4))
-        minute = int(match.group(5))
-        second = int(match.group(6))
-
-        struct_t = time.struct_time(
-            (year, month, day, hour, minute, second, 0, 0, 0))
-        self.t_of_attack = round(time.mktime(struct_t))
+        if match:
+            month = months[match.group(1)]
+            day = int(match.group(2))
+            year = int(match.group(3))
+            hour = int(match.group(4))
+            minute = int(match.group(5))
+            second = int(match.group(6))
+            struct_t = time.struct_time((year, month, day, hour, minute, second, 0, 0, 0))
+            self.t_of_attack = round(time.mktime(struct_t))
+        else: self.is_valid_report = False
 
     def set_mines_level(self):
         mines = ["Timber camp", "Clay pit", "Iron mine"]
@@ -106,12 +118,16 @@ class AttackReport:
         for mine in mines:
             search = r'{}\s<b>\WLevel\s(\d)\W</b>'.format(mine) # "Barracks <b>(Level 4)</b>"
             match = re.search(search, self.data)
-            levels.append(int(match.group(1)))
+            if match:
+                levels.append(int(match.group(1)))
+            else:
+                self.is_valid_report = False
+                return
         self.mine_levels = levels
 
     def set_capacities(self):
-        scouted = re.search(r'Resources scouted:[\w\W]+Buildings:', self.data).group()
-        looted = re.search(r'Haul:[\w\W]+Publicize this report', self.data).group()
+        scouted = re.search(r'Resources scouted:[\w\W]+Buildings:', self.data)
+        looted = re.search(r'Haul:[\w\W]+Publicize this report', self.data)
 
         def get_haul_amount(s_resources):
             # <span class="icon header stone"> </span>800
@@ -121,14 +137,23 @@ class AttackReport:
             i_amount = 0
             for ptrn in (wood_pattern, clay_pattern, iron_pattern,):
                 match = re.search(ptrn, s_resources)
-                s_resource = match.group()
-                # floats: "...wood"> </span>1 span class="grey">.</span>175"
-                amounts = re.findall(r'\d+', s_resource)
-                s_amount = ''
-                for s in amounts:
-                    s_amount += s
-                i_amount += int(s_amount)
+                if match:
+                    s_resource = match.group()
+                    # floats: "...wood"> </span>1 span class="grey">.</span>175"
+                    amounts = re.findall(r'\d+', s_resource)
+                    s_amount = ''
+                    for s in amounts:
+                        s_amount += s
+                    i_amount += int(s_amount)
+                else:
+                    self.is_valid_report = False
+                    return
+
             return i_amount
 
-        self.remaining_capacity = get_haul_amount(scouted)
-        self.looted_capacity = get_haul_amount(looted)
+        if scouted and looted:
+            self.remaining_capacity = get_haul_amount(scouted.group())
+            self.looted_capacity = get_haul_amount(looted.group())
+        else:
+            self.is_valid_report = False
+            return

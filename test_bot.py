@@ -297,7 +297,21 @@ class TestAttackReport(unittest.TestCase):
             s_yellow_report = f.read()
         self.green_report = AttackReport(s_green_report)
         self.yellow_report = AttackReport(s_yellow_report)
-    
+
+    def test_invalid_report(self):
+        with open(r'test_html/single_report_blue.html') as f:
+            s_recon_report = f.read()
+            recon_report = AttackReport(s_recon_report)
+            self.assertFalse(recon_report.is_valid_report)
+        with open(r'test_html/single_report_red.html') as f:
+            s_red_report = f.read()
+            red_report = AttackReport(s_red_report)
+            self.assertFalse(red_report.is_valid_report)
+        with open(r'test_html/single_report_support.html') as f:
+            s_support_report = f.read()
+            support_report = AttackReport(s_support_report)
+            self.assertFalse(support_report.is_valid_report)
+
     def test_set_status(self):
         self.assertEqual(self.green_report.status, 'green')
         self.assertEqual(self.yellow_report.status, 'yellow')

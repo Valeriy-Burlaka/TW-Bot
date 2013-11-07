@@ -19,6 +19,7 @@ class DummyRequestManager:
 
     def get_report(self, url):
         reports = ['single_report_green.html', 'single_report_yellow.html']
+
         report_file = random.choice(reports)
         report_path = os.path.join('test_html', report_file)
         with open(report_path) as f:
