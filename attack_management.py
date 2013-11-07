@@ -95,12 +95,14 @@ class AttackQueue:
     def update_villages(self, new_reports):
         """Updates self.villages with a new reports
         """
+        updated_villages = {}
         for coords, report in new_reports.items():
-            print(coords)
-            print(report)
-            print(self.villages[coords])
-            self.villages[coords].update_stats(report)
-        self.map.update_villages(self.villages)
+            villa = self.villages[coords]
+            villa.update_stats(report)
+            self.villages[coords] = villa
+            updated_villages[coords] = villa
+
+        self.map.update_villages(updated_villages)
         # Re-build self.queue basing on last information
         self.build_queue()
 

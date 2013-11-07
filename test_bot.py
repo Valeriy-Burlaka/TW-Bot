@@ -93,13 +93,21 @@ class TestAttackQueue(unittest.TestCase):
         self.assertTrue(lc in get_attack[1])
         self.assertEqual(get_attack[1][lc], 15)
 
-#    def test_update_villages(self):
-#        new_reports = self.report_builder.get_new_reports()
-#        self.aq.update_villages(new_reports)
-#
-#        for coords, report in new_reports.items():
-#            in_aq_villa = self.aq.villages[coords]['village']
-#            self.assertEqual(in_aq_villa.last_visited, report.t_of_attack)
+    def test_update_villages(self):
+        new_reports = self.report_builder.get_new_reports()
+        self.aq.update_villages(new_reports)
+
+        for coords, report in new_reports.items():
+            in_aq_villa = self.aq.villages[coords]
+            # Villages in AttackQueue.villages were updated
+            self.assertEqual(in_aq_villa.last_visited, report.t_of_attack)
+            self.assertEqual(in_aq_villa.mine_levels, report.mine_levels)
+            self.assertEqual(in_aq_villa.remaining_capacity, report.remaining_capacity)
+            # Double-check: AQ.queue also contains latest information
+            in_queue_villa = [villa for villa in self.aq.queue if villa.coords == coords][0]
+            self.assertEqual(in_queue_villa.last_visited, report.t_of_attack)
+            self.assertEqual(in_queue_villa.mine_levels, report.mine_levels)
+            self.assertEqual(in_queue_villa.remaining_capacity, report.remaining_capacity)
 
 
 class TestMap(unittest.TestCase):
