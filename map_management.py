@@ -84,6 +84,7 @@ class Map:
             if depth:
                 sector_corners = self.get_sector_corners(sector_coords)
                 for corner in sector_corners:
+                    time.sleep(0.3)
                     self.build_villages(*corner, depth=depth)
 
     def get_sector_corners(self, sector_coords):
@@ -111,11 +112,13 @@ class Map:
         """Constructs a Village obj from given data
         """
         id = int(village_data[0])
+        population = village_data[3]    # str, e.g. "4.567" (4567)
+        population = int(population.replace('.', ''))
         if len(village_data) > 6:
             bonus = village_data[6][0]
-            village = Village(villa_coords, id, bonus)
+            village = Village(villa_coords, id, population, bonus)
         else:
-            village = Village(villa_coords, id)
+            village = Village(villa_coords, id, population)
 
         village.dist_from_base = dist_from_base
         return village
@@ -159,9 +162,10 @@ class Village:
     'Lives' in Map.
     """
 
-    def __init__(self, coords, id, bonus=None):
+    def __init__(self, coords, id, population, bonus=None):
         self.id = id
         self.coords = coords    #tuple (x,y)
+        self.population = population
         self.bonus = bonus  # str
         self.mine_levels = None #list [wood, clay, iron], integers
         self.h_rates = None
@@ -241,7 +245,10 @@ class Village:
         return rates
 
     def __str__(self):
-        return "id: {0}, coords: {1}, h_rates: {2}".format(self.id, self.coords, self.h_rates)
+        return "id: {0}, (x,y): {1}, dist: {2} rates: {3}, visited: {4}, looted_total: {5}".format(self.id, self.coords,
+                                                                                                    self.dist_from_base ,self.h_rates,
+                                                                                                    time.ctime(self.last_visited),
+                                                                                                    self.looted['total'])
 
     def __repr__(self):
         return self.__str__()

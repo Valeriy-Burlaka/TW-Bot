@@ -15,17 +15,51 @@ class ReportBuilder:
     attack reports, so using regular expressions instead.
     """
 
-    def __init__(self, request_manager):
+    def __init__(self, request_manager, lock):
         self.request_manager = request_manager  # instance of RequestManager
+        self.lock = lock    # shared instance of Bot's lock
+
+    def get_new_reports(self):
+        """
+        Downloads new battle reports from server.
+        Inits AttackReport objects from downloaded reports.
+        Validates inited AttackReports (all fields are filled)
+        Returns mapping {(x, y): AttackReport, ..}, where (x,y) =
+        coordinates of attacked village.
+        """
+        new_reports = {}
+        reports_table = self.get_reports_table()
+        battle_reports = self.get_reports_from_table(reports_table)
+        for report_data in battle_reports:
+            html_report, coords = self.get_single_report(report_data)
+            attack_report = AttackReport(html_report)
+            if attack_report.is_valid_report:
+                print("Created valid report for: {}".format(coords))
+                new_reports[coords] = attack_report
+
+        return new_reports
 
     def get_reports_table(self):
+        """
+        Requests default (1st) report page from server.
+        We assume that AttackObserver will trigger update of
+        reports in time, so no new reports will be after 1st report page.
+        """
+        self.lock.acquire()
         reports_page = self.request_manager.get_reports_page()
+        self.lock.release()
         report_table_ptrn = re.compile(r'<table id="report_list"[\W\w]+?</table>')  # table with 12 reports
         match = re.search(report_table_ptrn, reports_page)
         reports_table = match.group()
         return reports_table
 
     def get_reports_from_table(self, reports_table):
+        """
+        Extracts single reports from report table and filters out
+        non-green/yellow reports (only green & yellow can contain info
+        about looted & remaining village capacity.
+        Returns list which contains HTML chunks, each with URL for single report.
+        """
         single_report_ptrn = re.compile(r'<input name="id_[\W\w]+?</tr>')
         reports_list = re.findall(single_report_ptrn, reports_table)
         reports_list = [x for x in reports_list if '(new)' in x]    # get reports marked as "new"
@@ -38,26 +72,24 @@ class ReportBuilder:
         return battle_reports
 
     def get_single_report(self, report):
-        href_ptrn = re.compile(r'<a href=[\W\w]+?>')
+        """
+        Extracts report URL from given HTML and requests
+        single report page from server. Returns HTML page
+        of single attack report & coordinates of village that was attacked.
+        """
+        href_ptrn = re.compile(r'<a href="([\W\w]+?)">')
         coords_ptrn = re.compile(r'(\d{3})\|(\d{3})')
         url = re.search(href_ptrn, report)
-        url = url.group()
+        url = url.group(1)
+        url = url.replace('&amp;', '&')
         coords = re.search(coords_ptrn, report)
         coords = (int(coords.group(1)), int(coords.group(2)))
+        # Do not hit server too frequently
+        time.sleep(0.5)
+        self.lock.acquire()
         html_report = self.request_manager.get_report(url)
+        self.lock.release()
         return html_report, coords
-
-    def get_new_reports(self):
-        new_reports = {}
-        reports_table = self.get_reports_table()
-        battle_reports = self.get_reports_from_table(reports_table)
-        for report_data in battle_reports:
-            html_report, coords = self.get_single_report(report_data)
-            attack_report = AttackReport(html_report)
-            if attack_report.is_valid_report:
-                new_reports[coords] = attack_report
-
-        return new_reports
 
 
 class AttackReport:
@@ -94,21 +126,12 @@ class AttackReport:
         else: self.is_valid_report = False
 
     def set_t_of_attack(self):
-        months = {"Jan":1, "Feb":2, "Mar":3, "Apr":4, "May":5,
-                  "Jun":6, "Jul":7, "Aug":8, "Sep":9, "Oct":10,
-                  "Nov":11, "Dec":12}
-
         # "Nov 03, 2013  14:01:57"
         pattern = re.compile(r'(\w{3})\s(\d\d),\s(\d{4})\s\s(\d\d):(\d\d):(\d\d)')
         match = re.search(pattern, self.data)
         if match:
-            month = months[match.group(1)]
-            day = int(match.group(2))
-            year = int(match.group(3))
-            hour = int(match.group(4))
-            minute = int(match.group(5))
-            second = int(match.group(6))
-            struct_t = time.struct_time((year, month, day, hour, minute, second, 0, 0, 0))
+            str_t = match.group()
+            struct_t = time.strptime(str_t, "%b %d, %Y %H:%M:%S")
             self.t_of_attack = round(time.mktime(struct_t))
         else: self.is_valid_report = False
 
@@ -146,7 +169,6 @@ class AttackReport:
                         s_amount += s
                     i_amount += int(s_amount)
                 else:
-                    self.is_valid_report = False
                     return
 
             return i_amount

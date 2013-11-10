@@ -1,6 +1,8 @@
 import time
 import unittest
 import shelve
+from threading import  Thread
+from threading import Lock
 from map_management import Map
 from map_management import Village
 from attack_management import *
@@ -8,12 +10,112 @@ from data_management import *
 from request_manager import DummyRequestManager
 
 
+#class TestAttackManagerInCycle(unittest.TestCase):
+#
+#    def setUp(self):
+#        self.lock = Lock()
+#        self.RM = DummyRequestManager()
+#        self.RB = ReportBuilder(self.RM, self.lock)
+#        self.AM = AttackManager(211, 305, self.RM, self.RB, self.lock)
+#
+#    def test_full_cycle(self):
+#        self.AM.start()
+#        time.sleep(0.5)
+#        self.assertTrue(self.AM.attack_observer.arrival_queue)
+#        self.assertTrue(self.AM.attack_observer.return_queue)
+#        time.sleep(20)
+#        self.AM.active = False
+
+
+#class TestAttackManager(unittest.TestCase):
+#
+#    def setUp(self):
+#        self.lock = Lock()
+#        self.RM = DummyRequestManager()
+#        self.RB = ReportBuilder(self.RM, self.lock)
+#        self.AM = AttackManager(211, 305, self.RM, self.RB, self.lock)
+#
+#    def test_initial_troops(self):
+#        troops_map = self.AM.state_manager.get_troops_map()
+#        self.assertTrue('axe' in troops_map)
+#        self.assertEqual(troops_map['axe'], 1971)
+#        self.assertTrue('light' in troops_map)
+#        self.assertEqual(troops_map['light'], 641)
+#        self.assertTrue('heavy' in troops_map)
+#        self.assertEqual(troops_map['heavy'], 69)
+#        self.assertTrue('spy' in troops_map)
+#        self.assertEqual(troops_map['spy'], 724)
+#
+#    def test_get_confirmation_data(self):
+#        coords = (100, 100)
+#        troops = {'axe': 100, 'light': 100}
+#        valid_data = "948f507c72264da32c343a=e8432083948f50&template_id=&spear=&sword=&axe=100&" + \
+#                     "archer=&spy=2&light=100&marcher=&heavy=&ram=&catapult=&knight=&snob=&x=100&y=100&attack=Attack"
+#        s_confirm_data = self.AM.get_confirmation_data(coords, troops)
+#        self.assertEqual(s_confirm_data, valid_data)
+#
+#    def test_get_post_attack_data(self):
+#        coords = (100, 100)
+#        troops = {'axe': 100, 'light': 100}
+#        ch_token = ('ch', '2d27ecd3c56dcd001c086a588f2ea6c5dda3b3ac')
+#        action_id = ('action_id', '275824')
+#        valid_data = "attack=true&ch=2d27ecd3c56dcd001c086a588f2ea6c5dda3b3ac&x=100&y=100&action_id=275824&" + \
+#                     "attack_name=&spear=0&sword=0&axe=100&archer=0&spy=2&light=100&marcher=0&heavy=0&ram=0&catapult=0&knight=0&snob=0"
+#        s_attack_data = self.AM.get_attack_data(coords, troops, ch_token, action_id)
+#        self.assertEqual(s_attack_data, valid_data)
+#
+#    def test_send_attack(self):
+#        initial_troops = self.AM.troops_map
+#        coords = (100, 100)
+#        troops = {'axe': 100, 'light': 100}
+#        t_of_attack = self.AM.send_attack(coords, troops)
+#        self.assertAlmostEqual(t_of_attack, time.mktime(time.gmtime()))
+#
+#        initial_troops['axe'] -= 100
+#        initial_troops['light'] -= 100
+#        for key in initial_troops:
+#            self.assertEqual(initial_troops[key], self.AM.troops_map[key])
+#
+#    def test_manager_notification(self):
+#        self.AM.active = True
+#        self.AM.attack_observer = AttackObserver(self.AM)
+#        self.AM.attack_observer.start()
+#        t_gmt = time.mktime(time.gmtime())
+#        self.AM.attack_observer.register_attack(t_gmt+5, t_gmt+7)
+#        self.assertFalse(self.AM.new_battle_reports)
+#        self.assertFalse(self.AM.some_troops_returned)
+#        self.assertTrue(self.AM.attack_observer.arrival_queue)
+#        self.assertTrue(self.AM.attack_observer.return_queue)
+#        time.sleep(6)
+#        self.assertTrue(self.AM.new_battle_reports)
+#        time.sleep(2)
+#        self.assertTrue(self.AM.some_troops_returned)
+#        self.AM.active = False
+
+
+class TestVillageStateManager(unittest.TestCase):
+
+    def setUp(self):
+        self.RM = DummyRequestManager()
+        self.lock = Lock()
+        self.manager = VillageStateManager(self.RM, self.lock)
+
+    def test_get_troops_map(self):
+        troops_map = self.manager.get_troops_map()
+        self.assertTrue('axe' in troops_map)
+        self.assertEqual(troops_map['axe'], 1971)
+        self.assertTrue('light' in troops_map)
+        self.assertEqual(troops_map['light'], 641)
+        self.assertTrue('heavy' in troops_map)
+        self.assertEqual(troops_map['heavy'], 69)
+        self.assertTrue('spy' in troops_map)
+        self.assertEqual(troops_map['spy'], 724)
 
 class TestAttackQueue(unittest.TestCase):
 
     def setUp(self):
         self.aq = AttackQueue(211, 305, DummyRequestManager(), mapfile='test_data/testmap')
-        self.report_builder = ReportBuilder(DummyRequestManager())
+        self.report_builder = ReportBuilder(DummyRequestManager(), Lock())
 
     def test_base_attributes(self):
         pass
@@ -30,68 +132,91 @@ class TestAttackQueue(unittest.TestCase):
     def test_is_ready_for_farm(self):
         """Components under this function are covered in TestVillage
         class so just making a sanity test"""
-        fresh_village = Village((100, 100), 100)
+        fresh_village = Village((100, 100), 100, 200)
         self.assertTrue(self.aq.is_ready_for_farm(fresh_village))
 
-    def test_estimate_arrival(self):
+    def test_get_time_one_the_road(self):
         distance = 10
         speed = 10
         time_on_road = distance*speed*60
+        self.assertEqual(self.aq.get_time_on_the_road(distance, speed), time_on_road)
+
+    def test_estimate_arrival(self):
+        time_on_road = 6000
         expected_arrival = time.mktime(time.gmtime()) + time_on_road
-        self.assertAlmostEqual(expected_arrival, self.aq.estimate_arrival(distance, speed))
+        self.assertAlmostEqual(expected_arrival, self.aq.estimate_arrival(time_on_road))
 
     def test_estimate_troops_needed(self):
-        lc = LightCavalry()
-        self.assertEqual(self.aq.estimate_troops_needed(lc), 30)
+        lc = Unit('light', 10, 80)
+        self.assertEqual(self.aq.estimate_troops_needed(lc, 2400), 30)
         self.assertEqual(self.aq.estimate_troops_needed(lc, 4800), 60)
+
+    def test_estimate_initial_capacity(self):
+        villa = Village((1,1), 1, 91)
+        self.assertEqual(self.aq.estimate_initial_capacity(villa), 1200)
+        villa.population = 151
+        self.assertEqual(self.aq.estimate_initial_capacity(villa), 2400)
+        villa.population = 251
+        self.assertEqual(self.aq.estimate_initial_capacity(villa), 3200)
+        villa.population = 351
+        self.assertEqual(self.aq.estimate_initial_capacity(villa), 4800)
+        villa.population = 451
+        self.assertEqual(self.aq.estimate_initial_capacity(villa), 6400)
+        villa.population = 751
+        self.assertEqual(self.aq.estimate_initial_capacity(villa), 8000)
 
     def test_is_attack_possible(self):
         villa = self.aq.queue[0]    # fresh village, estimate against AttackQueue.initial_capacity value (default =2400)
-        lc = LightCavalry()
-        axe = Axeman()
+        lc = 'light'
+        axe = 'axe'
         troops_map = {lc:25, axe:200}
         self.assertFalse(self.aq.is_attack_possible(villa, troops_map))
 
-        troops_map = {lc:30, axe:200}   # 30 LC is enough to attack (2400 / 80)
-        units_needed = self.aq.is_attack_possible(villa, troops_map)
-        self.assertTrue(units_needed)
-        self.assertTrue(lc in units_needed)
-        self.assertFalse(axe in units_needed)
-        self.assertEqual(units_needed[lc], 30)
+        troops_map = {lc:50, axe:200}   # 30 LC is enough to attack (2400 / 80)
+        # returns {unit.name: units_needed}, time_on_road
+        check = self.aq.is_attack_possible(villa, troops_map)
+        self.assertTrue(check)
+        self.assertTrue(lc in check[0])
+        self.assertFalse(axe in check[0])
+        self.assertEqual(check[0][lc], 30)
+        # distance to 1st village in queue = 1 tile, t_on_road = 1*10*60
+        self.assertEqual(check[1], 600)
 
         villa.remaining_capacity = 6000
         villa.last_visited = time.mktime(time.gmtime())
         villa.h_rates = [9, 9, 9]
         troops_map = {lc:30, axe:600}   # 600 is not enough due to hour/rates
-        units_needed = self.aq.is_attack_possible(villa, troops_map)
-        self.assertFalse(units_needed)
+        check = self.aq.is_attack_possible(villa, troops_map)
+        self.assertFalse(check)
         troops_map = {lc:30, axe:700}
-        units_needed = self.aq.is_attack_possible(villa, troops_map)
-        self.assertTrue(units_needed)
-        self.assertTrue(axe in units_needed)
-        self.assertFalse(lc in units_needed)
+        check = self.aq.is_attack_possible(villa, troops_map)
+        self.assertTrue(check)
+        self.assertTrue(axe in check[0])
+        self.assertFalse(lc in check[0])
 
     def test_get_next_attack_target(self):
         villa = self.aq.queue[0]
-        lc = LightCavalry()
-        axe = Axeman()
-        troops_map = {lc:20, axe:310}
-        get_attack = self.aq.get_next_attack_target(troops_map)
-        self.assertTrue(get_attack) # Enough troops to loot the first village in queue
-        self.assertEqual(villa.coords, get_attack[0])
-        self.assertTrue(axe in get_attack[1])
-        self.assertEqual(get_attack[1][axe], 240)
+        lc = 'light'
+        axe = 'axe'
+        troops_map = {lc:20, axe:500}
+        # get_next_attack = ((x,y), {unit.name: count}, t_on_road)
+        get_next_attack = self.aq.get_next_attack_target(troops_map)
+        self.assertTrue(get_next_attack) # Enough troops to loot the first village in queue
+        self.assertEqual(villa.coords, get_next_attack[0])
+        self.assertTrue(axe in get_next_attack[1])
+        self.assertEqual(get_next_attack[1][axe], 240)
+        self.assertEqual(get_next_attack[2], 1080)  # 1*18*60
 
         troops_map = {lc:20, axe:100}   #Not enough to loot first, should search deeper and find 'our' village
         villa = self.aq.queue[self.aq.depth]
         self.aq.queue[self.aq.depth].remaining_capacity = 1200 # Modify queue in-place
         self.aq.queue[self.aq.depth].last_visited = time.mktime(time.gmtime())
         self.aq.queue[self.aq.depth].h_rates = [1, 1, 1]
-        get_attack = self.aq.get_next_attack_target(troops_map)
-        self.assertTrue(get_attack)
-        self.assertEqual(villa.coords, get_attack[0])
-        self.assertTrue(lc in get_attack[1])
-        self.assertEqual(get_attack[1][lc], 15)
+        get_next_attack = self.aq.get_next_attack_target(troops_map)
+        self.assertTrue(get_next_attack)
+        self.assertEqual(villa.coords, get_next_attack[0])
+        self.assertTrue(lc in get_next_attack[1])
+        self.assertEqual(get_next_attack[1][lc], 15)
 
     def test_update_villages(self):
         new_reports = self.report_builder.get_new_reports()
@@ -122,10 +247,10 @@ class TestMap(unittest.TestCase):
         """Create and save villages that should be filtered
         out upon Map initialization (will not be found in map-HTML)
         """
-        villa_min_min = Village((100, 100), 1)
-        villa_min_max = Village((100, 1000), 2)
-        villa_max_min = Village((1000, 100), 3)
-        villa_max_max = Village((1000, 1000), 4)
+        villa_min_min = Village((100, 100), 1, 100)
+        villa_min_max = Village((100, 1000), 2, 100)
+        villa_max_min = Village((1000, 100), 3, 200)
+        villa_max_max = Village((1000, 1000), 4, 300)
         self.dummy_villages = (villa_min_min, villa_min_max,
                    villa_max_min, villa_max_max)
         self.save_villages(self.dummy_villages)
@@ -134,10 +259,10 @@ class TestMap(unittest.TestCase):
         """Create and save villages that exist in map-HTML.
         These villages should retain their state in Map.villages
         """
-        valid_bonus = Village((218, 305), 133228)
+        valid_bonus = Village((218, 305), 133228, 100)
         valid_bonus.mine_levels = (12, 12, 12)  # Add some state for valid villages
         valid_bonus.remaining_capacity = 4000   # to check that it will be retained
-        valid_barb = Village((218, 307), 125319)
+        valid_barb = Village((218, 307), 125319, 100)
         valid_barb.mine_levels = (13, 13, 13)
         valid_barb.remaining_capacity = 2000
         self.valid_villages = (valid_bonus, valid_barb)
@@ -167,11 +292,11 @@ class TestMap(unittest.TestCase):
         """Tests final state of self.map.villages and
         of local mapfile.
         """
-        in_test_map = [Village((211, 306), 135083), 
-                       Village((200, 306), 137156),
-                       Village((212, 289), 136936),
-                       Village((212, 318), 120821),
-                       Village((225, 304), 128693)]
+        in_test_map = [Village((211, 306), 135083, 100),
+                       Village((200, 306), 137156, 100),
+                       Village((212, 289), 136936, 100),
+                       Village((212, 318), 120821, 100),
+                       Village((225, 304), 128693, 100)]
         not_in_test_map = [(211, 307), (210, 305),
                            (227, 309), (217, 324)]
         for villa in in_test_map:
@@ -267,7 +392,7 @@ class TestReportBuilder(unittest.TestCase):
     """
     
     def setUp(self):
-        self.builder = ReportBuilder(DummyRequestManager())
+        self.builder = ReportBuilder(DummyRequestManager(), Lock())
     
     def test_get_new_reports(self):
         new_reports = self.builder.get_new_reports()
@@ -343,7 +468,7 @@ class TestAttackReport(unittest.TestCase):
         self.assertEqual(self.yellow_report.remaining_capacity, yellow_left)
     
     def test_integration_w_village(self):
-        villa = Village((200, 300), 10000)
+        villa = Village((200, 300), 10000, 100)
         villa.update_stats(self.green_report)
         self.assertEqual(self.green_report.mine_levels, villa.mine_levels)
         self.assertEqual(self.green_report.t_of_attack, villa.last_visited)
@@ -371,7 +496,7 @@ class TestVillage(unittest.TestCase):
     """
     
     def setUp(self):
-        self.barb = Village((200, 300), 10000)
+        self.barb = Village((200, 300), 10000, 100)
         self.bonus_all = Village((100, 100), 10001, 
                                 "30% more resources are produced (all resource type)")
         self.bonus_wood = Village((0, 0), 10002,
@@ -448,7 +573,7 @@ class TestVillage(unittest.TestCase):
         report.remaining_capacity = 3000
         report.looted_capacity = 4000
         
-        villa = Village((100, 200), 10005)
+        villa = Village((100, 200), 10005, 200)
         villa.update_stats(report)
         self.assertEqual(villa.last_visited, 10000)
         self.assertEqual(villa.mine_levels, [13, 14, 15])
@@ -473,13 +598,13 @@ class TestVillage(unittest.TestCase):
         self.assertEqual(villa.looted["per_visit"][-1][1], report.looted_capacity)
 
     def test_is_fresh_meat(self):
-        fresh_villa = Village((100, 100), 100)
+        fresh_villa = Village((100, 100), 100, 200)
         self.assertTrue(fresh_villa.is_fresh_meat())
         fresh_villa.last_visited = 1
         self.assertFalse(fresh_villa.is_fresh_meat())
 
     def test_passes_threshold(self):
-        fresh_villa = Village((100, 100), 100)
+        fresh_villa = Village((100, 100), 100, 200)
         threshold = 2400
         fresh_villa.remaining_capacity = threshold - 1
         self.assertFalse(fresh_villa.passes_threshold(threshold))
@@ -487,7 +612,7 @@ class TestVillage(unittest.TestCase):
         self.assertTrue(fresh_villa.passes_threshold(threshold))
 
     def test_finished_rest(self):
-        fresh_villa = Village((100, 100), 100)
+        fresh_villa = Village((100, 100), 100, 200)
         rest = 3600
         fresh_villa.last_visited = time.mktime(time.gmtime()) - (rest - 100)
         self.assertFalse(fresh_villa.finished_rest(rest))
