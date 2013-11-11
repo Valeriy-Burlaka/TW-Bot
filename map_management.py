@@ -182,7 +182,7 @@ class Village:
         self.h_rates = [rates[x] for x in self.mine_levels]
         if self.bonus:
             if "all resource type" in self.bonus:
-                self.h_rates = [x * 1.33 for x in self.h_rates]
+                self.h_rates = [round(x * 1.3) for x in self.h_rates]
             elif "wood" in self.bonus:
                 self.h_rates[0] *= 2
             elif "clay" in self.bonus:

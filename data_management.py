@@ -36,6 +36,8 @@ class ReportBuilder:
             if attack_report.is_valid_report:
                 print("Created valid report for: {}".format(coords))
                 new_reports[coords] = attack_report
+            else:
+                print("Invalid report on coords: {}".format(coords))
 
         return new_reports
 
@@ -139,13 +141,13 @@ class AttackReport:
         mines = ["Timber camp", "Clay pit", "Iron mine"]
         levels = []
         for mine in mines:
-            search = r'{}\s<b>\WLevel\s(\d)\W</b>'.format(mine) # "Barracks <b>(Level 4)</b>"
+            search = r'{}\s<b>\WLevel\s(\d+)\W</b>'.format(mine) # "Barracks <b>(Level 4)</b>"
             match = re.search(search, self.data)
             if match:
                 levels.append(int(match.group(1)))
             else:
-                self.is_valid_report = False
-                return
+                levels.append(0)
+
         self.mine_levels = levels
 
     def set_capacities(self):

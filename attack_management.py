@@ -4,6 +4,7 @@ import time
 import re
 import random
 import sys
+import traceback
 from urllib.parse import urlencode
 from threading import Thread
 from map_management import Map
@@ -47,12 +48,17 @@ class AttackManager(Thread):
         self.active = False
 
     def run(self):
-        self.active = True
-        self.attack_observer = AttackObserver(self)
-        self.attack_observer.start()
-        while self.active:
-            self.cycle()
-        return
+        try:
+            self.active = True
+            self.attack_observer = AttackObserver(self)
+            self.attack_observer.start()
+            while self.active:
+                self.cycle()
+        except Exception as e:
+            print(e)
+        finally:
+            self.attack_queue.update_villages_in_map()
+            return
 
     def cycle(self):
         try:
@@ -72,11 +78,11 @@ class AttackManager(Thread):
                     self.attack_observer.register_attack(t_of_arrival, t_of_return)
                     print("Attack sent at {time} to {coords}. Troops: {troops}".format(time=t_of_attack, coords=coords, troops=troops))
 
-            time.sleep(random.random() * 3.5)
-        except Exception as e:
-            print(e)
-            print(sys.exc_info())
-            # Force to re-build queue: we didn't send an attack (otherwise village is gone from queue until new_reports)
+            time.sleep(random.random() * 6) # User looks for the next village and thinks how much troops to send
+        except Exception:
+            info = traceback.format_exception(*sys.exc_info())
+            with open('errors_log.txt', 'a') as f:
+                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
         finally:
             self.update_self_state()
 
@@ -92,12 +98,61 @@ class AttackManager(Thread):
         t_of_attack = self.post_attack(attack_data.encode(), csrf)
         return t_of_attack
 
+    def post_confirmation(self, confirm_data):
+        """
+        Submits confirm data. Returns str HTML.
+        """
+        time.sleep(random.random() * 3) # User hits in fields to select troops to send
+        self.lock.acquire()
+        response_data = self.request_manager.post_confirmation(confirm_data)
+        self.lock.release()
+        return response_data
+
     def post_attack(self, request_data, csrf):
-        time.sleep(0.2)
+        time.sleep(random.random()) # User just hits OK button
         self.lock.acquire()
         t_of_attack = self.request_manager.post_attack(request_data, csrf)
         self.lock.release()
         return t_of_attack
+
+    def get_rally_overview(self):
+        time.sleep(random.random() * 1.5)   # User hits on village and clicks "send attack"
+        self.lock.acquire()
+        html_data = self.request_manager.get_rally_overview()
+        self.lock.release()
+        return html_data
+
+    def get_ch_token(self, html_data):
+        """
+        Extracts unique value (ch token) from hidden field of confirmation screen HTML.
+        Returns tuple ('ch', 'ch_value')
+        """
+        ch_match = re.search(r'type="hidden" name="ch" value="([\w\d]+)"', html_data)
+        ch_token = ('ch', ch_match.group(1))
+        return ch_token
+
+    def get_action_id(selfself, html_data):
+        """
+        Extracts unique value (action_id token) from hidden field of confirmation screen HTML.
+        Returns tuple ('action_id', 'value')
+        """
+        actionid_match = re.search(r'type="hidden" name="action_id" value="(\d+)"', html_data)
+        action_id = ('action_id', actionid_match.group(1))
+        return action_id
+
+    def get_csrf_token(self, html_data):
+        csrf_match = re.search(r'csrf":"(\w+)"', html_data)
+        csrf = csrf_match.group(1)
+        return csrf
+
+    def get_confirmation_token(self):
+        """
+        Extracts player token (confirmation token) from rally point html page
+        """
+        rally_html = self.get_rally_overview()
+        ptrn = re.compile(r'type="hidden" name="([\w\d]+)" value="([\w\d]+)"')
+        match = re.search(ptrn, rally_html)
+        return (match.group(1), match.group(2))
 
     def get_attack_data(self, coords, troops, ch_token, action_id):
         """
@@ -148,10 +203,7 @@ class AttackManager(Thread):
 
         return s_request_data
 
-    def calc_arrival_return(self, t_of_attack, t_on_road):
-        return (t_of_attack + t_on_road, t_of_attack + t_on_road*2)
-
-    def build_troops_data(self, troops, empty='', insert_spy = True):
+    def build_troops_data(self, troops, empty='', insert_spy=True):
         if insert_spy:
             troops = self.insert_spy_in_attack(troops)
         # spear=&sword=&axe=&archer=&spy=&light=&marcher=&heavy=&ram=&catapult=&knight=&snob=&
@@ -169,16 +221,18 @@ class AttackManager(Thread):
 
     def update_self_state(self):
         if self.new_battle_reports:
+            # Set flag to False at once we entered here, because while
+            # getting new reports/overview, AttackObserver may notify us again.
+            self.new_battle_reports = False
             print("New reports received, updating...")
             new_reports = self.report_builder.get_new_reports()
             self.attack_queue.update_villages(new_reports)
-            self.new_battle_reports = False
         if self.some_troops_returned:
+            self.some_troops_returned = False
             print("Troops returned, updating troops...")
             print("current troops: {}".format(self.troops_map))
             self.troops_map = self.state_manager.get_troops_map()
             print("updates troops: {}".format(self.troops_map))
-            self.some_troops_returned = False
 
     def update_troops_count(self, troops_sent):
         for key, value in troops_sent.items():
@@ -189,54 +243,8 @@ class AttackManager(Thread):
             troops['spy'] = 2
         return troops
 
-    def post_confirmation(self, confirm_data):
-        """
-        Submits confirm data. Returns str HTML.
-        """
-        time.sleep(0.25)
-        self.lock.acquire()
-        response_data = self.request_manager.post_confirmation(confirm_data)
-        self.lock.release()
-        return response_data
-
-    def get_rally_overview(self):
-        time.sleep(0.4)
-        self.lock.acquire()
-        html_data = self.request_manager.get_rally_overview()
-        self.lock.release()
-        return html_data
-
-    def get_ch_token(self, html_data):
-        """
-        Extracts unique value (ch token) from hidden field of confirmation screen HTML.
-        Returns tuple ('ch', 'ch_value')
-        """
-        ch_match = re.search(r'type="hidden" name="ch" value="([\w\d]+)"', html_data)
-        ch_token = ('ch', ch_match.group(1))
-        return ch_token
-
-    def get_action_id(selfself, html_data):
-        """
-        Extracts unique value (action_id token) from hidden field of confirmation screen HTML.
-        Returns tuple ('action_id', 'value')
-        """
-        actionid_match = re.search(r'type="hidden" name="action_id" value="(\d+)"', html_data)
-        action_id = ('action_id', actionid_match.group(1))
-        return action_id
-
-    def get_csrf_token(self, html_data):
-        csrf_match = re.search(r'csrf":"(\w+)"', html_data)
-        csrf = csrf_match.group(1)
-        return csrf
-
-    def get_confirmation_token(self):
-        """
-        Extracts player token (confirmation token) from rally point html page
-        """
-        rally_html = self.get_rally_overview()
-        ptrn = re.compile(r'type="hidden" name="([\w\d]+)" value="([\w\d]+)"')
-        match = re.search(ptrn, rally_html)
-        return (match.group(1), match.group(2))
+    def calc_arrival_return(self, t_of_attack, t_on_road):
+        return (t_of_attack + t_on_road, t_of_attack + t_on_road*2)
 
     def convert_t_to_seconds(self, t):
         """
@@ -244,7 +252,7 @@ class AttackManager(Thread):
         """
         # Sun, 10 Nov 2013 07:30:32 GMT
         t = t.rstrip(' GMT')
-        t = time.strptime(t, '%a, %d %b %Y %H:%M:%S')    # struct_t
+        t = time.strptime(t, '%a, %d %b %Y %H:%M:%S')    # returns struct_t
         t = time.mktime(t)
         return t
 
@@ -260,7 +268,7 @@ class AttackQueue:
     """
 
     def __init__(self, x, y, request_manager, map_depth=2, mapfile='map', queue_depth=5,
-                 farm_frequency=3, farm_radius=24, capacity_threshold=1600 ):
+                 farm_frequency=3, farm_radius=24, capacity_threshold=2400 ):
         self.map = Map(x, y, request_manager, depth=map_depth, mapfile=mapfile)
         self.depth = queue_depth    # Number of next priorities
         self.rest = farm_frequency*3600 # How long villages rest between attacks in seconds
@@ -268,6 +276,7 @@ class AttackQueue:
         self.threshold = capacity_threshold # Do not send very few troops in attack
         self.villages = self.map.get_villages_in_range(self.radius)
         self.queue = []
+        self.visited_villages = []
         self.units = self.init_units()
         self.build_queue()
 
@@ -346,11 +355,11 @@ class AttackQueue:
          """
         #print("Have villages: ", self.villages)
         if self.queue:  # there is something to farm
-            print("Queue:", self.queue)
-            print("Got troops map: ", troops_map)
             high_priority = self.queue[0]
             check = self.is_attack_possible(high_priority, troops_map)
             if check:   # tuple({unit_name:count}, t_on_road)
+                print("Sending high priority, items in queue: {}, first 15 villages in queue: {}".format(len(self.queue), self.queue))
+                print("Current troops map: ", troops_map)
                 self.queue.remove(high_priority)
                 return (high_priority.coords, check[0], check[1])
             else:
@@ -359,6 +368,8 @@ class AttackQueue:
                     for villa in next_priorities:
                         check = self.is_attack_possible(villa, troops_map)
                         if check:
+                            print("Sending 'depth' priority, items in queue: {}, first 15 villages in queue: {}".format(len(self.queue), self.queue))
+                            print("Current troops map: ", troops_map)
                             self.queue.remove(villa)
                             return (villa.coords, check[0], check[1])
         else:
@@ -366,22 +377,35 @@ class AttackQueue:
         return
 
     def update_villages(self, new_reports):
-        """Updates self.villages with a new reports
         """
-        updated_villages = {}
+        Updates self.villages with a new reports.
+        Updates self.visited_villages with updated villages.
+        Checks if some of visited villages can be placed in
+        attack queue again (flush_visited_villages)
+        """
         for coords, report in new_reports.items():
             if coords in self.villages:
-                villa = self.villages[coords]
-                villa.update_stats(report)
-                print('Recently updated villa: {}'.format(villa))
-                self.villages[coords] = villa
-                print("Recently updated in self.villages: {}".format(villa))
-                updated_villages[coords] = villa
+                print("Villa before update: {}".format(self.villages[coords]))
+                self.villages[coords].update_stats(report)
+                print('Villa after update: {}'.format(self.villages[coords]))
+                self.visited_villages.append(self.villages[coords])
 
-        print("Going to update next villages in map: ", updated_villages)
-        self.map.update_villages(updated_villages)
-#        # Re-build self.queue basing on last information
-#        self.build_queue()
+        self.flush_visited_villages()
+
+    def flush_visited_villages(self):
+        """
+        Updates self.queue with villages that could be farmed again.
+        """
+        ready_for_farm = [villa for villa in self.visited_villages if self.is_ready_for_farm(villa)]
+        for villa in ready_for_farm:
+            self.queue.append(villa)
+            self.visited_villages.remove(villa)
+
+        self.queue = sorted(self.queue, key=lambda x: x.dist_from_base)
+
+    def update_villages_in_map(self):
+        print("Going to update next villages in map: ", self.villages)
+        self.map.update_villages(self.villages)
 
     def init_units(self):
         units = {'axe': Unit('axe', 18, 10),
@@ -424,14 +448,16 @@ class AttackObserver(Observer):
         time_gmt = time.mktime(time.gmtime())
         arrived = [t for t in self.arrival_queue if t <= time_gmt]
         if arrived:
-            self.arrival_queue = []
+            for value in arrived:
+                self.arrival_queue.remove(value)
         return arrived
 
     def someone_returned(self):
         time_gmt = time.mktime(time.gmtime())
         returned = [t for t in self.return_queue if t <= time_gmt]
         if returned:
-            self.return_queue = []
+            for value in returned:
+                self.return_queue.remove(value)
         return returned
 
     def register_attack(self, t_of_arrival, t_of_return):

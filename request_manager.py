@@ -60,8 +60,9 @@ class RequestManager:
         req = Request(url, headers=headers)
         return self.safe_opener(req)
 
-    def get_reports_page(self):
-        url = 'http://{host}/game.php?village=127591&screen=report'.format(host=self.host)
+    def get_reports_page(self, from_page=0):
+        url = 'http://{host}/game.php?village=127591&mode=all&from={page}&screen=report'.format(host=self.host,
+                                                                                                page=from_page)
         self.referer = url
         headers = self.get_default_headers()
         req = Request(url, headers=headers)
