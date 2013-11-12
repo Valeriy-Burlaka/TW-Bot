@@ -19,6 +19,8 @@ am = AttackManager(211, 305, request_manager, report_builder, lock, farm_radius=
 
 
 
+
+
 #am.start()
 #time.sleep(120)
 #am.active = False

@@ -5,6 +5,7 @@ import re
 import random
 import sys
 import traceback
+import shelve
 from urllib.parse import urlencode
 from threading import Thread
 from map_management import Map
@@ -441,12 +442,21 @@ class AttackObserver(Observer):
     1. Troops sent arrived in target village (need to update
      reports)
     2. Troops sent returned back (update troops map,
-    possibly can send new attack)
+    possibly can send new attack).
+
+    When stopped, saves registered arrivals/returns (that were not
+    flushed yet) in local file. When inited again, checks local file
+    for saved registrations: 1. If any arrivals/returns are in future,
+    they are placed back in queues. If any arrivals are in past, possibly
+    there are new reports.
     """
-    def __init__(self, attack_manager):
+
+    def __init__(self, attack_manager, data_file='attack_observer'):
         Observer.__init__(self, attack_manager)
+        self.data_file = data_file
         self.arrival_queue = []
         self.return_queue = []
+        self.get_saved_attacks()
 
     def run(self):
         # to do: read about threading Events
@@ -456,7 +466,29 @@ class AttackObserver(Observer):
             if self.someone_returned():
                 self.manager.some_troops_returned = True
             time.sleep(1)
+        self.save_registered_attacks()
         return
+
+    def get_saved_attacks(self):
+        f = shelve.open(self.data_file)
+        if 'arrival_queue' in f:
+            registered_arrivals = f['arrival_queue']
+            now = time.mktime(time.gmtime())
+            arrived = [t for t in registered_arrivals if t < now]
+            if arrived:
+                self.manager.new_battle_reports = True
+            self.arrival_queue = [t for t in registered_arrivals if t > now]
+        if 'return_queue' in f:
+            registered_returns = f['return_queue']
+            now = time.mktime(time.gmtime())
+            self.return_queue = [t for t in registered_returns if t > now]
+        f.close()
+
+    def save_registered_attacks(self):
+        f = shelve.open(self.data_file)
+        f['arrival_queue'] = self.arrival_queue
+        f['return_queue'] = self.return_queue
+        f.close()
 
     def someone_arrived(self):
         time_gmt = time.mktime(time.gmtime())
