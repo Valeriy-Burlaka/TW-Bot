@@ -478,7 +478,7 @@ class AttackObserver(Observer):
             now = time.mktime(time.gmtime())
             arrived = [t for t in registered_arrivals if t < now]
             if arrived:
-                self.manager.new_battle_reports = True
+                self.manager.new_battle_reports = len(arrived)
             self.arrival_queue = [t for t in registered_arrivals if t > now]
         if 'return_queue' in f:
             registered_returns = f['return_queue']
