@@ -19,7 +19,7 @@ class ReportBuilder:
         self.request_manager = request_manager  # instance of RequestManager
         self.lock = lock    # shared instance of Bot's lock
 
-    def get_new_reports(self):
+    def get_new_reports(self, reports_count):
         """
         Downloads new battle reports from server.
         Inits AttackReport objects from downloaded reports.
@@ -28,34 +28,39 @@ class ReportBuilder:
         coordinates of attacked village.
         """
         new_reports = {}
-        reports_table = self.get_reports_table()
-        battle_reports = self.get_reports_from_table(reports_table)
-        for report_data in battle_reports:
-            html_report, coords = self.get_single_report(report_data)
-            attack_report = AttackReport(html_report)
-            if attack_report.is_valid_report:
+        # 12 reports per page. e.g.: if there 25 new reports, request 1, 2 & 3 report pages.
+        pages = reports_count / 12 if reports_count%12 == 0 else (reports_count / 12) + 1
+        # (+1) is a hardcoded sanity check: new reports may be shifted from page by trade reports, etc.
+        pages = int(pages) + 1
+        for page in range(pages):
+            reports_page = self.get_reports_page(page)
+            battle_reports = self.get_reports_from_page(reports_page)
+            for report_data in battle_reports:
+                html_report, coords = self.get_single_report(report_data)
+                attack_report = AttackReport(html_report)
+                if attack_report.is_valid_report:
                 #print("Created valid report for: {}".format(coords))
-                new_reports[coords] = attack_report
-            else:
-                print("Invalid report on coords: {}".format(coords))
+                    new_reports[coords] = attack_report
+                else:
+                    print("Invalid report on coords: {}".format(coords))
 
         return new_reports
 
-    def get_reports_table(self):
+    def get_reports_page(self, page):
         """
         Requests default (1st) report page from server.
         We assume that AttackObserver will trigger update of
         reports in time, so no new reports will be after 1st report page.
         """
         self.lock.acquire()
-        reports_page = self.request_manager.get_reports_page()
+        reports_page = self.request_manager.get_reports_page(from_page=page*12)
         self.lock.release()
-        report_table_ptrn = re.compile(r'<table id="report_list"[\W\w]+?</table>')  # table with 12 reports
-        match = re.search(report_table_ptrn, reports_page)
-        reports_table = match.group()
-        return reports_table
+        reports_page_ptrn = re.compile(r'<table id="report_list"[\W\w]+?</table>')  # table with 12 reports
+        match = re.search(reports_page_ptrn, reports_page)
+        reports_page = match.group()
+        return reports_page
 
-    def get_reports_from_table(self, reports_table):
+    def get_reports_from_page(self, reports_page):
         """
         Extracts single reports from report table and filters out
         non-green/yellow reports (only green & yellow can contain info
@@ -63,7 +68,7 @@ class ReportBuilder:
         Returns list which contains HTML chunks, each with URL for single report.
         """
         single_report_ptrn = re.compile(r'<input name="id_[\W\w]+?</tr>')
-        reports_list = re.findall(single_report_ptrn, reports_table)
+        reports_list = re.findall(single_report_ptrn, reports_page)
         reports_list = [x for x in reports_list if '(new)' in x]    # get reports marked as "new"
         battle_reports = []
         for report in reports_list: # filter out all support/recon/red reports

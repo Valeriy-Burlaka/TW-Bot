@@ -44,7 +44,7 @@ class AttackManager(Thread):
         self.state_manager = VillageStateManager(self.request_manager, self.lock)
         self.troops_map = self.state_manager.get_troops_map()   # {Unit: count, ...}
         self.confirmation_token = self.get_confirmation_token() # it's not changing even between browser's sessions
-        self.new_battle_reports = False
+        self.new_battle_reports = 0
         self.some_troops_returned = False
         self.active = False
 
@@ -234,11 +234,12 @@ class AttackManager(Thread):
 
     def update_self_state(self):
         if self.new_battle_reports:
-            # Set flag to False at once we entered here, because while
+            # Refresh flag  at once we entered here, because while
             # getting new reports/overview, AttackObserver may notify us again.
-            self.new_battle_reports = False
+            reports_count = self.new_battle_reports
+            self.new_battle_reports = 0
             #print("New reports received, updating...")
-            new_reports = self.report_builder.get_new_reports()
+            new_reports = self.report_builder.get_new_reports(reports_count)
             self.attack_queue.update_villages(new_reports)
         if self.some_troops_returned:
             self.some_troops_returned = False
@@ -461,8 +462,9 @@ class AttackObserver(Observer):
     def run(self):
         # to do: read about threading Events
         while self.manager.active:
-            if self.someone_arrived():
-                self.manager.new_battle_reports = True
+            new_reports = self.someone_arrived()
+            if new_reports:
+                self.manager.new_battle_reports = new_reports
             if self.someone_returned():
                 self.manager.some_troops_returned = True
             time.sleep(1)
@@ -496,7 +498,7 @@ class AttackObserver(Observer):
         if arrived:
             for value in arrived:
                 self.arrival_queue.remove(value)
-        return arrived
+        return len(arrived)
 
     def someone_returned(self):
         time_gmt = time.mktime(time.gmtime())
