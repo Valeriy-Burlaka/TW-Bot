@@ -52,12 +52,18 @@ class AttackManager(Thread):
             self.active = True
             self.attack_observer = AttackObserver(self)
             self.attack_observer.start()
+            print("Started to loot barbarians at: ", time.ctime())
             while self.active:
                 self.cycle()
         except Exception as e:
+            info = traceback.format_exception(*sys.exc_info())
+            with open('errors_log.txt', 'a') as f:
+                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
             print(e)
         finally:
+            self.update_self_state()
             self.attack_queue.update_villages_in_map()
+            print("Finished to loot barbarians at: ", time.ctime())
             return
 
     def cycle(self):
@@ -79,12 +85,18 @@ class AttackManager(Thread):
                     print("Attack sent at {time} to {coords}. Troops: {troops}".format(time=t_of_attack, coords=coords, troops=troops))
 
             time.sleep(random.random() * 6) # User looks for the next village and thinks how much troops to send
-        except Exception:
+        except AttributeError:
             info = traceback.format_exception(*sys.exc_info())
             with open('errors_log.txt', 'a') as f:
                 f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
-        finally:
-            self.update_self_state()
+        except TypeError:
+            info = traceback.format_exception(*sys.exc_info())
+            with open('errors_log.txt', 'a') as f:
+                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
+        except BufferError:
+            info = traceback.format_exception(*sys.exc_info())
+            with open('errors_log.txt', 'a') as f:
+                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
 
     def send_attack(self, coords, troops):
         self.get_rally_overview()
@@ -224,15 +236,15 @@ class AttackManager(Thread):
             # Set flag to False at once we entered here, because while
             # getting new reports/overview, AttackObserver may notify us again.
             self.new_battle_reports = False
-            print("New reports received, updating...")
+            #print("New reports received, updating...")
             new_reports = self.report_builder.get_new_reports()
             self.attack_queue.update_villages(new_reports)
         if self.some_troops_returned:
             self.some_troops_returned = False
-            print("Troops returned, updating troops...")
-            print("current troops: {}".format(self.troops_map))
+            #print("Troops returned, updating troops...")
+            #print("current troops: {}".format(self.troops_map))
             self.troops_map = self.state_manager.get_troops_map()
-            print("updates troops: {}".format(self.troops_map))
+            #print("updated troops: {}".format(self.troops_map))
 
     def update_troops_count(self, troops_sent):
         for key, value in troops_sent.items():
@@ -358,8 +370,8 @@ class AttackQueue:
             high_priority = self.queue[0]
             check = self.is_attack_possible(high_priority, troops_map)
             if check:   # tuple({unit_name:count}, t_on_road)
-                print("Sending high priority, items in queue: {}, first 15 villages in queue: {}".format(len(self.queue), self.queue))
-                print("Current troops map: ", troops_map)
+                #print("Sending high priority, items in queue: {}, first 15 villages in queue: {}".format(len(self.queue), self.queue[:15]))
+                #print("Current troops map: ", troops_map)
                 self.queue.remove(high_priority)
                 return (high_priority.coords, check[0], check[1])
             else:
@@ -368,8 +380,8 @@ class AttackQueue:
                     for villa in next_priorities:
                         check = self.is_attack_possible(villa, troops_map)
                         if check:
-                            print("Sending 'depth' priority, items in queue: {}, first 15 villages in queue: {}".format(len(self.queue), self.queue))
-                            print("Current troops map: ", troops_map)
+                            #print("Sending 'depth' priority, items in queue: {}, first 15 villages in queue: {}".format(len(self.queue), self.queue[:15]))
+                            #print("Current troops map: ", troops_map)
                             self.queue.remove(villa)
                             return (villa.coords, check[0], check[1])
         else:
@@ -397,6 +409,8 @@ class AttackQueue:
         Updates self.queue with villages that could be farmed again.
         """
         ready_for_farm = [villa for villa in self.visited_villages if self.is_ready_for_farm(villa)]
+        if ready_for_farm:
+            print("Time: {}, going to flush the next villages: {}".format(time.ctime(), ready_for_farm))
         for villa in ready_for_farm:
             self.queue.append(villa)
             self.visited_villages.remove(villa)
@@ -404,7 +418,7 @@ class AttackQueue:
         self.queue = sorted(self.queue, key=lambda x: x.dist_from_base)
 
     def update_villages_in_map(self):
-        print("Going to update next villages in map: ", self.villages)
+        #print("Going to update next villages in map: ", self.villages)
         self.map.update_villages(self.villages)
 
     def init_units(self):

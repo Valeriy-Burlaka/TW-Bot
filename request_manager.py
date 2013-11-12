@@ -1,11 +1,14 @@
 import os
+import sys
 import re
 import random
 import time
 import shutil
 import sqlite3
 import gzip
+import struct
 import tkinter
+import traceback
 from PIL import ImageTk
 from urllib.request import Request
 from urllib.request import urlopen
@@ -18,15 +21,16 @@ class RequestManager:
     Component responsible for sending requests to TribalWars server.
     Upon init, copies browser's (currently Chrome only) cookies (sqlite file)
     and extracts mandatory Game cookies from there ('sid', 'cid', 'mobile', 'global_vilage_id')
-    Class should be further re-worked to accept 'global_village_id' dynamically to
-    allow sending requests from 'different' villages.
+    Class should be further re-worked to accept 'global_village_id' dynamically (to
+    allow sending requests from 'different' villages.) & possibly to automate
+    login procedure.
 
     The trickiest part is that almost each response should be checked
     for "<h2>Bot protection</h2>": this means we faced CAPTCHA.
-    If so, we're attempting to download CAPTCHA image and creating GUI blocking
+    If so, we attempt to download CAPTCHA image and create GUI blocking
     window (until we do not return control, caller Thread will not release Lock() &
     no additional calls will be made to RequestManager). When user submits what she
-    sees, we're attempting to POST this value and unblocking the caller
+    sees, we attempt to POST this value and unblock the caller.
     """
 
 
@@ -96,6 +100,9 @@ class RequestManager:
             self.get_rally_overview()
             return response.getheader('Date')
         except HTTPError as e:
+            info = traceback.format_exception(*sys.exc_info())
+            with open('errors_log.txt', 'a') as f:
+                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
             print(e)
 
     def safe_opener(self, request):
@@ -113,9 +120,14 @@ class RequestManager:
             print(e)
 
     def unpack_decode(self, data):
-        decompressed = gzip.decompress(data)
-        decoded_data = decompressed.decode()
-        return decoded_data
+        try:
+            decompressed = gzip.decompress(data)
+            decoded_data = decompressed.decode()
+            return decoded_data
+        except struct.error:    # strange rare and floating issue when unzipping some of TribalWars responses
+            info = traceback.format_exception(*sys.exc_info())
+            with open('errors_log.txt', 'a') as f:
+                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
 
     def protection_check(self, html_data):
         bot_ptrn = re.compile(r'<h2>Bot protection</h2>')

@@ -34,7 +34,7 @@ class ReportBuilder:
             html_report, coords = self.get_single_report(report_data)
             attack_report = AttackReport(html_report)
             if attack_report.is_valid_report:
-                print("Created valid report for: {}".format(coords))
+                #print("Created valid report for: {}".format(coords))
                 new_reports[coords] = attack_report
             else:
                 print("Invalid report on coords: {}".format(coords))
