@@ -59,11 +59,6 @@ class AttackManager(Thread):
             print("Started to loot barbarians at: ", time.ctime())
             while self.active:
                 self.cycle()
-        except Exception as e:
-            info = traceback.format_exception(*sys.exc_info())
-            with open('errors_log.txt', 'a') as f:
-                f.write("Unexpected exception: Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
-            print(e)
         finally:
             self.update_self_state()
             self.attack_queue.update_villages_in_map()
@@ -103,6 +98,11 @@ class AttackManager(Thread):
             info = traceback.format_exception(*sys.exc_info())
             with open('errors_log.txt', 'a') as f:
                 f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
+        except Exception as e:
+            info = traceback.format_exception(*sys.exc_info())
+            with open('errors_log.txt', 'a') as f:
+                f.write("Unexpected exception: Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
+            print(e)
 
     def send_attack(self, coords, troops):
         self.get_rally_overview()

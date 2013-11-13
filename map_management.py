@@ -61,6 +61,7 @@ class Map:
         If depth > 1, requests sector's data & recursively repeats
         Villages construction for sector's corners.
         """
+        print(x, y)
         depth -= 1
         map_html = self.request_manager.get_map_overview(x, y)
         sectors = self.get_map_data(map_html)   # list of dicts, each dict represents 1 sector
