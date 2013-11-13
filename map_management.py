@@ -237,7 +237,7 @@ class Village:
         Index = mine_level, value = production hour rate.
         (http://help.tribalwars.net/wiki/Timber_camp)
         """
-        rates = [20, 30, 35, 41, 47, 55, 64, 74, 86, 100, 117,
+        rates = [5, 30, 35, 41, 47, 55, 64, 74, 86, 100, 117,
                  136, 158, 184, 214, 249, 289, 337, 391, 455,
                  530, 616, 717, 833, 969, 1127, 1311, 1525, 1774,
                  2063, 2400]
@@ -245,10 +245,9 @@ class Village:
         return rates
 
     def __str__(self):
-        return "id: {0}, (x,y): {1}, dist: {2} rates: {3}, visited: {4}, looted_total: {5}".format(self.id, self.coords,
-                                                                                                    self.dist_from_base ,self.h_rates,
-                                                                                                    time.ctime(self.last_visited),
-                                                                                                    self.looted['total'])
+        return "(x,y):{0},dst:{1},rates:{2},visited:{3},looted:{4},remaining:{5}".format(self.coords, self.dist_from_base,
+                                                                                        self.h_rates,time.ctime(self.last_visited),
+                                                                                        self.looted['total'], self.remaining_capacity)
 
     def __repr__(self):
         return self.__str__()

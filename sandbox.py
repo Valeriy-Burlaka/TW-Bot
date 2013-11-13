@@ -4,6 +4,7 @@ __author__ = 'Troll'
 import time
 import shelve
 import re
+import gzip
 from threading import Lock
 from request_manager import  RequestManager
 from attack_management import AttackManager, AttackObserver
@@ -12,13 +13,24 @@ from map_management import Village
 
 
 lock = Lock()
-request_manager = RequestManager()
+request_manager = RequestManager(user_name='Jeopard', user_pswd='GXJCXBXvT0vH12Ll9UrT')
+#post_data = request_manager.get_server_selection_data()
+#response = request_manager.show_server_selection(post_data)
+#print(response.getcode())
+#print(gzip.decompress(response.read()))
+#post_data = 'user=Jeopard&password=2d53491fd86525779b687158cf3c30dcf8988b15'.encode()
+#response = request_manager.post_login_data(post_data, 'server_en70')
+#print(response.getcode())
+#print(response.getheaders())
+
+
+
+
+
+
 report_builder = ReportBuilder(request_manager, lock)
 am = AttackManager(211, 305, request_manager, report_builder, lock, farm_radius=18, queue_depth=15,
                     farm_frequency=4)
-
-
-
 
 
 #am.start()
@@ -27,10 +39,12 @@ am = AttackManager(211, 305, request_manager, report_builder, lock, farm_radius=
 
 
 
+
+
 #def get_reports_from_table(reports_table):
 #    single_report_ptrn = re.compile(r'<input name="id_[\W\w]+?</tr>')
 #    reports_list = re.findall(single_report_ptrn, reports_table)
-#    reports_list = [x for x in reports_list if '(new)' in x]
+##    reports_list = [x for x in reports_list if '(new)' in x]
 #    battle_reports = []
 #    for report in reports_list: # filter out all support/recon/red reports
 #        match = re.search(r'<img src[\W\w]+?(yellow)|(green)\.png', report)
@@ -40,7 +54,7 @@ am = AttackManager(211, 305, request_manager, report_builder, lock, farm_radius=
 #    return battle_reports
 #
 #flushed_reports = {}
-#for i in range(3):
+#for i in range(2):
 #    report_page = request_manager.get_reports_page(from_page=i*12)
 #    battle_reports = get_reports_from_table(report_page)
 #    for report in battle_reports:

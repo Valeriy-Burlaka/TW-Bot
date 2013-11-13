@@ -35,12 +35,15 @@ class RequestManager:
 
 
     def __init__(self, host='en70.tribalwars.net', browser='Chrome',
-                 user_path=r'C:\Users\Troll\Documents\exercises\TW' ):
+                 user_path=r'C:\Users\Troll\Documents\exercises\TW',
+                 user_name='Chebutroll', user_pswd='cjiy47H5MamVephlVddV'):
         self.browser = browser
         self.host = host
         self.user_path = user_path
         self.set_cookies()
         self.referer = None
+        self.user_name = user_name
+        self.user_pswd = user_pswd
 
 
     def get_map_overview(self, x, y):
@@ -195,8 +198,88 @@ class RequestManager:
         req = Request(url, data=data, headers=headers)
         print(req.headers, req.data, req.full_url)
         response = urlopen(req)
-        if response.getcode() == '200' or response.getcode() == 200:
+        if response.getcode() == 200:
             return True
+
+    def expiration_check(self, html_data):
+        """
+        Checks if session has expired (specific header will be in
+        HTML response. If so, invokes login procedure.
+        """
+        expiration_ptrn = re.compile('<h2>Session expired</h2>')
+        match = re.search(expiration_ptrn, html_data)
+        if match:
+            print("Session expired...Don't worry, masta!")
+            try:
+                post_data = self.get_server_selection_data()
+                response = self.show_server_selection(post_data)
+                selection_data = gzip.decompress(response.read())
+                encrypt_pass = self.get_login_data(selection_data)
+                post_data = urlencode([('user', self.user_name), ('password', encrypt_pass)])
+                server = 'server_' + self.host.split('.')[0]
+                response = self.post_login_data(post_data, server)
+
+
+            except AttributeError as e:
+                print("Tried to login ", time.ctime(), e)
+                return
+            except HTTPError as e:
+                print("Tried to login ", time.ctime(), e)
+                return
+
+    def get_server_selection_data(self):
+        """
+        Prepares POST data to submit
+        "/index.php?action=login&show_server_selection=1" request.
+        """
+        user = ('user', self.user_name)
+        pswd = ('password', self.user_pswd)
+        cookie = ('cookie', 'false')
+        check = ('clear', 'true')
+        post_data = urlencode([user, pswd, cookie, check])
+        return post_data.encode()
+
+    def show_server_selection(self, post_data):
+        """
+        POSTs server selection request. Response contains encrypted
+        user password for further POST.
+        """
+        host = 'www.tribalwars.net'
+        url = 'http://' + host + '/index.php?action=login&show_server_selection=1'
+        headers = self.get_default_headers()
+        headers['Host'] = host
+        headers['Content-Length'] = len(post_data)
+        headers['Accept'] = 'application/json, text/javascript, */*; q=0.01'
+        headers['Origin'] = 'http://{}'.format(host)
+        headers['X-Requested-With'] = 'XMLHttpRequest'
+        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        headers['Referer'] = 'http://www.tribalwars.net'
+        req = Request(url, headers=headers, data=post_data)
+        response = urlopen(req)
+        return response
+
+    def get_login_data(self, selection_data):
+        """
+        Parses response received after 'show_server_selection' request.
+        Returns encrypted user password.
+        """
+        pswd_ptrn = re.compile(r'<input name=\"password[\W\w]+?value=\"([\W\w]+?)\"')
+        match = re.search(pswd_ptrn, selection_data)
+        return match.group(1).encode()
+
+    def post_login_data(self, post_data, server):
+        host = 'www.tribalwars.net'
+        url = 'http://' + host + '/index.php?action=login&{server}'.format(server=server)
+        headers = self.get_default_headers()
+        headers['Host'] = host
+        headers['Content-Length'] = len(post_data)
+        headers['Origin'] = 'http://' + host
+        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        headers['Referer'] = 'http://' + host
+        req = Request(url, headers=headers, data=post_data)
+        response = urlopen(req)
+        return response
+
 
     def get_default_headers(self):
         """

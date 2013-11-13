@@ -13,7 +13,7 @@ am = AttackManager(211, 305, request_manager, report_builder, lock, farm_radius=
                     farm_frequency=4)
 try:     
     am.start()
-    time.sleep(18000)
+    time.sleep(10800)
     am.active = False
 except KeyboardInterrupt:
     am.active = False
