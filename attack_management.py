@@ -33,20 +33,23 @@ class AttackManager(Thread):
     avoid simultaneous requests to Game server (and potential ban).
     """
 
-    def __init__(self, village_x, village_y, request_manager, report_builder, lock, **kwargs):
+    def __init__(self, village_id, village_x, village_y, request_manager, report_builder, lock, **kwargs):
         Thread.__init__(self)
+        self.id = village_id
         self.x = village_x
         self.y = village_y
         self.request_manager = request_manager  # Shared instance of RequestManager class
         self.report_builder = report_builder    # Shared instance of ReportBuilder class
         self.lock = lock    # Shared instance of Bot's Lock()
         self.attack_queue = AttackQueue(self.x, self.y, self.request_manager, **kwargs)
-        self.state_manager = VillageStateManager(self.request_manager, self.lock)
-        self.troops_map = self.state_manager.get_troops_map()   # {Unit: count, ...}
+        self.state_manager = VillageStateManager(self.request_manager, self.lock, self.id)
+        self.battle_units = ['Light cavalry', 'Heavy cavalry', 'Scouts']    # Axemen
+        self.troops_map = self.state_manager.get_troops_map(self.battle_units)   # {Unit: count, ...}
         self.confirmation_token = self.get_confirmation_token() # it's not changing even between browser's sessions
         self.new_battle_reports = 0
         self.some_troops_returned = False
         self.active = False
+
 
     def run(self):
         try:
@@ -55,6 +58,7 @@ class AttackManager(Thread):
             # get list of coordinates where attacks were sent in previous session (and not arrived yet)
             pending_arrival = self.attack_observer.arrival_queue.keys()
             self.attack_queue.build_queue(pending_arrival)
+            print("Attack queue length upon init: ", len(self.attack_queue.queue))
             self.attack_observer.start()
             print("Started to loot barbarians at: ", time.ctime())
             while self.active:
@@ -122,21 +126,21 @@ class AttackManager(Thread):
         """
         time.sleep(random.random() * 3) # User hits in fields to select troops to send
         self.lock.acquire()
-        response_data = self.request_manager.post_confirmation(confirm_data)
+        response_data = self.request_manager.post_confirmation(self.id, confirm_data)
         self.lock.release()
         return response_data
 
     def post_attack(self, request_data, csrf):
         time.sleep(random.random()) # User just hits OK button
         self.lock.acquire()
-        t_of_attack = self.request_manager.post_attack(request_data, csrf)
+        t_of_attack = self.request_manager.post_attack(self.id, request_data, csrf)
         self.lock.release()
         return t_of_attack
 
     def get_rally_overview(self):
         time.sleep(random.random() * 1.5)   # User hits on village and clicks "send attack"
         self.lock.acquire()
-        html_data = self.request_manager.get_rally_overview()
+        html_data = self.request_manager.get_rally_overview(self.id)
         self.lock.release()
         return html_data
 
@@ -250,7 +254,7 @@ class AttackManager(Thread):
             self.some_troops_returned = False
             #print("Troops returned, updating troops...")
             #print("current troops: {}".format(self.troops_map))
-            self.troops_map = self.state_manager.get_troops_map()
+            self.troops_map = self.state_manager.get_troops_map(self.battle_units)
             #print("updated troops: {}".format(self.troops_map))
 
     def update_troops_count(self, troops_sent):

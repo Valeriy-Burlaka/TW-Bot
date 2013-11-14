@@ -11,27 +11,27 @@ class VillageStateManager():
     making decisions about resources usage.
     """
 
-    def __init__(self, request_manager, lock):
+    def __init__(self, request_manager, lock, village_id):
         self.request_manager = request_manager
         self.lock = lock
+        self.id = village_id
         self.units_names = self.get_units_names()
 
-    def get_troops_map(self):
+    def get_troops_map(self, battle_units):
         self.lock.acquire()
-        overview_html = self.request_manager.get_village_overview()
+        overview_html = self.request_manager.get_village_overview(self.id)
         self.lock.release()
         if overview_html:
-            troops_map = self.form_troops_map(overview_html)
+            troops_map = self.form_troops_map(overview_html, battle_units)
             return troops_map
 
-    def form_troops_map(self, html_data):
+    def form_troops_map(self, html_data, battle_units):
         """
         Parses given village-overview html to get troops count.
         Inits Units from self.units_data, returns mapping
         {Unit: count, ...
         """
         troops_map = {}
-        battle_units = ['Light cavalry', 'Axemen', 'Heavy cavalry', 'Scouts']
         units_in_village = re.findall(r'<strong>(\d+)</strong>\W*?(\w+\s*\w*)', html_data)
         if units_in_village:
             for count, unit_ingame_name in units_in_village:

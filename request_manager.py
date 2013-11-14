@@ -12,6 +12,9 @@ import traceback
 from PIL import ImageTk
 from urllib.request import Request
 from urllib.request import urlopen
+from urllib.request import build_opener
+from urllib.request import HTTPCookieProcessor
+from http.cookiejar import CookieJar
 from urllib.parse import urlencode
 from urllib.error import  HTTPError
 
@@ -34,9 +37,8 @@ class RequestManager:
     """
 
 
-    def __init__(self, host='en70.tribalwars.net', browser='Chrome',
-                 user_path=r'C:\Users\Troll\Documents\exercises\TW',
-                 user_name='Chebutroll', user_pswd='cjiy47H5MamVephlVddV'):
+    def __init__(self, user_name, user_pswd, user_path, browser, host, main_id):
+        self.main_id = str(main_id)
         self.browser = browser
         self.host = host
         self.user_path = user_path
@@ -47,29 +49,31 @@ class RequestManager:
 
 
     def get_map_overview(self, x, y):
-        url = 'http://{host}/game.php?village=127591&{x}=211&{y}=305&screen=map'.format(host=self.host, x=x, y=y)
+        url = 'http://{host}/game.php?village={id}&x={x}&y={y}&screen=map'.format(host=self.host,
+                                                                                  id=self.main_id, x=x, y=y)
         self.referer = url
         headers = self.get_default_headers()
         req = Request(url, headers=headers)
         return self.safe_opener(req)
 
-    def get_village_overview(self):
-        url = 'http://{host}/game.php?village=127591&screen=overview'.format(host=self.host)
+    def get_village_overview(self, village_id):
+        url = 'http://{host}/game.php?village={id}&screen=overview'.format(host=self.host, id=village_id)
         self.referer = url
         headers = self.get_default_headers()
         req = Request(url, headers=headers)
         return self.safe_opener(req)
 
-    def get_rally_overview(self):
-        url = 'http://{host}/game.php?village=127591&screen=place'.format(host=self.host)
+    def get_rally_overview(self, village_id):
+        url = 'http://{host}/game.php?village={id}&screen=place'.format(host=self.host, id=village_id)
         self.referer = url
         headers = self.get_default_headers()
         req = Request(url, headers=headers)
         return self.safe_opener(req)
 
     def get_reports_page(self, from_page=0):
-        url = 'http://{host}/game.php?village=127591&mode=all&from={page}&screen=report'.format(host=self.host,
-                                                                                                page=from_page)
+        url = 'http://{host}/game.php?village={id}&mode=all&from={page}&screen=report'.format(host=self.host,
+                                                                                              id=self.main_id,
+                                                                                              page=from_page)
         self.referer = url
         headers = self.get_default_headers()
         req = Request(url, headers=headers)
@@ -77,22 +81,23 @@ class RequestManager:
 
     def get_report(self, url):
         url = 'http://{host}{url}'.format(host=self.host, url=url)
-        self.referer = "http://{host}/game.php?village=127591&screen=report".format(host=self.host)
+        self.referer = "http://{host}/game.php?village={id}&screen=report".format(host=self.host, id=self.main_id)
         headers = self.get_default_headers()
         req = Request(url, headers=headers)
         return self.safe_opener(req)
 
-    def post_confirmation(self, data):
-        url = 'http://{host}/game.php?village=127591&try=confirm&screen=place'.format(host=self.host)
-        self.referer = 'http://{host}/game.php?village=127591&screen=place'.format(host=self.host)
+    def post_confirmation(self, village_id, data):
+        url = 'http://{host}/game.php?village={id}&try=confirm&screen=place'.format(host=self.host, id=village_id)
+        self.referer = 'http://{host}/game.php?village={id}&screen=place'.format(host=self.host, id=village_id)
         headers = self.get_default_headers()
         headers['Content-Length'] = len(data)
         req = Request(url, headers=headers, data=data)
         return self.safe_opener(req)
 
-    def post_attack(self, data, csrf):
-        url = 'http://{host}/game.php?village=127591&action=command&h={csrf}&screen=place'.format(host=self.host, csrf=csrf)
-        self.referer = 'http://{host}/game.php?village=127591&try=confirm&screen=place'.format(host=self.host)
+    def post_attack(self, village_id, data, csrf):
+        url = 'http://{host}/game.php?village={id}&action=command&h={csrf}&screen=place'.format(host=self.host, id=village_id,
+                                                                                                csrf=csrf)
+        self.referer = 'http://{host}/game.php?village={id}&try=confirm&screen=place'.format(host=self.host, id=village_id)
         headers = self.get_default_headers()
         headers['Content-Length'] = len(data)
         headers['Origin'] = "http://{host}".format(host=self.host)
@@ -100,7 +105,7 @@ class RequestManager:
         try:
             response = urlopen(req)
             # after POSTing an attack, Game automatically redirects to rally point
-            self.get_rally_overview()
+            self.get_rally_overview(village_id)
             return response.getheader('Date')
         except HTTPError as e:
             info = traceback.format_exception(*sys.exc_info())
@@ -118,19 +123,32 @@ class RequestManager:
         try:
             response = urlopen(request)
             data = response.read()
-            return self.protection_check(self.unpack_decode(data))
-        except HTTPError as e:
-            print(e)
+            if self.expiration_check(self.unpack_decode(data)):
+                self.login_to_server()
+                request.add_header('Cookie', self.cookies)
+                response = urlopen(request)
+                data = response.read()
+                response_data = self.protection_check(self.unpack_decode(data))
+            else:
+                response_data = self.protection_check(self.unpack_decode(data))
 
-    def unpack_decode(self, data):
-        try:
-            decompressed = gzip.decompress(data)
-            decoded_data = decompressed.decode()
-            return decoded_data
+            return response_data
+        except HTTPError:
+            info = traceback.format_exception(*sys.exc_info())
+            with open('errors_log.txt', 'a') as f:
+                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
         except struct.error:    # strange rare and floating issue when unzipping some of TribalWars responses
             info = traceback.format_exception(*sys.exc_info())
             with open('errors_log.txt', 'a') as f:
                 f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
+            with open('{}_struct_error_data.txt'.format(time.ctime()), 'wb') as f:
+                f.write(data)
+            return self.safe_opener(request)
+
+    def unpack_decode(self, data):
+        decompressed = gzip.decompress(data)
+        decoded_data = decompressed.decode()
+        return decoded_data
 
     def protection_check(self, html_data):
         bot_ptrn = re.compile(r'<h2>Bot protection</h2>')
@@ -210,22 +228,19 @@ class RequestManager:
         match = re.search(expiration_ptrn, html_data)
         if match:
             print("Session expired...Don't worry, masta!")
-            try:
-                post_data = self.get_server_selection_data()
-                response = self.show_server_selection(post_data)
-                selection_data = gzip.decompress(response.read())
-                encrypt_pass = self.get_login_data(selection_data)
-                post_data = urlencode([('user', self.user_name), ('password', encrypt_pass)])
-                server = 'server_' + self.host.split('.')[0]
-                response = self.post_login_data(post_data, server)
+            return True
 
-
-            except AttributeError as e:
-                print("Tried to login ", time.ctime(), e)
-                return
-            except HTTPError as e:
-                print("Tried to login ", time.ctime(), e)
-                return
+    def login_to_server(self):
+        post_data = self.get_server_selection_data()
+        response = self.show_server_selection(post_data)
+        b_selection_data = gzip.decompress(response.read())
+        selection_data = b_selection_data.decode()
+        encrypt_pass = self.get_login_data(selection_data)
+        post_data = urlencode([('user', self.user_name), ('password', encrypt_pass)])
+        post_data = post_data.encode()
+        server = 'server_' + self.host.split('.')[0]
+        self.post_login_data(post_data, server)
+        self.get_village_overview(self.main_id)
 
     def get_server_selection_data(self):
         """
@@ -263,23 +278,31 @@ class RequestManager:
         Parses response received after 'show_server_selection' request.
         Returns encrypted user password.
         """
-        pswd_ptrn = re.compile(r'<input name=\"password[\W\w]+?value=\"([\W\w]+?)\"')
+        pswd_ptrn = re.compile(r'password[\W\w]+?value\W\W"([\W\w]+?)\W"')
         match = re.search(pswd_ptrn, selection_data)
-        return match.group(1).encode()
+        return match.group(1)
+
 
     def post_login_data(self, post_data, server):
+        cj = CookieJar()
+        opener = build_opener(HTTPCookieProcessor(cj))
+
         host = 'www.tribalwars.net'
         url = 'http://' + host + '/index.php?action=login&{server}'.format(server=server)
         headers = self.get_default_headers()
+        headers.pop('Cookie')
         headers['Host'] = host
         headers['Content-Length'] = len(post_data)
         headers['Origin'] = 'http://' + host
         headers['Content-Type'] = 'application/x-www-form-urlencoded'
         headers['Referer'] = 'http://' + host
         req = Request(url, headers=headers, data=post_data)
-        response = urlopen(req)
-        return response
-
+        opener.open(req)
+        cookies_data = []
+        for cook in cj:
+            cookies_data.append((cook.name, cook.value))
+        cookies_data.append(('global_village_id', self.main_id))
+        self.cookies = self.form_cookie_header(cookies_data)
 
     def get_default_headers(self):
         """
@@ -305,6 +328,7 @@ class RequestManager:
         mandatory_cookies = self.get_mandatory_cookies()
         # sort out host from cookies_data.
         cookies_data = [(item[1], item[2]) for item in cookies_data if item[1] in mandatory_cookies]
+        cookies_data.extend([('mobile', '0'), ('global_village_id', self.main_id)])
         self.cookies = self.form_cookie_header(cookies_data)
 
     def form_cookie_header(self, cookies_data):
@@ -321,7 +345,7 @@ class RequestManager:
         return str_value
 
     def get_mandatory_cookies(self):
-        return ['cid', 'sid', 'mobile', 'global_village_id']
+        return ['cid', 'sid']
 
     def extract_cookies(self, cookies_path, timeout=30):
         """

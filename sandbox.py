@@ -11,26 +11,37 @@ from attack_management import AttackManager, AttackObserver
 from data_management import ReportBuilder, AttackReport
 from map_management import Village
 
+village_x = 217
+village_y = 301
+main_id = 162743
+host ='en70.tribalwars.net'
+browser ='Chrome'
+user_path =r'C:\Users\Troll\Documents\exercises\TW\clonned_bot'
+user_name = ' Lord Jeopard'
+user_pswd = 'GXJCXBXvT0vH12Ll9UrT'
+
 
 lock = Lock()
-request_manager = RequestManager(user_name='Jeopard', user_pswd='GXJCXBXvT0vH12Ll9UrT')
+request_manager = RequestManager(user_name, user_pswd, user_path, browser, host, main_id)
+#report_builder = ReportBuilder(request_manager, lock)
+#am = AttackManager(main_id, village_x, village_y, request_manager, report_builder, lock, map_depth=2,
+#    farm_radius=18, queue_depth=15, farm_frequency=4)
+#print(len(am.attack_queue.map.villages))
+#print(len(am.attack_queue.villages))
+
+
+
+
 #post_data = request_manager.get_server_selection_data()
 #response = request_manager.show_server_selection(post_data)
 #print(response.getcode())
 #print(gzip.decompress(response.read()))
-#post_data = 'user=Jeopard&password=2d53491fd86525779b687158cf3c30dcf8988b15'.encode()
-#response = request_manager.post_login_data(post_data, 'server_en70')
+post_data = 'user=Lord+Jeopard&password=2d53491fd86525779b687158cf3c30dcf8988b15'.encode()
+request_manager.post_login_data(post_data, 'server_en70')
+data = request_manager.get_village_overview(main_id)
+print(data)
 #print(response.getcode())
 #print(response.getheaders())
-
-
-
-
-
-
-report_builder = ReportBuilder(request_manager, lock)
-am = AttackManager(211, 305, request_manager, report_builder, lock, farm_radius=18, queue_depth=15,
-                    farm_frequency=4)
 
 
 #am.start()
@@ -38,54 +49,6 @@ am = AttackManager(211, 305, request_manager, report_builder, lock, farm_radius=
 #am.active = False
 
 
-
-
-
-def get_reports_from_table(reports_table):
-    single_report_ptrn = re.compile(r'<input name="id_[\W\w]+?</tr>')
-    reports_list = re.findall(single_report_ptrn, reports_table)
-#    reports_list = [x for x in reports_list if '(new)' in x]
-    battle_reports = []
-    for report in reports_list: # filter out all support/recon/red reports
-        match = re.search(r'<img src[\W\w]+?(yellow)|(green)\.png', report)
-        if match:
-            battle_reports.append(report)
-
-    return battle_reports
-
-flushed_reports = {}
-for i in range(3):
-    report_page = request_manager.get_reports_page(from_page=i*12)
-    battle_reports = get_reports_from_table(report_page)
-    for report in battle_reports:
-        html_report, coordinates = report_builder.get_single_report(report)
-        attack_report = AttackReport(html_report)
-        if attack_report.is_valid_report:
-            flushed_reports[coordinates] = attack_report
-        else:
-            with open('bad_reports/{coords}_invalid_report.html'.format(coords=coordinates), 'w') as f:
-                f.write(html_report)
-
-for coords, report in flushed_reports.items():
-    if coords in am.attack_queue.villages:
-        villa = am.attack_queue.villages[coords]
-        print('Villa before update: ', villa)
-        if not villa.last_visited or villa.last_visited < report.t_of_attack:
-            villa.update_stats(report)
-            am.attack_queue.villages[coords] = villa
-            print('Villa after update: ', am.attack_queue.villages[coords])
-
-am.attack_queue.update_villages_in_map()
-
-#f = shelve.open('map')
-#villages = f['villages']
-#print(len(villages.items()))
-#for coords, villa in villages.items():
-#    print(villa)
-#    for t, loot in villa.looted['per_visit']:
-#        print(time.ctime(t), ': looted==>', loot)
-#
-#f.close()
 
 
 

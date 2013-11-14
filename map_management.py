@@ -61,29 +61,46 @@ class Map:
         If depth > 1, requests sector's data & recursively repeats
         Villages construction for sector's corners.
         """
-        print(x, y)
         depth -= 1
+        print(x, y, 'depth:', depth)
         map_html = self.request_manager.get_map_overview(x, y)
         sectors = self.get_map_data(map_html)   # list of dicts, each dict represents 1 sector
         for sector in sectors:
             sector_x = sector['x']
             sector_y = sector['y']
             sector_coords = []  # hold coords of villages found, need to determine sector's corners
-            sector_villages = sector['data']['villages']    # list; index is a x coord (relative to sector_x)
-            for x, y_axis in enumerate(sector_villages): # y_axis is a dict of villages
-                for y, village_data in y_axis.items():
-                    if self.is_valid(village_data): # check if village is Bonus/Barbarian
-                        villa_x = sector_x + x
-                        villa_y = sector_y + int(y)
-                        villa_coords = (villa_x, villa_y)
-                        sector_coords.append(villa_coords)
-                        if not villa_coords in self.villages:
-                            distance_from_base = self.calculate_distance(villa_coords)
-                            village = self.get_village(villa_coords, village_data, distance_from_base)
-                            self.villages[villa_coords] = village
+            sector_villages = sector['data']['villages']    # can be either list of dicts or dict of dicts
+            # index is x coordinate, value is a dict of villages which lie on a y axis for given x.
+            if isinstance(sector_villages, list):
+                for x, y_axis in enumerate(sector_villages): # y_axis is a dict of villages
+                    for y, village_data in y_axis.items():
+                        if self.is_valid(village_data): # check if village is Bonus/Barbarian
+                            villa_x = sector_x + x
+                            villa_y = sector_y + int(y)
+                            villa_coords = (villa_x, villa_y)
+                            sector_coords.append(villa_coords)
+                            if not villa_coords in self.villages:
+                                distance_from_base = self.calculate_distance(villa_coords)
+                                village = self.get_village(villa_coords, village_data, distance_from_base)
+                                self.villages[villa_coords] = village
+            # key is x coordinate, value is a dict of villages which lie on a y axis for given x.
+            elif isinstance(sector_villages, dict):
+                for x, y_axis in sector_villages.items():
+                    x = int(x)
+                    for y, village_data in y_axis.items():
+                        if self.is_valid(village_data): # check if village is Bonus/Barbarian
+                            villa_x = sector_x + x
+                            villa_y = sector_y + int(y)
+                            villa_coords = (villa_x, villa_y)
+                            sector_coords.append(villa_coords)
+                            if not villa_coords in self.villages:
+                                distance_from_base = self.calculate_distance(villa_coords)
+                                village = self.get_village(villa_coords, village_data, distance_from_base)
+                                self.villages[villa_coords] = village
 
             if depth:
                 sector_corners = self.get_sector_corners(sector_coords)
+                print('corners: ', sector_corners)
                 for corner in sector_corners:
                     time.sleep(0.3)
                     self.build_villages(*corner, depth=depth)
