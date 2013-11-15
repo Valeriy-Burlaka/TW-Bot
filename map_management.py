@@ -105,6 +105,9 @@ class Map:
                     time.sleep(0.3)
                     self.build_villages(*corner, depth=depth)
 
+        with open('villages_upon_map_init.txt', 'w') as f:
+            f.write(str(self.villages))
+
     def get_sector_corners(self, sector_coords):
         """Sorts given list of sector coords to determine
         corner points.

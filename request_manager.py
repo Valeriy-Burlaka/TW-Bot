@@ -141,7 +141,8 @@ class RequestManager:
             info = traceback.format_exception(*sys.exc_info())
             with open('errors_log.txt', 'a') as f:
                 f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
-            with open('{}_struct_error_data.txt'.format(time.ctime()), 'wb') as f:
+            t = time.gmtime()
+            with open('{h}_{m}_{s}_struct_error_data.txt'.format(h=t[3],m=t[4],s=t[5]), 'wb') as f:
                 f.write(data)
             return self.safe_opener(request)
 
@@ -171,9 +172,10 @@ class RequestManager:
         Downloads captcha from given URL and saves it to local file.
         Returns filename
         """
+        t = time.gmtime()
         response = urlopen(captcha_url)
         img_bytes = response.read()
-        captcha_file = os.path.join(self.user_path, 'test_human.png')
+        captcha_file = os.path.join(self.user_path, '{h}_{m}_{s}_test_human.png'.format(h=t[3],m=t[4],s=t[5]))
         with open(captcha_file, 'wb') as f:
             f.write(img_bytes)
 

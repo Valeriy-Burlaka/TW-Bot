@@ -43,7 +43,7 @@ class AttackManager(Thread):
         self.lock = lock    # Shared instance of Bot's Lock()
         self.attack_queue = AttackQueue(self.x, self.y, self.request_manager, **kwargs)
         self.state_manager = VillageStateManager(self.request_manager, self.lock, self.id)
-        self.battle_units = ['Light cavalry', 'Heavy cavalry', 'Scouts']    # Axemen
+        self.battle_units = ['Light cavalry', 'Axemen', 'Heavy cavalry', 'Scouts']    # Axemen
         self.troops_map = self.state_manager.get_troops_map(self.battle_units)   # {Unit: count, ...}
         self.confirmation_token = self.get_confirmation_token() # it's not changing even between browser's sessions
         self.new_battle_reports = 0
@@ -426,6 +426,7 @@ class AttackQueue:
         ready_for_farm = {coords: villa for coords, villa in self.visited_villages.items() if self.is_ready_for_farm(villa)}
         if ready_for_farm:
             print("Time: {}, going to flush the next villages: {}".format(time.ctime(), ready_for_farm))
+            print('Queue length upon flushing: {}'.format(len(self.queue)))
         for coords, villa in ready_for_farm.items():
             self.queue.append(villa)
             self.visited_villages.pop(coords)

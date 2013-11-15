@@ -17,12 +17,12 @@ lock = Lock()
 
 request_manager = RequestManager(user_name, user_pswd, user_path, browser, host, main_id)
 report_builder = ReportBuilder(request_manager, lock)
-am = AttackManager(main_id, village_x, village_y, request_manager, report_builder, lock, map_depth=2,
-    farm_radius=18, queue_depth=15, farm_frequency=4)
+am = AttackManager(main_id, village_x, village_y, request_manager, report_builder, lock, map_depth=3,
+    farm_radius=21, queue_depth=30, farm_frequency=4)
 
 try:     
     am.start()
-    time.sleep(18000)
+    time.sleep(12600)
     am.active = False
 except KeyboardInterrupt:
     am.active = False
