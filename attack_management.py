@@ -43,7 +43,7 @@ class AttackManager(Thread):
         self.lock = lock    # Shared instance of Bot's Lock()
         self.attack_queue = AttackQueue(self.x, self.y, self.request_manager, **kwargs)
         self.state_manager = VillageStateManager(self.request_manager, self.lock, self.id)
-        self.battle_units = ['Light cavalry', 'Axemen', 'Heavy cavalry', 'Scouts']    # Axemen
+        self.battle_units = ['Light cavalry', 'Axemen', 'Heavy cavalry', 'Scouts']    # Axemen, 
         self.troops_map = self.state_manager.get_troops_map(self.battle_units)   # {Unit: count, ...}
         self.confirmation_token = self.get_confirmation_token() # it's not changing even between browser's sessions
         self.new_battle_reports = 0
@@ -311,6 +311,7 @@ class AttackQueue:
             queue = [villa for villa in queue if villa.coords not in pending_arrival]
         # assign queue sorted by distance
         self.queue = sorted(queue, key=lambda x: x.dist_from_base)
+        print((217, 310) in self.queue)
 
     def is_ready_for_farm(self, village):
         return village.passes_threshold(self.threshold) or village.is_fresh_meat() or village.finished_rest(self.rest)
@@ -426,16 +427,18 @@ class AttackQueue:
         ready_for_farm = {coords: villa for coords, villa in self.visited_villages.items() if self.is_ready_for_farm(villa)}
         if ready_for_farm:
             print("Time: {}, going to flush the next villages: {}".format(time.ctime(), ready_for_farm))
-            print('Queue length upon flushing: {}'.format(len(self.queue)))
-        for coords, villa in ready_for_farm.items():
-            self.queue.append(villa)
-            self.visited_villages.pop(coords)
+            print('Queue length before flushing: {}'.format(len(self.queue)))
+            for coords, villa in ready_for_farm.items():
+                self.queue.append(villa)
+                self.visited_villages.pop(coords)
 
-        self.queue = sorted(self.queue, key=lambda x: x.dist_from_base)
+            self.queue = sorted(self.queue, key=lambda x: x.dist_from_base)
+            print('Queue length after flushing: {}'.format(len(self.queue)))
 
     def update_villages_in_map(self):
         #print("Going to update next villages in map: ", self.villages)
         self.map.update_villages(self.villages)
+        self.map.update_villages(self.visited_villages)
 
     def init_units(self):
         units = {'axe': Unit('axe', 18, 10),

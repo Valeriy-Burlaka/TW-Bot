@@ -22,7 +22,7 @@ am = AttackManager(main_id, village_x, village_y, request_manager, report_builde
 
 try:     
     am.start()
-    time.sleep(12600)
+    time.sleep(32400)
     am.active = False
 except KeyboardInterrupt:
     am.active = False
