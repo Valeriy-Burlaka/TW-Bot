@@ -1,8 +1,12 @@
 __author__ = 'Troll'
 
 import re
+import json
+import time
+import random
+from threading import Thread
 
-class VillageStateManager():
+class VillageManager(Thread):
     """
     Component responsible for getting and keeping information
     about player's village (troops, resources).
@@ -11,45 +15,237 @@ class VillageStateManager():
     making decisions about resources usage.
     """
 
-    def __init__(self, request_manager, lock, village_id):
+    def __init__(self, request_manager, lock, main_id, farm_with,
+                 use_def_to_farm=False, t_limit_to_leave=4):
+        Thread.__init__(self)
         self.request_manager = request_manager
         self.lock = lock
-        self.id = village_id
-        self.units_names = self.get_units_names()
+        self.main_id = main_id
+        self.player_villages = self.build_player_villages(use_def_to_farm, t_limit_to_leave)
+        self.farming_villages = self.get_farming_villages(farm_with)
 
-    def get_troops_map(self, battle_units):
+    def build_player_villages(self, use_def, t_limit_to_leave):
+        """
+        Builds a mapping of PlayerVillage objects from 'overviews' screen
+        """
+        overviews_html = self.request_manager.get_overviews_screen()
+        time.sleep(0.1)
+        villages_data = self.get_villages_data(overviews_html)
+        player_villages = {}
+        for villa_data in villages_data:
+            villa_id, villa_coords, villa_name = villa_data[0], villa_data[1], villa_data[2]
+            time.sleep(random.random() * 3)
+            html_data = self.get_train_screen(villa_id)
+            pv = PlayerVillage(villa_id, villa_coords, villa_name, html_data, use_def, t_limit_to_leave)
+            player_villages[villa_id] = pv
+
+        return player_villages
+
+    def get_villages_data(self, html_data):
+        """
+        Parses "Overviews" game screen to extract player's villages.
+        Returns list of tuples (int(villa_id), str(villa_name), tuple(villa_coordinates))
+        """
+        villa_info_ptrn = re.compile(r'<span id="label_text_(\d+)">([\W\w]+?)\((\d{3})\|(\d{3})')
+        villages_data = re.findall(villa_info_ptrn, html_data)
+        for i, village_data in enumerate(villages_data):
+            villa_id = int(village_data[0])
+            villa_name = village_data[1].rstrip()
+            villa_x, villa_y = int(village_data[2]), int(village_data[3])
+            villages_data[i] = (villa_id, (villa_x, villa_y), villa_name)
+
+        return villages_data
+
+    def get_next_attacking_village(self):
+        attackers = list(self.farming_villages.values())
+        next_attacker = random.choice(attackers)
+        attacker_id = next_attacker.id
+        attacker_coords = next_attacker.coords
+        attacker_troops = next_attacker.troops_count
+        return (attacker_id, attacker_coords, attacker_troops)
+
+    def update_troops_count(self, villa_id, troops_sent):
+        pv = self.farming_villages[villa_id]
+        pv.update_troops_count(troops_sent=troops_sent)
+
+    def refresh_village_troops(self, ids):
+        for villa_id in ids:
+            train_screen_html = self.get_train_screen(villa_id)
+            pv = self.farming_villages[villa_id]
+            pv.update_troops_count(train_screen_html=train_screen_html)
+
+    def get_farming_villages(self, farm_with):
+        farm_villages = {villa_id: villa for villa_id, villa in self.player_villages.items() if villa_id in farm_with}
+        return farm_villages
+
+    def get_train_screen(self, villa_id):
         self.lock.acquire()
-        overview_html = self.request_manager.get_village_overview(self.id)
+        train_screen_html = self.request_manager.get_train_screen(villa_id)
         self.lock.release()
-        if overview_html:
-            troops_map = self.form_troops_map(overview_html, battle_units)
-            return troops_map
+        return train_screen_html
 
-    def form_troops_map(self, html_data, battle_units):
+    def get_overviews_screen(self):
+        self.lock.acquire()
+        overviews_screen_html = self.request_manager.get_overviews_screen()
+        self.lock.release()
+        return overviews_screen_html
+
+    def get_village_overview(self, villa_id):
+        self.lock.acquire()
+        village_overview = self.request_manager.get_village_overview(villa_id)
+        self.lock.release()
+        return village_overview
+
+class PlayerVillage:
+    """
+    Component for holding & updating info about player's villages.
+    In current implementation, provides only information about
+    troops.
+    """
+
+    def __init__(self, id, coords, name, train_screen_html, use_def, t_limit_to_leave, flag=None):
+        self.id = id
+        self.coords = coords
+        self.name = name
+        self.flag = flag
+        self.troops_to_use = self.get_troops_group(use_def)
+        self.units = self.build_units()
+        self.troops_upon_init = self.get_troops_data(train_screen_html)
+        self.troops_count = self.get_troops_count(self.troops_upon_init)    # current troops in village
+        self.radius = self.set_preferred_farm_radius(t_limit_to_leave)
+
+
+    def set_preferred_farm_radius(self, t):
         """
-        Parses given village-overview html to get troops count.
-        Inits Units from self.units_data, returns mapping
-        {Unit: count, ...
+        Tries to find the best farm radius for a given village, returns int.
+        Steps:
+        1. Gets total troops count (in-village, returning, etc.) from a train screen HTML.
+        2. Calculates total looting capacity for each speed value (e.g. village has
+        1000 axes & 1000 swords, then speed 18 has 10000 total looting capacity,
+        speed 22 has 15000 looting capacity).
+        3. Calculates density (% in total village looting capacity) for each speed value.
+        4. Gets a sum of each (speed * t * speed_density), where t is a maximum hours
+        for troops to live the village.
+
+        Thus, for example, if we consider a village, that mostly has slow units, their speed
+        density will form the majority of farm radius and we'll mitigate the chance of sending
+        slow units to a 'far lands'. Additionally, we will try to use slowest units
+        first when choosing an attack target in AttackQueue.
         """
-        troops_map = {}
-        units_in_village = re.findall(r'<strong>(\d+)</strong>\W*?(\w+\s*\w*)', html_data)
-        if units_in_village:
-            for count, unit_ingame_name in units_in_village:
-                unit_ingame_name = unit_ingame_name.rstrip()
-                if unit_ingame_name in battle_units:
-                    unit_name = self.units_names[unit_ingame_name]
-                    count = int(count)
-                    troops_map[unit_name] = count
+        total_troops_count = {}
+        for unit_name in self.troops_to_use:
+            if unit_name == 'spy': continue
+            if unit_name in self.troops_upon_init:
+                unit = self.units[unit_name]
+                count = int(self.troops_upon_init[unit_name]['all_count'])
+                total_troops_count[unit] = count
+
+        total_looting_capacity = sum((unit.haul * count for unit, count in total_troops_count.items()))
+        capacity_by_speed = {}
+        for unit, count in total_troops_count.items():
+            if unit.speed in capacity_by_speed:
+                capacity_by_speed[unit.speed] += unit.haul * count
+            else:
+                capacity_by_speed[unit.speed] = unit.haul * count
+
+        radius = 0
+        for speed, amount in capacity_by_speed.items():
+            speed = round(60 / speed, 3)  # unit.speed = minutes per tile, so getting tiles-per-hour value here.
+            speed_radius = speed * t
+            speed_density = round(amount / total_looting_capacity, 3)
+            radius += speed_radius * speed_density
+        radius = round(radius, 2)
+        return radius
+
+    def build_units(self):
+        return Unit.build_units()
+
+    def update_troops_count(self, train_screen_html=None, troops_sent=None):
+        if train_screen_html:
+            troops_data = self.get_troops_data(train_screen_html)
+            self.troops_count = self.get_troops_count(troops_data)
+        if troops_sent:
+            for name, count in troops_sent.items():
+                self.troops_count[name] -= count
+
+    def get_troops_data(self, html_data):
+        """
+        Returns dict containing all troops data for a given village (current & total)
+        """
+        data_ptrn = re.compile(r'UnitPopup.unit_data = ([\w\W]+);[\s]*UnitPopup[\w\W]+')
+        match = re.search(data_ptrn, html_data)
+        if not match: raise Exception('Unable to get troops data!')
+        troops_data = json.loads(match.group(1))
+        return troops_data
+
+    def get_troops_map(self):
+        """
+        Builds list of dicts {Unit: count} from self.troops_count.
+        List is used to retain troops order for AttackQueue (from slow to fast)
+        """
+        troops_map = []
+        for unit_name in self.troops_to_use:
+            unit_count = self.troops_count[unit_name]
+            unit = self.units[unit_name]
+            troops_map.append({unit: unit_count})
 
         return troops_map
 
-    def get_units_names(self):
+    def get_troops_count(self, troops_data):
         """
-        Returns mapping {'game_name':[name, speed, haul],..}, where
-        'game_name' is unit name as it appears in village_overview
-        html page, value is a list with unit stats needed to init Unit obj.
+        Returns information about current troops in village.
+        Return type is a dict {unit_name: count, ...}
         """
+        troops_count = {}
+        for unit_name in self.troops_to_use:
+            if unit_name in troops_data:
+                count = int(troops_data[unit_name]['available'])
+                troops_count[unit_name] = count
 
-        units_data = {'Axemen': 'axe', 'Scouts': 'spy',
-                      'Light cavalry': 'light', 'Heavy cavalry': 'heavy'}
-        return units_data
+        return troops_count
+
+    def get_troops_group(self, use_def):
+        if use_def:
+            troops_group = ['spear', 'sword', 'archer', 'axe', 'spy', 'light', 'marcher', 'heavy']
+        else:
+            troops_group = ['axe', 'spy', 'light', 'marcher', 'heavy']
+        return troops_group
+
+    def __str__(self):
+        str_villa = "PlayerVillage: id: {id}, coords: {coords}, name: {name}, farm_radius: {radius},\n current_troops: {troops}"
+        return str_villa.format(id=self.id, coords=self.coords, name=self.name, radius=self.radius, troops=self.troops_count)
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class Unit:
+    """Representation of TW unit.
+    """
+
+    def __init__(self, name, attack, speed, haul):
+        self.name = name
+        self.attack = attack
+        self.speed = speed
+        self.haul = haul
+
+    @classmethod
+    def build_units(self):
+        """
+        Pre-defines Unit objects for each TribalWars unit.
+        """
+        units = {'spear': Unit('spear', 10, 18, 25),
+                 'sword': Unit('sword', 25, 22, 15),
+                 'archer': Unit('archer', 15, 18, 10),
+                 'axe': Unit('axe', 40, 18, 10),
+                 'spy': Unit('spy', 0, 9, 0),
+                 'light': Unit('light', 130, 10, 80),
+                 'marcher': Unit('marcher', 120, 10, 50),
+                 'heavy': Unit('heavy', 150, 11, 50)}
+        return units
+
+    def __str__(self):
+        return "Unit:=>{0}, speed:=>{1}, haul:=>{2}".format(self.name, self.speed, self.haul)
+
+    def __repr__(self):
+        return self.__str__()

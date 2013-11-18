@@ -186,3 +186,5 @@ class AttackReport:
         else:
             self.is_valid_report = False
             return
+
+

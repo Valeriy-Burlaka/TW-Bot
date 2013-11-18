@@ -56,17 +56,34 @@ class RequestManager:
         req = Request(url, headers=headers)
         return self.safe_opener(req)
 
+    def get_overviews_screen(self):
+        url = 'http://{host}/game.php?village={id}&screen=overview_villages'.format(host=self.host, id=self.main_id)
+        self.referer = 'http://{host}/game.php?village={id}&screen=overview'.format(host=self.host, id=self.main_id)
+        headers = self.get_default_headers()
+        req = Request(url, headers=headers)
+        return self.safe_opener(req)
+
     def get_village_overview(self, village_id):
         url = 'http://{host}/game.php?village={id}&screen=overview'.format(host=self.host, id=village_id)
-        self.referer = url
+        self.referer =  'http://{host}/game.php?village={id}&screen=overview_villages'.format(host=self.host,
+                                                                                              id=self.main_id)
         headers = self.get_default_headers()
+        req = Request(url, headers=headers)
+        return self.safe_opener(req)
+
+    def get_train_screen(self, village_id):
+        url = 'http://{host}/game.php?village={id}&screen=train'.format(host=self.host, id=village_id)
+        self.referer = 'http://{host}/game.php?village={id}&screen=overview'.format(host=self.host, id=village_id)
+        headers = self.get_default_headers()
+        self.replace_global_id(headers, village_id)
         req = Request(url, headers=headers)
         return self.safe_opener(req)
 
     def get_rally_overview(self, village_id):
         url = 'http://{host}/game.php?village={id}&screen=place'.format(host=self.host, id=village_id)
-        self.referer = url
+        self.referer = 'http://{host}/game.php?village={id}&screen=overview'.format(host=self.host, id=village_id)
         headers = self.get_default_headers()
+        self.replace_global_id(headers, village_id)
         req = Request(url, headers=headers)
         return self.safe_opener(req)
 
@@ -90,6 +107,7 @@ class RequestManager:
         url = 'http://{host}/game.php?village={id}&try=confirm&screen=place'.format(host=self.host, id=village_id)
         self.referer = 'http://{host}/game.php?village={id}&screen=place'.format(host=self.host, id=village_id)
         headers = self.get_default_headers()
+        self.replace_global_id(headers, village_id)
         headers['Content-Length'] = len(data)
         req = Request(url, headers=headers, data=data)
         return self.safe_opener(req)
@@ -99,8 +117,8 @@ class RequestManager:
                                                                                                 csrf=csrf)
         self.referer = 'http://{host}/game.php?village={id}&try=confirm&screen=place'.format(host=self.host, id=village_id)
         headers = self.get_default_headers()
+        self.replace_global_id(headers, village_id)
         headers['Content-Length'] = len(data)
-        headers['Origin'] = "http://{host}".format(host=self.host)
         req = Request(url, headers=headers, data=data)
         try:
             response = urlopen(req)
@@ -319,6 +337,11 @@ class RequestManager:
                            ('Referer', self.referer),
                            ('Cookie', self.cookies)]
         return dict(default_headers)
+
+    def replace_global_id(self, headers, villa_id):
+        cook = headers['Cookie']
+        cook = re.sub(r'global_village_id=\d{6}', 'global_village_id={id}'.format(id=villa_id), cook)
+        headers['Cookie'] = cook
 
     def set_cookies(self):
         """

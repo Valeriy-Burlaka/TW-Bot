@@ -8,6 +8,7 @@ from map_management import Village
 from attack_management import *
 from data_management import *
 from request_manager import DummyRequestManager
+from village_management import PlayerVillage
 
 
 #class TestAttackManagerInCycle(unittest.TestCase):
@@ -618,7 +619,70 @@ class TestVillage(unittest.TestCase):
         self.assertFalse(fresh_villa.finished_rest(rest))
         fresh_villa.last_visited = time.mktime(time.gmtime()) - (rest + 100)
         self.assertTrue(fresh_villa.finished_rest(rest))
-        
+
+
+class TestPlayerVillage(unittest.TestCase):
+
+    def setUp(self):
+        with open('test_html/village_overview_test_pv_initial.html') as f:
+            self.overview_html_init = f.read()
+        with open('test_html/village_overview_test_pv_updated.html') as f:
+            self.overview_html_updated = f.read()
+        with open('test_html/train_screen.html') as f:
+            self.train_html = f.read()
+
+    def test_initial_troops(self):
+        pv = PlayerVillage(127591, (211, 305), 'Test', self.train_html, False, 4)
+        correct_troops_to_use = ['axe', 'spy', 'light', 'marcher', 'heavy']
+        self.assertEqual(correct_troops_to_use, pv.troops_to_use)
+        self.assertEqual(pv.troops_count['axe'], 33)
+        self.assertEqual(pv.troops_count['spy'], 395)
+        self.assertEqual(pv.troops_count['light'], 9)
+        self.assertEqual(pv.troops_count['marcher'], 18)
+        self.assertEqual(pv.troops_count['heavy'], 129)
+        pv = PlayerVillage(127591, (211, 305), 'Test', self.train_html, True, 4)
+        correct_troops_to_use = ['spear', 'sword', 'archer', 'axe', 'spy', 'light', 'marcher', 'heavy']
+        self.assertEqual(correct_troops_to_use, pv.troops_to_use)
+        self.assertEqual(pv.troops_count['axe'], 33)
+        self.assertEqual(pv.troops_count['spy'], 395)
+        self.assertEqual(pv.troops_count['light'], 9)
+        self.assertEqual(pv.troops_count['marcher'], 18)
+        self.assertEqual(pv.troops_count['heavy'], 129)
+        self.assertEqual(pv.troops_count['spear'], 370)
+        self.assertEqual(pv.troops_count['sword'], 458)
+        self.assertEqual(pv.troops_count['archer'], 117)
+
+    def test_set_preferred_farm_radius(self):
+        pv = PlayerVillage(127591, (211, 305), 'Test', self.train_html, True, 4)
+        self.assertEqual(pv.radius, 21.87)
+        pv = PlayerVillage(127591, (211, 305), 'Test', self.train_html, False, 3)
+        self.assertEqual(pv.radius, 17.05)
+
+    def test_update_troops_count(self):
+        pv = PlayerVillage(127591, (211, 305), 'Test', self.train_html, True, 4)
+        with open('test_html/train_screen_update.html') as f:
+            train_html_updated = f.read()
+        pv.update_troops_count(train_screen_html=train_html_updated)
+        self.assertEqual(pv.troops_count['axe'], 95)
+        self.assertEqual(pv.troops_count['spy'], 393)
+        self.assertEqual(pv.troops_count['light'], 0)
+        self.assertEqual(pv.troops_count['marcher'], 36)
+        self.assertEqual(pv.troops_count['heavy'], 298)
+        self.assertEqual(pv.troops_count['spear'], 173)
+        self.assertEqual(pv.troops_count['sword'], 200)
+        self.assertEqual(pv.troops_count['archer'], 146)
+        troops_sent = {'spear': 100, 'axe': 95, 'heavy': 10, 'spy': 2}
+        pv.update_troops_count(troops_sent=troops_sent)
+        self.assertEqual(pv.troops_count['axe'], 0)
+        self.assertEqual(pv.troops_count['spy'], 391)
+        self.assertEqual(pv.troops_count['light'], 0)
+        self.assertEqual(pv.troops_count['marcher'], 36)
+        self.assertEqual(pv.troops_count['heavy'], 288)
+        self.assertEqual(pv.troops_count['spear'], 73)
+        self.assertEqual(pv.troops_count['sword'], 200)
+        self.assertEqual(pv.troops_count['archer'], 146)
+
+
 if __name__ == '__main__':
     unittest.main()
         

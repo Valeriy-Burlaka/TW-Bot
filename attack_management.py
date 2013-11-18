@@ -9,7 +9,7 @@ import shelve
 from urllib.parse import urlencode
 from threading import Thread
 from map_management import Map
-from village_management import VillageStateManager
+from village_management import VillageStateManager, Unit
 
 
 
@@ -33,7 +33,7 @@ class AttackManager(Thread):
     avoid simultaneous requests to Game server (and potential ban).
     """
 
-    def __init__(self, village_id, village_x, village_y, request_manager, report_builder, lock, **kwargs):
+    def __init__(self, village_id, village_x, village_y, request_manager, report_builder, lock, battle_units, **kwargs):
         Thread.__init__(self)
         self.id = village_id
         self.x = village_x
@@ -43,7 +43,7 @@ class AttackManager(Thread):
         self.lock = lock    # Shared instance of Bot's Lock()
         self.attack_queue = AttackQueue(self.x, self.y, self.request_manager, **kwargs)
         self.state_manager = VillageStateManager(self.request_manager, self.lock, self.id)
-        self.battle_units = ['Light cavalry', 'Axemen', 'Heavy cavalry', 'Scouts']    # Axemen
+        self.battle_units = battle_units
         self.troops_map = self.state_manager.get_troops_map(self.battle_units)   # {Unit: count, ...}
         self.confirmation_token = self.get_confirmation_token() # it's not changing even between browser's sessions
         self.new_battle_reports = 0
@@ -57,6 +57,7 @@ class AttackManager(Thread):
             self.attack_observer = AttackObserver(self)
             # get list of coordinates where attacks were sent in previous session (and not arrived yet)
             pending_arrival = self.attack_observer.arrival_queue.keys()
+            print(pending_arrival)
             self.attack_queue.build_queue(pending_arrival)
             print("Attack queue length upon init: ", len(self.attack_queue.queue))
             self.attack_observer.start()
@@ -306,6 +307,7 @@ class AttackQueue:
         """Builds queue from villages that are ready for farm
         and sorts it ascending by distance (nearest=first)"""
         # v_data = {'village': Village, 'distance':distance]
+        print('pending arrival in queue:', pending_arrival)
         queue = [villa for villa in self.villages.values() if self.is_ready_for_farm(villa)]
         if pending_arrival:
             queue = [villa for villa in queue if villa.coords not in pending_arrival]
@@ -426,21 +428,22 @@ class AttackQueue:
         ready_for_farm = {coords: villa for coords, villa in self.visited_villages.items() if self.is_ready_for_farm(villa)}
         if ready_for_farm:
             print("Time: {}, going to flush the next villages: {}".format(time.ctime(), ready_for_farm))
-            print('Queue length upon flushing: {}'.format(len(self.queue)))
-        for coords, villa in ready_for_farm.items():
-            self.queue.append(villa)
-            self.visited_villages.pop(coords)
+            print('Queue length before flushing: {}'.format(len(self.queue)))
+            for coords, villa in ready_for_farm.items():
+                self.queue.append(villa)
+                self.visited_villages.pop(coords)
 
-        self.queue = sorted(self.queue, key=lambda x: x.dist_from_base)
+            self.queue = sorted(self.queue, key=lambda x: x.dist_from_base)
+            print('Queue length after flushing: {}'.format(len(self.queue)))
 
     def update_villages_in_map(self):
         #print("Going to update next villages in map: ", self.villages)
         self.map.update_villages(self.villages)
 
     def init_units(self):
-        units = {'axe': Unit('axe', 18, 10),
-                 'light': Unit('light', 10, 80),
-                 'heavy': Unit('heavy', 11, 50)}
+        units = {'axe': Unit('axe', 40, 18, 10),
+                 'light': Unit('light', 130, 10, 80),
+                 'heavy': Unit('heavy', 150, 11, 50)}
         return units
 
 
@@ -531,17 +534,4 @@ class AttackObserver(Observer):
         self.return_queue.append(t_of_return)
 
 
-class Unit:
-    """Representation of TW unit.
-    """
 
-    def __init__(self, name, speed, haul):
-        self.name = name
-        self.speed = speed
-        self.haul = haul
-
-    def __str__(self):
-        return "Unit:=>{0}, speed:=>{1}, haul:=>{2}".format(self.name, self.speed, self.haul)
-
-    def __repr__(self):
-        return self.__str__()
