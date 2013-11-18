@@ -89,7 +89,7 @@ class AttackManager(Thread):
                     print("Attack sent at {time} to {coords}. Troops: {troops}".format(time=time.ctime(t_of_attack),
                                                                                         coords=coords, troops=troops))
 
-            time.sleep(random.random() * 6) # User looks for the next village and thinks about how much troops to send
+            time.sleep(random.random() * 10) # User looks for the next village and thinks about how much troops to send
         except AttributeError:
             info = traceback.format_exception(*sys.exc_info())
             with open('errors_log.txt', 'a') as f:

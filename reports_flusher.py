@@ -16,7 +16,7 @@ browser ='Chrome'
 user_path =r'C:\Users\Troll\Documents\exercises\TW\clonned_bot'
 user_name = 'Chebutroll'
 user_pswd = 'cjiy47H5MamVephlVddV'
-num_pages = 3
+num_pages = 4
 
 lock = Lock()
 request_manager = RequestManager(user_name, user_pswd, user_path, browser, host, main_id)

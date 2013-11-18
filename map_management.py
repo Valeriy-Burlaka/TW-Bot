@@ -4,6 +4,7 @@ import re
 import shelve
 import time
 import json
+import random
 from math import sqrt
 
 
@@ -102,7 +103,7 @@ class Map:
                 sector_corners = self.get_sector_corners(sector_coords)
                 print('corners: ', sector_corners)
                 for corner in sector_corners:
-                    time.sleep(0.3)
+                    time.sleep(random.random() * 10)
                     self.build_villages(*corner, depth=depth)
 
         with open('villages_upon_map_init.txt', 'w') as f:
