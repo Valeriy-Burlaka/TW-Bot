@@ -92,6 +92,7 @@ class Map:
                 sector_corners = self.get_sector_corners(sector_coords)
                 print('corners: ', sector_corners)
                 for corner in sector_corners:
+                    time.sleep(random.random() * 6)
                     self.build_villages(*corner, depth=depth)
 
         with open('villages_upon_map_init.txt', 'w') as f:

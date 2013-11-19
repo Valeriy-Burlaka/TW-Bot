@@ -2,6 +2,7 @@ __author__ = 'Troll'
 
 import re
 import time
+import random
 
 
 class ReportBuilder:
@@ -92,7 +93,7 @@ class ReportBuilder:
         coords = re.search(coords_ptrn, report)
         coords = (int(coords.group(1)), int(coords.group(2)))
         # Do not hit server too frequently
-        time.sleep(0.5)
+        time.sleep(random.random() * 5)
         self.lock.acquire()
         html_report = self.request_manager.get_report(url)
         self.lock.release()

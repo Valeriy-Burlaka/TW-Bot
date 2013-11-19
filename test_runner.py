@@ -31,6 +31,7 @@ try:
     attack_manager.start()
     time.sleep(18000)
     attack_manager.active = False
+
 except KeyboardInterrupt:
     attack_manager.active = False
     sys.exit()

@@ -94,7 +94,6 @@ class AttackManager(Thread):
             else:
                 print("Any of player's villages cannot attack, zzz...")
                 time.sleep(random.random() * 30)    # User waits a bit, probably something will change
-
         except AttributeError:
             info = traceback.format_exception(*sys.exc_info())
             with open('errors_log.txt', 'a') as f:
@@ -336,6 +335,7 @@ class AttackQueue:
             queue = {coords: villa for coords, villa in queue.items() if coords not in pending_arrival}
         self.queue = queue
 
+
     def is_ready_for_farm(self, village):
         return village.passes_threshold(self.threshold) or village.is_fresh_meat() or village.finished_rest(self.rest)
 
@@ -472,6 +472,7 @@ class AttackQueue:
     def update_villages_in_map(self):
         #print("Going to update next villages in map: ", self.villages)
         self.map.update_villages(self.villages)
+        self.map.update_villages(self.visited_villages)
 
     def evaluate_bot_sanity(self, unit_name, count, villa):
         """
