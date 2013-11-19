@@ -4,6 +4,7 @@ import re
 import shelve
 import time
 import json
+import random
 from math import sqrt
 
 
@@ -15,13 +16,12 @@ class Map:
     Responsible for storing and updating villages in a local shelve file.
     """
 
-    def __init__(self, x, y, request_manager, depth=2, mapfile='map'):
+    def __init__(self, base_x, base_y, request_manager, lock,  depth=2, mapfile='map'):
         self.request_manager = request_manager  # instance of RequestManager
+        self.lock = lock
         self.villages = {}  # Will be {(x,y): {'village': Village, 'distance': int}
         self.mapfile = mapfile
-        self.base_x = x
-        self.base_y = y
-        self.build_villages(x, y, depth)
+        self.build_villages(base_x, base_y, depth)
         self.get_saved_villages()
 
     def get_saved_villages(self):
@@ -33,8 +33,6 @@ class Map:
             still_valid = {}
             for coords, village in f['villages'].items():
                 if coords in self.villages: # Saved village remained Bonus/Barbarian
-                    distance = self.calculate_distance(coords)
-                    village.dist_from_base = distance
                     self.villages[coords] = village  #Update with saved data
                     still_valid[coords] = village
             f['villages'] = still_valid
@@ -57,60 +55,58 @@ class Map:
 
     def build_villages(self, x, y, depth):
         """Extracts village's data from sector data.
-        Constructs Villages and fills self.villages.
-        If depth > 1, requests sector's data & recursively repeats
-        Villages construction for sector's corners.
+        Constructs Village objects with villages data.
+        If depth > 1, requests sector's corners & recursively repeats
+        Villages construction using corners as new start point.
         """
         depth -= 1
         print(x, y, 'depth:', depth)
-        map_html = self.request_manager.get_map_overview(x, y)
+        map_html = self.get_map_overview(x, y)
         sectors = self.get_map_data(map_html)   # list of dicts, each dict represents 1 sector
         for sector in sectors:
             sector_x = sector['x']
             sector_y = sector['y']
             sector_coords = []  # hold coords of villages found, need to determine sector's corners
             sector_villages = sector['data']['villages']    # can be either list of dicts or dict of dicts
+            # Some fun below: there are cases, when game stores sector villages in different data types
             # index is x coordinate, value is a dict of villages which lie on a y axis for given x.
             if isinstance(sector_villages, list):
-                for x, y_axis in enumerate(sector_villages): # y_axis is a dict of villages
-                    for y, village_data in y_axis.items():
-                        if self.is_valid(village_data): # check if village is Bonus/Barbarian
-                            villa_x = sector_x + x
-                            villa_y = sector_y + int(y)
-                            villa_coords = (villa_x, villa_y)
-                            sector_coords.append(villa_coords)
-                            if not villa_coords in self.villages:
-                                distance_from_base = self.calculate_distance(villa_coords)
-                                village = self.get_village(villa_coords, village_data, distance_from_base)
-                                self.villages[villa_coords] = village
+                sector_gen = enumerate(sector_villages)
             # key is x coordinate, value is a dict of villages which lie on a y axis for given x.
             elif isinstance(sector_villages, dict):
-                for x, y_axis in sector_villages.items():
-                    x = int(x)
-                    for y, village_data in y_axis.items():
-                        if self.is_valid(village_data): # check if village is Bonus/Barbarian
-                            villa_x = sector_x + x
-                            villa_y = sector_y + int(y)
-                            villa_coords = (villa_x, villa_y)
-                            sector_coords.append(villa_coords)
-                            if not villa_coords in self.villages:
-                                distance_from_base = self.calculate_distance(villa_coords)
-                                village = self.get_village(villa_coords, village_data, distance_from_base)
-                                self.villages[villa_coords] = village
+                sector_gen = sector_villages.items()
+
+            for x, y_axis in sector_gen:
+                x = int(x)
+                for y, village_data in y_axis.items():
+                    if self.is_valid(village_data): # check if village is Bonus/Barbarian
+                        villa_x = sector_x + x
+                        villa_y = sector_y + int(y)
+                        villa_coords = (villa_x, villa_y)
+                        sector_coords.append(villa_coords)
+                        if not villa_coords in self.villages:
+                            village = self.get_village(villa_coords, village_data)
+                            self.villages[villa_coords] = village
 
             if depth:
                 sector_corners = self.get_sector_corners(sector_coords)
                 print('corners: ', sector_corners)
                 for corner in sector_corners:
-                    time.sleep(0.3)
                     self.build_villages(*corner, depth=depth)
 
         with open('villages_upon_map_init.txt', 'w') as f:
             f.write(str(self.villages))
 
+    def get_map_overview(self, x, y):
+        time.sleep(random.random() * 3)
+        self.lock.acquire()
+        html_data = self.request_manager.get_map_overview(x, y)
+        self.lock.release()
+        return html_data
+
     def get_sector_corners(self, sector_coords):
-        """Sorts given list of sector coords to determine
-        corner points.
+        """
+        Determines sector's corner points.
         Returns list of 4 points ( [(x=min,y=min), (x=max, y=max), etc.])
         """
         corners = []
@@ -129,7 +125,7 @@ class Map:
 
         return corners
 
-    def get_village(self, villa_coords, village_data, dist_from_base):
+    def get_village(self, villa_coords, village_data):
         """Constructs a Village obj from given data
         """
         id = int(village_data[0])
@@ -141,7 +137,6 @@ class Map:
         else:
             village = Village(villa_coords, id, population)
 
-        village.dist_from_base = dist_from_base
         return village
 
     def is_valid(self, village_data):
@@ -156,11 +151,11 @@ class Map:
         else:
             return
 
-    def calculate_distance(self, coords):
-        x = coords[0]
-        y = coords[1]
-        side_x = abs(self.base_x - x)
-        side_y = abs(self.base_y - y)
+    def calculate_distance(self, source_coords, target_coords):
+        x = target_coords[0]
+        y = target_coords[1]
+        side_x = abs(source_coords[0] - x)
+        side_y = abs(source_coords[1] - y)
         distance = sqrt(side_x**2 + side_y**2)
         return round(distance, 2)
 
@@ -172,9 +167,13 @@ class Map:
         res = json.loads(js_res)
         return res
 
-    def get_villages_in_range(self, distance):
-        in_range = {coords:villa for coords, villa in self.villages.items() if villa.dist_from_base <= distance}
-        return in_range
+    def get_targets_in_radius(self, radius, source_coords):
+        targets = []
+        for coords, villa in self.villages.items():
+            distance = self.calculate_distance(source_coords, coords)
+            if distance <= radius: targets.append((coords, distance))
+
+        return targets
 
 
 class Village:
@@ -191,7 +190,6 @@ class Village:
         self.mine_levels = None #list [wood, clay, iron], integers
         self.h_rates = None
         self.last_visited = None
-        self.dist_from_base = None
         self.remaining_capacity = 0
         self.looted = {"total": 0, "per_visit": []}
 
@@ -266,9 +264,9 @@ class Village:
         return rates
 
     def __str__(self):
-        return "(x,y):{0},dst:{1},rates:{2},visited:{3},looted:{4},remaining:{5}".format(self.coords, self.dist_from_base,
-                                                                                        self.h_rates,time.ctime(self.last_visited),
-                                                                                        self.looted['total'], self.remaining_capacity)
+        return "(x,y):{0},rates:{1},visited:{2},looted:{3},remaining:{4}".format(self.coords, self.h_rates,
+                                                                                 time.ctime(self.last_visited),
+                                                                                 self.looted['total'], self.remaining_capacity)
 
     def __repr__(self):
         return self.__str__()

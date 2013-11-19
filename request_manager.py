@@ -193,7 +193,7 @@ class RequestManager:
         t = time.gmtime()
         response = urlopen(captcha_url)
         img_bytes = response.read()
-        captcha_file = os.path.join(self.user_path, '{h}_{m}_{s}_test_human.png'.format(h=t[3],m=t[4],s=t[5]))
+        captcha_file = os.path.join(self.user_path, 'official_captchas', '{h}_{m}_{s}_test_human.png'.format(h=t[3],m=t[4],s=t[5]))
         with open(captcha_file, 'wb') as f:
             f.write(img_bytes)
 
@@ -205,9 +205,8 @@ class RequestManager:
         Does not return until user submits what she sees on the picture.
         """
         def submit():
-            submit = self.submit_captcha(entry.get())
-            if submit:
-                root.quit()
+            self.submit_captcha(entry.get())
+            root.destroy()
 
         root = tkinter.Tk()
         img = ImageTk.PhotoImage(file=captcha_file)
@@ -215,7 +214,7 @@ class RequestManager:
         label.pack()
         entry = tkinter.Entry(root)
         entry.pack()
-        btn = tkinter.Button(text='Submit captcha', command=submit)
+        btn = tkinter.Button(root, text='Submit captcha', command=submit)
         btn.pack()
         root.mainloop()
 
@@ -235,9 +234,8 @@ class RequestManager:
 
         req = Request(url, data=data, headers=headers)
         print(req.headers, req.data, req.full_url)
-        response = urlopen(req)
-        if response.getcode() == 200:
-            return True
+        urlopen(req)
+
 
     def expiration_check(self, html_data):
         """

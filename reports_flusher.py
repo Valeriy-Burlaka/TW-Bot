@@ -1,28 +1,31 @@
-__author__ = 'Troll'
-
-import time
-import sys
 import re
 from threading import Lock
 from request_manager import  RequestManager
-from attack_management import AttackManager, AttackObserver
+from village_management import VillageManager
+from attack_management import AttackManager
 from data_management import ReportBuilder, AttackReport
-
-village_x = 211
-village_y = 305
-main_id = 127591
-host ='en70.tribalwars.net'
-browser ='Chrome'
-user_path =r'C:\Users\Troll\Documents\exercises\TW\clonned_bot'
-user_name = 'Chebutroll'
-user_pswd = 'cjiy47H5MamVephlVddV'
-num_pages = 3
+from map_management import Map
 
 lock = Lock()
+base_x = 211
+base_y = 305
+main_id = 127591
+host = 'en70.tribalwars.net'
+browser = 'Chrome'
+user_path = r'C:\Users\Troll\Documents\exercises\TW\clonned_bot'
+user_name = 'Chebutroll'
+user_pswd = 'cjiy47H5MamVephlVddV'
+farm_with = (127591, 126583)
+t_limit = 4
+observer_file = 'test_observer_data'
+num_pages = 8
+
 request_manager = RequestManager(user_name, user_pswd, user_path, browser, host, main_id)
+village_manager = VillageManager(request_manager, lock, main_id, farm_with, t_limit_to_leave=t_limit)
 report_builder = ReportBuilder(request_manager, lock)
-am = AttackManager(main_id, village_x, village_y, request_manager, report_builder, lock, map_depth=2,
-    farm_radius=18, queue_depth=15, farm_frequency=4)
+map = Map(base_x, base_y, request_manager, lock, depth=3, mapfile='map')
+
+attack_manager = AttackManager(request_manager, lock, village_manager, report_builder, map, observer_file)
 
 
 def get_reports_from_table(reports_table):
@@ -51,15 +54,15 @@ for i in range(num_pages):
                 f.write(html_report)
 
 for coords, report in flushed_reports.items():
-    if coords in am.attack_queue.villages:
-        villa = am.attack_queue.villages[coords]
+    if coords in attack_manager.attack_queue.villages:
+        villa = attack_manager.attack_queue.villages[coords]
         print('Villa before update: ', villa)
         if not villa.last_visited or villa.last_visited < report.t_of_attack:
             villa.update_stats(report)
-            am.attack_queue.villages[coords] = villa
-            print('Villa after update: ', am.attack_queue.villages[coords])
+            attack_manager.attack_queue.villages[coords] = villa
+            print('Villa after update: ', attack_manager.attack_queue.villages[coords])
 
-am.attack_queue.update_villages_in_map()
+attack_manager.attack_queue.update_villages_in_map()
 
 
 

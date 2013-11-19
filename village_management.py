@@ -21,10 +21,12 @@ class VillageManager(Thread):
         self.request_manager = request_manager
         self.lock = lock
         self.main_id = main_id
-        self.player_villages = self.build_player_villages(use_def_to_farm, t_limit_to_leave)
-        self.farming_villages = self.get_farming_villages(farm_with)
+        self.farm_with = farm_with
+        self.player_villages = self.build_player_villages(use_def_to_farm)
+        self.t_limit = t_limit_to_leave
+        self.farming_villages = self.get_farming_villages()
 
-    def build_player_villages(self, use_def, t_limit_to_leave):
+    def build_player_villages(self, use_def):
         """
         Builds a mapping of PlayerVillage objects from 'overviews' screen
         """
@@ -36,7 +38,7 @@ class VillageManager(Thread):
             villa_id, villa_coords, villa_name = villa_data[0], villa_data[1], villa_data[2]
             time.sleep(random.random() * 3)
             html_data = self.get_train_screen(villa_id)
-            pv = PlayerVillage(villa_id, villa_coords, villa_name, html_data, use_def, t_limit_to_leave)
+            pv = PlayerVillage(villa_id, villa_coords, villa_name, html_data, use_def)
             player_villages[villa_id] = pv
 
         return player_villages
@@ -57,26 +59,41 @@ class VillageManager(Thread):
         return villages_data
 
     def get_next_attacking_village(self):
-        attackers = list(self.farming_villages.values())
-        next_attacker = random.choice(attackers)
-        attacker_id = next_attacker.id
-        attacker_coords = next_attacker.coords
-        attacker_troops = next_attacker.troops_count
-        return (attacker_id, attacker_coords, attacker_troops)
+        active_farming_villages = {v_id: v for v_id, v in self.farming_villages.items() if v.active}
+#        print("VM: active farmers: ", active_farming_villages)
+        if active_farming_villages:
+            attackers = list(active_farming_villages.values())
+            next_attacker = random.choice(attackers)
+            attacker_id = next_attacker.id
+            attacker_troops = next_attacker.get_troops_count()
+            return (attacker_id, attacker_troops)
+        else:
+            return
+
+    def disable_farming_village(self, villa_id):
+        self.player_villages[villa_id].active = False
 
     def update_troops_count(self, villa_id, troops_sent):
-        pv = self.farming_villages[villa_id]
+        pv = self.player_villages[villa_id]
         pv.update_troops_count(troops_sent=troops_sent)
+        self.player_villages[villa_id] = pv
 
     def refresh_village_troops(self, ids):
         for villa_id in ids:
+            time.sleep(random.random() * 3)
             train_screen_html = self.get_train_screen(villa_id)
-            pv = self.farming_villages[villa_id]
+            pv = self.player_villages[villa_id]
             pv.update_troops_count(train_screen_html=train_screen_html)
+            pv.active = True    # since some troops have returned, try to consider villa as attacker again.
+            self.player_villages[villa_id] = pv
 
-    def get_farming_villages(self, farm_with):
-        farm_villages = {villa_id: villa for villa_id, villa in self.player_villages.items() if villa_id in farm_with}
-        return farm_villages
+    def get_farming_villages(self):
+        farming_villages = {v_id: pv for v_id, pv in self.player_villages.items() if v_id in self.farm_with}
+        for pv in farming_villages.values():
+            pv.set_preferred_farm_radius(self.t_limit)
+            print("PV radius: ", pv.radius)
+
+        return farming_villages
 
     def get_train_screen(self, villa_id):
         self.lock.acquire()
@@ -103,17 +120,17 @@ class PlayerVillage:
     troops.
     """
 
-    def __init__(self, id, coords, name, train_screen_html, use_def, t_limit_to_leave, flag=None):
+    def __init__(self, id, coords, name, train_screen_html, use_def, flag=None):
         self.id = id
         self.coords = coords
         self.name = name
         self.flag = flag
         self.troops_to_use = self.get_troops_group(use_def)
         self.units = self.build_units()
-        self.troops_upon_init = self.get_troops_data(train_screen_html)
-        self.troops_count = self.get_troops_count(self.troops_upon_init)    # current troops in village
-        self.radius = self.set_preferred_farm_radius(t_limit_to_leave)
-
+        self.troops_data_on_init = self.get_troops_data(train_screen_html)
+        self.troops_count = {}
+        self.update_troops_count(train_screen_html=train_screen_html) # current troops in village
+        self.active = True
 
     def set_preferred_farm_radius(self, t):
         """
@@ -132,15 +149,20 @@ class PlayerVillage:
         slow units to a 'far lands'. Additionally, we will try to use slowest units
         first when choosing an attack target in AttackQueue.
         """
+        print(self.id, self.name)
+#        print("troops to use:", self.troops_to_use)
+#        print("troops count:", self.troops_count)
         total_troops_count = {}
         for unit_name in self.troops_to_use:
             if unit_name == 'spy': continue
-            if unit_name in self.troops_upon_init:
+            if unit_name in self.troops_data_on_init:
                 unit = self.units[unit_name]
-                count = int(self.troops_upon_init[unit_name]['all_count'])
+                count = int(self.troops_data_on_init[unit_name]['all_count'])
                 total_troops_count[unit] = count
 
+        print("total troops count", total_troops_count)
         total_looting_capacity = sum((unit.haul * count for unit, count in total_troops_count.items()))
+        print("total looting capacity", total_looting_capacity)
         capacity_by_speed = {}
         for unit, count in total_troops_count.items():
             if unit.speed in capacity_by_speed:
@@ -154,8 +176,8 @@ class PlayerVillage:
             speed_radius = speed * t
             speed_density = round(amount / total_looting_capacity, 3)
             radius += speed_radius * speed_density
-        radius = round(radius, 2)
-        return radius
+
+        self.radius = round(radius, 2)
 
     def build_units(self):
         return Unit.build_units()
@@ -163,10 +185,17 @@ class PlayerVillage:
     def update_troops_count(self, train_screen_html=None, troops_sent=None):
         if train_screen_html:
             troops_data = self.get_troops_data(train_screen_html)
-            self.troops_count = self.get_troops_count(troops_data)
+            troops_count = {}
+            for unit_name in self.troops_to_use:
+                if unit_name in troops_data:
+                    count = int(troops_data[unit_name]['available'])
+                    troops_count[unit_name] = count
+
+            self.troops_count = troops_count
         if troops_sent:
-            for name, count in troops_sent.items():
-                self.troops_count[name] -= count
+            if self.troops_count:
+                for name, count in troops_sent.items():
+                    self.troops_count[name] -= count
 
     def get_troops_data(self, html_data):
         """
@@ -178,31 +207,22 @@ class PlayerVillage:
         troops_data = json.loads(match.group(1))
         return troops_data
 
-    def get_troops_map(self):
-        """
-        Builds list of dicts {Unit: count} from self.troops_count.
-        List is used to retain troops order for AttackQueue (from slow to fast)
-        """
-        troops_map = []
-        for unit_name in self.troops_to_use:
-            unit_count = self.troops_count[unit_name]
-            unit = self.units[unit_name]
-            troops_map.append({unit: unit_count})
+#    def get_troops_map(self):
+#        """
+#        Builds list of dicts {Unit: count} from self.troops_count.
+#        List is used to retain troops order for AttackQueue (from slow to fast)
+#        """
+#        troops_map = []
+#        for unit_name in self.troops_to_use:
+#            if unit_name in self.troops_count:
+#                unit_count = self.troops_count[unit_name]
+#                unit = self.units[unit_name]
+#                troops_map.append({unit: unit_count})
+#
+#        return troops_map
 
-        return troops_map
-
-    def get_troops_count(self, troops_data):
-        """
-        Returns information about current troops in village.
-        Return type is a dict {unit_name: count, ...}
-        """
-        troops_count = {}
-        for unit_name in self.troops_to_use:
-            if unit_name in troops_data:
-                count = int(troops_data[unit_name]['available'])
-                troops_count[unit_name] = count
-
-        return troops_count
+    def get_troops_count(self):
+        return self.troops_count
 
     def get_troops_group(self, use_def):
         if use_def:
@@ -212,8 +232,8 @@ class PlayerVillage:
         return troops_group
 
     def __str__(self):
-        str_villa = "PlayerVillage: id: {id}, coords: {coords}, name: {name}, farm_radius: {radius},\n current_troops: {troops}"
-        return str_villa.format(id=self.id, coords=self.coords, name=self.name, radius=self.radius, troops=self.troops_count)
+        str_villa = "PlayerVillage: id: {id}, coords: {coords}, name: {name},\n current_troops: {troops}"
+        return str_villa.format(id=self.id, coords=self.coords, name=self.name, troops=self.troops_count)
 
     def __repr__(self):
         return self.__str__()

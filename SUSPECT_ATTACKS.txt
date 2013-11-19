@@ -1,0 +1,43 @@
+Suspect attack registered at: Tue Nov 19 12:26:32 2013Attack was sent to (214, 307) with troops ('heavy', 4))Attack target: coords: (214, 307), remaining capacity: 0 
+
+                                  H-rates: [100, 117, 74], Last visited: Tue Nov 19 10:15:31 2013, population: 166 
+
+                                  Fresh?: False, Rested?: False, Passes thresh?: False
+
+                                Suspect attack registered at: Tue Nov 19 12:26:54 2013Attack was sent to (209, 311) with troops ('heavy', 5))Attack target: coords: (209, 311), remaining capacity: 3 
+
+                                  H-rates: [100, 86, 74], Last visited: Tue Nov 19 10:21:40 2013, population: 224 
+
+                                  Fresh?: False, Rested?: False, Passes thresh?: False
+
+                                Suspect attack registered at: Tue Nov 19 12:27:30 2013Attack was sent to (207, 305) with troops ('light', 2))Attack target: coords: (207, 305), remaining capacity: 3 
+
+                                  H-rates: [100, 55, 64], Last visited: Tue Nov 19 10:20:02 2013, population: 116 
+
+                                  Fresh?: False, Rested?: False, Passes thresh?: False
+
+                                Suspect attack registered at: Tue Nov 19 12:27:48 2013Attack was sent to (209, 302) with troops ('axe', 29))Attack target: coords: (209, 302), remaining capacity: 3 
+
+                                  H-rates: [55, 30, 136], Last visited: Tue Nov 19 10:15:22 2013, population: 200 
+
+                                  Fresh?: False, Rested?: False, Passes thresh?: False
+
+                                Suspect attack registered at: Tue Nov 19 12:28:15 2013Attack was sent to (214, 302) with troops ('axe', 31))Attack target: coords: (214, 302), remaining capacity: 9 
+
+                                  H-rates: [74, 74, 74], Last visited: Tue Nov 19 10:23:25 2013, population: 96 
+
+                                  Fresh?: False, Rested?: False, Passes thresh?: False
+
+                                Suspect attack registered at: Tue Nov 19 12:31:59 2013Attack was sent to (215, 300) with troops ('heavy', 3))Attack target: coords: (215, 300), remaining capacity: 0 
+
+                                  H-rates: [5, 5, 5], Last visited: Tue Nov 19 01:49:59 2013, population: 26 
+
+                                  Fresh?: False, Rested?: True, Passes thresh?: False
+
+                                Suspect attack registered at: Tue Nov 19 12:32:34 2013Attack was sent to (206, 310) with troops ('light', 6))Attack target: coords: (206, 310), remaining capacity: 0 
+
+                                  H-rates: [41, 30, 47], Last visited: Tue Nov 19 07:21:53 2013, population: 91 
+
+                                  Fresh?: False, Rested?: True, Passes thresh?: False
+
+                                
