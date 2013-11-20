@@ -337,7 +337,14 @@ class AttackQueue:
 
 
     def is_ready_for_farm(self, village):
-        return village.passes_threshold(self.threshold) or village.is_fresh_meat() or village.finished_rest(self.rest)
+        if village.passes_threshold(self.threshold):
+            return True
+        elif village.is_fresh_meat():
+            return True
+        elif village.finished_rest(self.rest):
+            return True
+        else:
+            return False
 
     def get_next_attack_target(self, attacker):
         """Decides if a given attacker (PlayerVillage) can attack any target
