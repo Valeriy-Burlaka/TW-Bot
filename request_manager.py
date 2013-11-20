@@ -10,30 +10,28 @@ import struct
 import tkinter
 import traceback
 from PIL import ImageTk
-from urllib.request import Request
-from urllib.request import urlopen
-from urllib.request import build_opener
-from urllib.request import HTTPCookieProcessor
-from http.cookiejar import CookieJar
+from urllib.request import Request, urlopen
+from urllib.request import build_opener, HTTPCookieProcessor
 from urllib.parse import urlencode
-from urllib.error import  HTTPError
+from urllib.error import  HTTPError, URLError
+from http.cookiejar import CookieJar
 
 
 class RequestManager:
     """
     Component responsible for sending requests to TribalWars server.
     Upon init, copies browser's (currently Chrome only) cookies (sqlite file)
-    and extracts mandatory Game cookies from there ('sid', 'cid', 'mobile', 'global_vilage_id')
-    Class should be further re-worked to accept 'global_village_id' dynamically (to
-    allow sending requests from 'different' villages.) & possibly to automate
-    login procedure.
+    and extracts mandatory Game cookies from there ('sid' & 'cid' tokens).
 
-    The trickiest part is that almost each response should be checked
-    for "<h2>Bot protection</h2>": this means we faced CAPTCHA.
+    Checks each response data for the next things:
+    1. "<h2>Bot protection</h2>" element: this means we faced CAPTCHA.
     If so, we attempt to download CAPTCHA image and create GUI blocking
-    window (until we do not return control, caller Thread will not release Lock() &
+    window (until we do not return control, caller Thread will not release Lock() and
     no additional calls will be made to RequestManager). When user submits what she
     sees, we attempt to POST this value and unblock the caller.
+
+    2. "<h2>Session expired</h2>" element: this means that session has expired. We try to
+    re-connect to server, update self.ccokies and re-submit the last Request with new cookies.
     """
 
 
@@ -155,7 +153,14 @@ class RequestManager:
             info = traceback.format_exception(*sys.exc_info())
             with open('errors_log.txt', 'a') as f:
                 f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
-        except struct.error:    # strange rare and floating issue when unzipping some of TribalWars responses
+        except URLError:    # server is unreachable or actively refuses connection
+            info = traceback.format_exception(*sys.exc_info())
+            with open('errors_log.txt', 'a') as f:
+                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
+            time.sleep(30 + random.random() * 30)   # do not hit server in a predictable manner
+            # re-try to submit the latest Request
+            return self.safe_opener(request)
+        except struct.error:    # strange, rare and floating issue when unzipping some of TribalWars responses
             info = traceback.format_exception(*sys.exc_info())
             with open('errors_log.txt', 'a') as f:
                 f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
@@ -207,6 +212,9 @@ class RequestManager:
         def submit():
             self.submit_captcha(entry.get())
             root.destroy()
+
+        audio_file = os.path.join(self.user_path, 'notification.mp3')
+        os.startfile(audio_file)
 
         root = tkinter.Tk()
         img = ImageTk.PhotoImage(file=captcha_file)

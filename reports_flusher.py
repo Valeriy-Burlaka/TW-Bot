@@ -15,14 +15,10 @@ browser = 'Chrome'
 user_path = r'C:\Users\Troll\Documents\exercises\TW\clonned_bot'
 user_name = 'Chebutroll'
 user_pswd = 'cjiy47H5MamVephlVddV'
-<<<<<<< HEAD
 farm_with = (127591, 126583)
 t_limit = 4
 observer_file = 'test_observer_data'
 num_pages = 8
-=======
-num_pages = 4
->>>>>>> 73fab7763b650c4f53b6472155a12d4d6b196903
 
 request_manager = RequestManager(user_name, user_pswd, user_path, browser, host, main_id)
 village_manager = VillageManager(request_manager, lock, main_id, farm_with, t_limit_to_leave=t_limit)
