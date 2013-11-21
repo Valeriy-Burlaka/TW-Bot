@@ -265,9 +265,15 @@ class Village:
         return rates
 
     def __str__(self):
-        return "(x,y):{0},rates:{1},visited:{2},looted:{3},remaining:{4}".format(self.coords, self.h_rates,
-                                                                                 time.ctime(self.last_visited),
-                                                                                 self.looted['total'], self.remaining_capacity)
+        info = """
+               Village: coords: {coords}, remaining capacity: {remaining} \n
+               H-rates: {rates}, Last visited: {visited}, population: {pop} \n
+               Fresh?: {fresh}, Looted total: {total}\n
+               """.format(coords=self.coords, remaining=self.remaining_capacity,
+                          rates=self.h_rates, visited=time.ctime(self.last_visited),
+                          pop=self.population, fresh=self.is_fresh_meat(),
+                          total=self.looted['total'])
+        return info
 
     def __repr__(self):
         return self.__str__()
