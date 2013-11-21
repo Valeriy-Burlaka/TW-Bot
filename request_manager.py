@@ -3,13 +3,12 @@ import sys
 import re
 import random
 import time
+import base64
 import shutil
 import sqlite3
 import gzip
 import struct
-import tkinter
 import traceback
-from PIL import ImageTk
 from urllib.request import Request, urlopen
 from urllib.request import build_opener, HTTPCookieProcessor
 from urllib.parse import urlencode
@@ -35,7 +34,8 @@ class RequestManager:
     """
 
 
-    def __init__(self, user_name, user_pswd, user_path, browser, host, main_id):
+    def __init__(self, user_name, user_pswd, user_path, browser, host, main_id,
+                 captcha_api_key='bd676a60b996da118afcb2f12f3182e0'):
         self.main_id = str(main_id)
         self.browser = browser
         self.host = host
@@ -44,6 +44,7 @@ class RequestManager:
         self.referer = None
         self.user_name = user_name
         self.user_pswd = user_pswd
+        self.api_key = captcha_api_key
 
 
     def get_map_overview(self, x, y):
@@ -184,47 +185,52 @@ class RequestManager:
             if url_match:
                 captcha_url = 'http://{host}{match}'.format(host=self.host, match=url_match.group(1))
                 try:
-                    self.invoke_notification(captcha_url)
+                    self.handle_captcha(captcha_url)
                 except Exception as e:
                     print(e)
                     return
         return html_data
 
-    def invoke_notification(self, captcha_url):
-        """
-        Downloads captcha from given URL and saves it to local file.
-        Returns filename
-        """
-        t = time.gmtime()
+    def handle_captcha(self, captcha_url):
         response = urlopen(captcha_url)
         img_bytes = response.read()
-        captcha_file = os.path.join(self.user_path, 'official_captchas', '{h}_{m}_{s}_test_human.png'.format(h=t[3],m=t[4],s=t[5]))
-        with open(captcha_file, 'wb') as f:
-            f.write(img_bytes)
+        captcha_text = self.get_captcha_text(img_bytes)
+        if captcha_text:
+            self.submit_captcha(captcha_text)
+            with open('CAPTCHA_submissions_log.txt', 'a') as f:
+                f.write("Time: {time}: submitted CAPTCHA through Antigate, text: {text}".format(time=time.ctime(),
+                                                                                                text=captcha_text))
+            captcha_file = os.path.join(self.user_path, 'official_captchas', '{text}_test_human.png'.format(text=captcha_text))
+            with open(captcha_file, 'wb') as f:
+                f.write(img_bytes)
+        return
 
-        self.notify_user(captcha_file)
+    def get_captcha_text(self, img_bytes):
+        b64_img = base64.b64encode(img_bytes)
+        req_data = {'method': 'base64', 'key': self.api_key, 'body': b64_img,
+                    'numeric': '1', 'min_len': '6', 'max_len': '6'}
+        req_data = urlencode(req_data).encode()
+        req = Request('http://antigate.com/in.php', data=req_data)
+        response = urlopen(req)
+        resp_data = response.read().decode()    # response.read() = b'OK|captcha_ID'
+        captcha_id = resp_data.split('|')[1]
+        captcha_url = 'http://antigate.com/res.php?key={api_key}&action=get&id={cap_id}'.format(api_key=self.api_key,
+                                                                                                cap_id=captcha_id)
+        captcha_text = ""
+        time.sleep(10)  # average time of handling CAPTCHA on AntiGate service
+        while not captcha_text:
+            get_text_req = Request(captcha_url)
+            response = urlopen(get_text_req)
+            captcha_status = response.read().decode()
+            if captcha_status == 'CAPCHA_NOT_READY':    # It's not a typo (CAPCHA)
+                time.sleep(5)
+                continue
+            elif captcha_status.startswith('ERROR'):
+                raise Exception("Badly formed request to AntiGate service!")
+            elif captcha_status.startswith('OK'):
+                captcha_text = captcha_status.split('|')[1]
 
-    def notify_user(self, captcha_file):
-        """
-        Initializes GUI window with label=captcha image.
-        Does not return until user submits what she sees on the picture.
-        """
-        def submit():
-            self.submit_captcha(entry.get())
-            root.destroy()
-
-        audio_file = os.path.join(self.user_path, 'notification.mp3')
-        os.startfile(audio_file)
-
-        root = tkinter.Tk()
-        img = ImageTk.PhotoImage(file=captcha_file)
-        label = tkinter.Label(root, image=img)
-        label.pack()
-        entry = tkinter.Entry(root)
-        entry.pack()
-        btn = tkinter.Button(root, text='Submit captcha', command=submit)
-        btn.pack()
-        root.mainloop()
+        return captcha_text
 
     def submit_captcha(self, text):
         """
@@ -243,7 +249,6 @@ class RequestManager:
         req = Request(url, data=data, headers=headers)
         print(req.headers, req.data, req.full_url)
         urlopen(req)
-
 
     def expiration_check(self, html_data):
         """
@@ -409,7 +414,7 @@ class RequestManager:
         Test function which can be used with self.safe_opener to verify
         workability of notification process.
         Note: after submission, Game URLs of kind '/human.php?s=24ee69a57ec6&small'
-        contain no image, so PIL.ImageTk will raise 'NoImage' exception.
+        contain no image.
         To test, either replace URL in captcha_text to still valid CAPTCHA URL,
         or with any image URL (& adjust self.submit_captcha to not insert self.host in URL)
         """
