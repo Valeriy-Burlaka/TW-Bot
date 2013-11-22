@@ -411,81 +411,100 @@ class TestReportBuilder(unittest.TestCase):
         
         
 class TestAttackReport(unittest.TestCase):
-    """
-    Tests for bot's AttackReport class.
-    Uses hardcoded paths to HTML report files.
-    """
-    
-    def setUp(self):
-        with open(r'test_html/single_report_green.html') as f:
-            s_green_report = f.read()
-        with open(r'test_html/single_report_yellow.html') as f:
-            s_yellow_report = f.read()
-        self.green_report = AttackReport(s_green_report)
-        self.yellow_report = AttackReport(s_yellow_report)
 
-    def test_invalid_report(self):
-        with open(r'test_html/single_report_blue.html') as f:
-            s_recon_report = f.read()
-            recon_report = AttackReport(s_recon_report)
-            self.assertFalse(recon_report.is_valid_report)
-        with open(r'test_html/single_report_red.html') as f:
-            s_red_report = f.read()
-            red_report = AttackReport(s_red_report)
-            self.assertFalse(red_report.is_valid_report)
-        with open(r'test_html/single_report_support.html') as f:
-            s_support_report = f.read()
-            support_report = AttackReport(s_support_report)
-            self.assertFalse(support_report.is_valid_report)
+    def test_red_report(self):
+        with open('test_html/single_report_red.html') as f:
+            report_data = f.read()
+            rep = AttackReport(report_data)
 
-    def test_set_status(self):
-        self.assertEqual(self.green_report.status, 'green')
-        self.assertEqual(self.yellow_report.status, 'yellow')
-   
-    def test_set_t_of_attack(self):
-        # 'green' time: "Nov 03, 2013  14:01:57"
-        struct_t = time.struct_time((2013, 11, 3, 14, 1, 57, 0, 0, 0))
-        green_time = round(time.mktime(struct_t))
-        self.assertEqual(self.green_report.t_of_attack, green_time)
-        # 'yellow' time: "Nov 02, 2013  17:49:01"
-        struct_t = time.struct_time((2013, 11, 2, 17, 49, 1, 0, 0, 0))
-        yellow_time = round(time.mktime(struct_t))
-        self.assertEqual(self.yellow_report.t_of_attack, yellow_time)
-        
-    def test_set_mines_level(self):
-        green_levels = [9, 1, 2]
-        yellow_levels = [7, 4, 5]
-        self.assertEqual(self.green_report.mine_levels, green_levels)
-        self.assertEqual(self.yellow_report.mine_levels, yellow_levels) 
+        self.assertEqual(rep.status, 'red')
+        self.assertEqual(rep.coords, (220, 317))
+        self.assertEqual(rep.t_of_attack, 1383659164)
+        self.assertTrue(rep.defended)
+        self.assertIsNone(rep.mine_levels)
+        self.assertIsNone(rep.remaining_capacity)
+        self.assertIsNone(rep.looted_capacity)
+        self.assertIsNone(rep.wall_level)
+        self.assertIsNone(rep.storage_level)
+
+    def test_report_with_defence(self):
+        with open('test_html/yellow_report_w_defence.html') as f:
+            report_data = f.read()
+            rep = AttackReport(report_data)
+
+        self.assertEqual(rep.status, 'yellow')
+        self.assertEqual(rep.coords, (218, 310))
+        self.assertEqual(rep.t_of_attack, 1385013774)
+        self.assertTrue(rep.defended)
+        self.assertEqual(rep.mine_levels, [11, 15, 10])
+        self.assertEqual(rep.remaining_capacity, 450)
+        self.assertEqual(rep.looted_capacity, 2800)
+        self.assertEqual(rep.wall_level, 0)
+        self.assertEqual(rep.storage_level, 5)
+
+    def test_report_without_scouts(self):
+        with open('test_html/green_report_wo_scouts.html') as f:
+            report_data = f.read()
+            rep = AttackReport(report_data)
+
+        self.assertEqual(rep.status, 'green')
+        self.assertEqual(rep.coords, (212, 297))
+        self.assertEqual(rep.t_of_attack, 1384888276)
+        self.assertFalse(rep.defended)
+        self.assertEqual(rep.mine_levels, [0, 0, 0])
+        self.assertEqual(rep.remaining_capacity, 0)
+        self.assertEqual(rep.looted_capacity, 71)
+        self.assertEqual(rep.wall_level, 0)
+        self.assertIsNone(rep.storage_level)
+
+    def test_scout_report(self):
+        with open('test_html/single_report_blue.html') as f:
+            report_data = f.read()
+            rep = AttackReport(report_data)
+
+        self.assertEqual(rep.status, 'blue')
+        self.assertEqual(rep.coords, (215, 301))
+        self.assertEqual(rep.t_of_attack, 1383454750)
+        self.assertFalse(rep.defended)
+        self.assertEqual(rep.mine_levels, [11, 11, 9])
+        self.assertEqual(rep.remaining_capacity, 2361)
+        self.assertEqual(rep.looted_capacity, 0)
+        self.assertEqual(rep.wall_level, 0)
+        self.assertEqual(rep.storage_level, 8)
     
-    def test_set_capacity(self):
-        green_loot = 2400
-        green_left = 1686
-        yellow_loot = 3120
-        yellow_left = 1656
-        self.assertEqual(self.green_report.looted_capacity, green_loot)
-        self.assertEqual(self.green_report.remaining_capacity, green_left)
-        self.assertEqual(self.yellow_report.looted_capacity, yellow_loot)
-        self.assertEqual(self.yellow_report.remaining_capacity, yellow_left)
+    def test_red_with_scouts_report(self):
+        with open('test_html/red_blue_html_report.html') as f:
+            report_data = f.read()
+            rep = AttackReport(report_data)
+
+        self.assertEqual(rep.status, 'red_blue')
+        self.assertEqual(rep.coords, (217, 311))
+        self.assertEqual(rep.t_of_attack, 1385015263)
+        self.assertTrue(rep.defended)
+        self.assertEqual(rep.mine_levels, [11, 15, 7])
+        self.assertEqual(rep.remaining_capacity, 4240)
+        self.assertEqual(rep.looted_capacity, 0)
+        self.assertEqual(rep.wall_level, 1)
+        self.assertEqual(rep.storage_level, 11)
     
-    def test_integration_w_village(self):
-        villa = Village((200, 300), 10000, 100)
-        villa.update_stats(self.green_report)
-        self.assertEqual(self.green_report.mine_levels, villa.mine_levels)
-        self.assertEqual(self.green_report.t_of_attack, villa.last_visited)
-        self.assertEqual(self.green_report.remaining_capacity, villa.remaining_capacity)
-        self.assertEqual(self.green_report.looted_capacity, villa.looted["total"])
-        self.assertEqual(self.green_report.t_of_attack, villa.looted["per_visit"][0][0])
-        self.assertEqual(self.green_report.looted_capacity, villa.looted["per_visit"][0][1])
-        
-        villa.update_stats(self.yellow_report)
-        self.assertEqual(self.yellow_report.mine_levels, villa.mine_levels)
-        self.assertEqual(self.yellow_report.t_of_attack, villa.last_visited)
-        self.assertEqual(self.yellow_report.remaining_capacity, villa.remaining_capacity)
-        total = self.green_report.looted_capacity + self.yellow_report.looted_capacity
-        self.assertEqual(total, villa.looted["total"])
-        self.assertEqual(self.yellow_report.t_of_attack, villa.looted["per_visit"][1][0])
-        self.assertEqual(self.yellow_report.looted_capacity, villa.looted["per_visit"][1][1])
+#    def test_integration_w_village(self):
+#        villa = Village((200, 300), 10000, 100)
+#        villa.update_stats(self.green_report)
+#        self.assertEqual(self.green_report.mine_levels, villa.mine_levels)
+#        self.assertEqual(self.green_report.t_of_attack, villa.last_visited)
+#        self.assertEqual(self.green_report.remaining_capacity, villa.remaining_capacity)
+#        self.assertEqual(self.green_report.looted_capacity, villa.looted["total"])
+#        self.assertEqual(self.green_report.t_of_attack, villa.looted["per_visit"][0][0])
+#        self.assertEqual(self.green_report.looted_capacity, villa.looted["per_visit"][0][1])
+#
+#        villa.update_stats(self.yellow_report)
+#        self.assertEqual(self.yellow_report.mine_levels, villa.mine_levels)
+#        self.assertEqual(self.yellow_report.t_of_attack, villa.last_visited)
+#        self.assertEqual(self.yellow_report.remaining_capacity, villa.remaining_capacity)
+#        total = self.green_report.looted_capacity + self.yellow_report.looted_capacity
+#        self.assertEqual(total, villa.looted["total"])
+#        self.assertEqual(self.yellow_report.t_of_attack, villa.looted["per_visit"][1][0])
+#        self.assertEqual(self.yellow_report.looted_capacity, villa.looted["per_visit"][1][1])
         
         
         

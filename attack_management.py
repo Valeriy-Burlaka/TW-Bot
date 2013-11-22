@@ -9,6 +9,7 @@ import shelve
 from urllib.parse import urlencode
 from threading import Thread
 from village_management import Unit
+from data_management import write_log_message
 
 
 class AttackManager(Thread):
@@ -31,7 +32,8 @@ class AttackManager(Thread):
     avoid simultaneous requests to Game server (and potential ban).
     """
 
-    def __init__(self, request_manager, lock, village_manager, report_builder, map, observer_file, **kwargs):
+    def __init__(self, request_manager, lock, village_manager, report_builder, map, observer_file,
+                 logfile, events_file, **kwargs):
         Thread.__init__(self)
         self.request_manager = request_manager  # Shared instance of RequestManager class
         self.village_manager = village_manager  # Shared instance of VillageManager class
@@ -39,8 +41,10 @@ class AttackManager(Thread):
         self.lock = lock    # Shared instance of Bot's Lock()
         self.map = map
         self.observer_file = observer_file
+        self.logfile = logfile
+        self.events_file = events_file
         self.attackers = self.get_attackers()
-        self.attack_queue = AttackQueue(self.attackers, self.map, **kwargs)
+        self.attack_queue = AttackQueue(self.attackers, self.map, self.events_file, **kwargs)
         self.new_battle_reports = 0
         self.some_troops_returned = False
         self.active = False
@@ -53,16 +57,16 @@ class AttackManager(Thread):
             # get list of coordinates where attacks were sent in previous session (and not arrived yet)
             pending_arrival = self.attack_observer.arrival_queue.keys()
             self.attack_queue.build_queue(pending_arrival)
-            print("Attack queue length upon init: ", len(self.attack_queue.queue))
+            write_log_message(self.events_file, "Attack_queue len on init: {}".format(len(self.attack_queue.queue)))
             self.attack_observer.start()
-            print("Started to loot barbarians at: ", time.ctime())
+            write_log_message(self.events_file, "Started to loot barbarians")
             while self.active:
                 self.cycle()
         finally:
             self.update_self_state()
             self.attack_queue.update_villages_in_map()
             self.attack_observer.save_registered_attacks()
-            print("Finished to loot barbarians at: ", time.ctime())
+            write_log_message(self.events_file, "Finished to loot barbarians")
             return
 
     def cycle(self):
@@ -83,33 +87,39 @@ class AttackManager(Thread):
                         self.update_troops_count(attacker_id, troops_sent)
                         t_of_arrival, t_of_return = self.calc_arrival_return(t_of_attack, t_on_road)
                         self.attack_observer.register_attack(attacker_id, coords, t_of_arrival, t_of_return)
-                        print("Attack sent at {time} from {source} to {coords}. Troops: {troops}".format(time=time.ctime(t_of_attack),
-                                                                                                        source=attacker_id,
-                                                                                                        coords=coords, troops=troops))
+                        event_msg = "Attack sent at: {time} from: {source} to: {coords}. Troops: {troops}".format(time=time.ctime(t_of_attack),
+                                                                                                                    source=attacker_id,
+                                                                                                                    coords=coords, troops=troops)
+                        print(event_msg)
+                        write_log_message(self.events_file, event_msg)
                 else: # given player village was not able to send attack
-                    print("Disabling player's village:", attacker_id)
+                    event_msg = "Disabling player's village: {id}".format(id=attacker_id)
+                    write_log_message(self.events_file, event_msg)
+                    print(event_msg)
                     self.village_manager.disable_farming_village(attacker_id)
 
                 time.sleep(random.random() * 12) # User looks for the next village and thinks about how much troops to send
             else:
-                print("Any of player's villages cannot attack, zzz...")
+                event_msg = "Any of player's villages cannot attack, zzz..."
+                write_log_message(self.events_file, event_msg)
+                print(event_msg)
                 time.sleep(random.random() * 30)    # User waits a bit, probably something will change
         except AttributeError:
-            info = traceback.format_exception(*sys.exc_info())
-            with open('errors_log.txt', 'a') as f:
-                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
+            error_info = traceback.format_exception(*sys.exc_info())
+            str_info = "Error information: {info}".format(info=error_info)
+            write_log_message(self.logfile, str_info)
         except TypeError:
-            info = traceback.format_exception(*sys.exc_info())
-            with open('errors_log.txt', 'a') as f:
-                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
+            error_info = traceback.format_exception(*sys.exc_info())
+            str_info = "Error information: {info}".format(info=error_info)
+            write_log_message(self.logfile, str_info)
         except BufferError:
-            info = traceback.format_exception(*sys.exc_info())
-            with open('errors_log.txt', 'a') as f:
-                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
+            error_info = traceback.format_exception(*sys.exc_info())
+            str_info = "Error information: {info}".format(info=error_info)
+            write_log_message(self.logfile, str_info)
         except Exception as e:
-            info = traceback.format_exception(*sys.exc_info())
-            with open('errors_log.txt', 'a') as f:
-                f.write("Unexpected exception: Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
+            error_info = traceback.format_exception(*sys.exc_info())
+            str_info = "Unexpected exception happened. Error information: {info}".format(info=error_info)
+            write_log_message(self.logfile, str_info)
             print(e)
 
     def get_attackers(self):
@@ -262,7 +272,9 @@ class AttackManager(Thread):
             self.attack_queue.update_villages(new_reports)
         if self.some_troops_returned:
             return_ids = self.some_troops_returned
-            print("There are returns to the next player's villages: ", return_ids)
+            event_msg = "There are returns to the next player's villages: {ids}".format(ids=return_ids)
+            print(event_msg)
+            write_log_message(self.events_file, event_msg)
             self.some_troops_returned = False
             self.village_manager.refresh_village_troops(return_ids)
 
@@ -293,9 +305,10 @@ class AttackQueue:
     Updates Map with villages.
     """
 
-    def __init__(self, attackers, map, farm_frequency=3, capacity_threshold=2400, insert_spy_in_attack=True):
+    def __init__(self, attackers, map, events_file, farm_frequency=3, capacity_threshold=2400, insert_spy_in_attack=True):
         self.attackers = attackers
         self.map = map
+        self.events_file = events_file
         self.targets_by_id = self.get_targets_in_radius()
         self.rest = farm_frequency*3600 # How long villages rest between attacks in seconds
         self.threshold = capacity_threshold # Do not send very few troops in attack
@@ -319,9 +332,13 @@ class AttackQueue:
             targets_in_radius = self.map.get_targets_in_radius(preferred_radius, attacker_coords)
             targets_in_radius = sorted(targets_in_radius, key=lambda x: x[1])
             targets_by_id[attacker_id] = targets_in_radius
-        print("AQ, targets by id: ", targets_by_id)
+        event_msg = "AttackQueue: targets by id: {}".format(targets_by_id)
+        print(event_msg)
+        write_log_message(self.events_file, event_msg)
         for attacker_id, targets in targets_by_id.items():
-            print("Attacker {id} has {count} villages in its farm radius".format(id=attacker_id, count=len(targets)))
+            event_msg = "Attacker {id} has {c} villages in its farm radius".format(id=attacker_id, c=len(targets))
+            print(event_msg)
+            write_log_message(self.events_file, event_msg)
         return targets_by_id
 
     def build_queue(self, pending_arrival=None):
@@ -329,7 +346,9 @@ class AttackQueue:
         Builds queue from villages that are ready for farm.
         Filters out villages, where troops were already sent and have not arrived yet.
         """
-        print('pending arrival in queue:', pending_arrival)
+        event_msg = "Targets Pending arrival: {}".format(pending_arrival)
+        print(event_msg)
+        write_log_message(self.events_file, event_msg)
         queue = {villa.coords: villa for villa in self.villages.values() if self.is_ready_for_farm(villa)}
         if pending_arrival:
             queue = {coords: villa for coords, villa in queue.items() if coords not in pending_arrival}
@@ -354,7 +373,9 @@ class AttackQueue:
         otherwise - None
         """
         if self.queue:
-            print("Considering attacker: ", attacker)
+            event_msg = "Considering attacker: {}".format(attacker)
+            print(event_msg)
+            write_log_message(self.events_file, event_msg)
             attacker_id = attacker[0]
             for attack_target in self.targets_by_id[attacker_id]:
                 target_coords = attack_target[0]
@@ -364,13 +385,16 @@ class AttackQueue:
                     attacker_troops = attacker[1]
                     check = self.is_attack_possible(target_villa, dst_to_target, attacker_troops)
                     if check:   # list [{troops_to_send}, t_on_road]
-                        print("Attacker passed check, attack will be sent to", target_coords)
+                        event_msg = "Attacker passed check, attack will be sent to {}".format(target_coords)
+                        print(event_msg)
+                        write_log_message(self.events_file, event_msg)
                         self.queue.pop(target_coords)
                         check.append(target_coords)
                         return check
             return
         else:
             print("Queue is empty:( Viva la new queue!")
+            write_log_message(self.events_file, "Queue is empty:( Viva la new queue!")
             self.build_queue()
         return
 
@@ -453,9 +477,13 @@ class AttackQueue:
         """
         for coords, report in new_reports.items():
             if coords in self.villages:
-                print("Villa before update: {}".format(self.villages[coords]))
+                event_msg = "Villa before update: {}".format(self.villages[coords])
+                print(event_msg)
+                write_log_message(self.events_file, event_msg)
                 self.villages[coords].update_stats(report)
-                print('Villa after update: {}'.format(self.villages[coords]))
+                event_msg = "Villa after update: {}".format(self.villages[coords])
+                print(event_msg)
+                write_log_message(self.events_file, event_msg)
                 # Avoid adding duplicate villages to visited due to user-sent attacks, etc.
                 if coords not in self.visited_villages:
                     self.visited_villages[coords] = self.villages[coords]
@@ -468,13 +496,19 @@ class AttackQueue:
         """
         ready_for_farm = {coords: villa for coords, villa in self.visited_villages.items() if self.is_ready_for_farm(villa)}
         if ready_for_farm:
-            print("Time: {}, going to flush the next villages: {}".format(time.ctime(), ready_for_farm))
-            print('Queue length before flushing: {}'.format(len(self.queue)))
+            event_msg = "Time: {}, going to flush the next villages: {}".format(time.ctime(), ready_for_farm)
+            print(event_msg)
+            write_log_message(self.events_file, event_msg)
+            event_msg = "Queue length before flushing: {}".format(len(self.queue))
+            print(event_msg)
+            write_log_message(self.events_file, event_msg)
             for coords in ready_for_farm:
                 self.queue[coords] = ready_for_farm[coords]
                 self.visited_villages.pop(coords)
 
-            print('Queue length after flushing: {}'.format(len(self.queue)))
+            event_msg = "Queue length after flushing: {}".format(len(self.queue))
+            print(event_msg)
+            write_log_message(self.events_file, event_msg)
 
     def update_villages_in_map(self):
         #print("Going to update next villages in map: ", self.villages)
@@ -496,24 +530,28 @@ class AttackQueue:
             if count <= 10 or count >= 480: bot_sane = False
 
         if not bot_sane:
-            print("WARNING!!! It seems that Bot is in addict!")
-            print("Check attack sent to {coords} (troops sent: {troops})".format(coords=villa.coords,
-                troops=(unit_name, count)))
+            event_msg = "WARNING!!! It seems that Bot is in addict!"
+            print(event_msg)
+            write_log_message(self.events_file, event_msg)
+            event_msg = "Check attack sent to {coords} (troops sent: {troops})".format(coords=villa.coords,
+                                                                                troops=(unit_name, count))
+            print(event_msg)
+            write_log_message(self.events_file, event_msg)
             if villa.last_visited:
                 last_visited = time.ctime(villa.last_visited)
             else: last_visited = None
-            with open('SUSPECT_ATTACKS.txt', 'a') as f:
-                village_info = """Attack target: coords: {coords}, remaining capacity: {remaining} \n
-                                  H-rates: {rates}, Last visited: {visited}, population: {pop} \n
-                                  Fresh?: {fresh}, Rested?: {rested}, Passes thresh?: {pass_thresh}\n
-                                """.format(coords=villa.coords, remaining=villa.remaining_capacity,
-                    rates=villa.h_rates, visited=last_visited, pop=villa.population,
-                    fresh=villa.is_fresh_meat(), rested=villa.finished_rest(self.rest),
-                    pass_thresh=villa.passes_threshold(self.threshold))
-                f.write("Suspect attack registered at: {time}".format(time=time.ctime()))
-                f.write("Attack was sent to {coords} with troops {troops})".format(coords=villa.coords,
-                    troops=(unit_name, count)))
-                f.write(village_info)
+            village_info =  """
+                            Attack target: coords: {coords}, remaining capacity: {remaining}
+                            H-rates: {rates}, Last visited: {visited}, population: {pop}
+                            Fresh?: {fresh}, Rested?: {rested}, Passes thresh?: {pass_thresh}
+                            """.format(coords=villa.coords, remaining=villa.remaining_capacity,
+                                        rates=villa.h_rates, visited=last_visited, pop=villa.population,
+                                        fresh=villa.is_fresh_meat(), rested=villa.finished_rest(self.rest),
+                                        pass_thresh=villa.passes_threshold(self.threshold))
+            write_log_message(self.events_file, "Suspect attack registered at: {time}".format(time=time.ctime()))
+            write_log_message(self.events_file, "Attack was sent to {coords} with troops {troops})".format(coords=villa.coords,
+                                                                                                            troops=(unit_name, count)))
+            write_log_message(self.events_file, village_info)
 
 
 class Observer(Thread):
@@ -564,7 +602,9 @@ class AttackObserver(Observer):
         f = shelve.open(self.data_file)
         if 'arrival_queue' in f:
             registered_arrivals = f['arrival_queue']
-            print('Got the next registered arrivals:', registered_arrivals)
+            event_msg = "Got the next registered arrivals: {}".format(registered_arrivals)
+            print(event_msg)
+            write_log_message(self.manager.events_file, event_msg)
             now = time.mktime(time.gmtime())
             arrived = {coords: t for coords, t in registered_arrivals.items() if t < now}
             if arrived:
@@ -572,7 +612,9 @@ class AttackObserver(Observer):
             self.arrival_queue = {coords: t for coords, t in registered_arrivals.items() if t > now}
         if 'return_queue' in f:
             registered_returns = f['return_queue']
-            print('Got the next saved returns:', registered_returns)
+            event_msg = "Got the next saved returns: {}".format(registered_returns)
+            print(event_msg)
+            write_log_message(self.manager.events_file, event_msg)
             now = time.mktime(time.gmtime())
             for attacker_id, returns_t in registered_returns.items():
                 pending_returns = [t for t in returns_t if t > now]

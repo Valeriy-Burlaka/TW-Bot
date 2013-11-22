@@ -14,6 +14,7 @@ from urllib.request import build_opener, HTTPCookieProcessor
 from urllib.parse import urlencode
 from urllib.error import  HTTPError, URLError
 from http.cookiejar import CookieJar
+from data_management import write_log_message
 
 
 class RequestManager:
@@ -34,18 +35,19 @@ class RequestManager:
     """
 
 
-    def __init__(self, user_name, user_pswd, user_path, browser, host, main_id,
+    def __init__(self, user_name, user_pswd, browser, host, main_id, run_path, logfile, events_file,
                  captcha_api_key='bd676a60b996da118afcb2f12f3182e0'):
-        self.main_id = str(main_id)
-        self.browser = browser
-        self.host = host
-        self.user_path = user_path
-        self.set_cookies()
-        self.referer = None
         self.user_name = user_name
         self.user_pswd = user_pswd
+        self.browser = browser
         self.api_key = captcha_api_key
-
+        self.host = host
+        self.main_id = str(main_id)
+        self.run_path = run_path
+        self.logfile = logfile
+        self.events_file = events_file
+        self.set_cookies()
+        self.referer = None
 
     def get_map_overview(self, x, y):
         url = 'http://{host}/game.php?village={id}&x={x}&y={y}&screen=map'.format(host=self.host,
@@ -151,22 +153,24 @@ class RequestManager:
 
             return response_data
         except HTTPError:
-            info = traceback.format_exception(*sys.exc_info())
-            with open('errors_log.txt', 'a') as f:
-                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
+            error_info = traceback.format_exception(*sys.exc_info())
+            str_info = "Error information: {info}".format(info=error_info)
+            write_log_message(self.logfile, str_info)
         except URLError:    # server is unreachable or actively refuses connection
-            info = traceback.format_exception(*sys.exc_info())
-            with open('errors_log.txt', 'a') as f:
-                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
+            error_info = traceback.format_exception(*sys.exc_info())
+            str_info = "Error information: {info}".format(info=error_info)
+            write_log_message(self.logfile, str_info)
             time.sleep(30 + random.random() * 30)   # do not hit server in a predictable manner
             # re-try to submit the latest Request
             return self.safe_opener(request)
-        except struct.error:    # strange, rare and floating issue when unzipping some of TribalWars responses
-            info = traceback.format_exception(*sys.exc_info())
-            with open('errors_log.txt', 'a') as f:
-                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
+        except struct.error:    # strange & rare issue when unzipping some of TribalWars responses
+            error_info = traceback.format_exception(*sys.exc_info())
+            str_info = "Error information: {info}".format(info=error_info)
+            write_log_message(self.logfile, str_info)
+
             t = time.gmtime()
-            with open('{h}_{m}_{s}_struct_error_data.txt'.format(h=t[3],m=t[4],s=t[5]), 'wb') as f:
+            f_corrupted = os.path.join(self.run_path, '{h}{m}{s}_struct_error_data.txt'.format(h=t[3],m=t[4],s=t[5]))
+            with open(f_corrupted, 'wb') as f:
                 f.write(data)
             return self.safe_opener(request)
 
@@ -179,8 +183,7 @@ class RequestManager:
         bot_ptrn = re.compile(r'<h2>Bot protection</h2>')
         match = re.search(bot_ptrn, html_data)
         if match:   # We have a problem
-            print("Faced CAPTCHA!")
-            os.startfile('notification.mp3')
+            write_log_message(self.events_file, "Faced Captcha")
             img_url_ptrn = re.compile(r"\$\('#bot_check_image'\)\.attr\('src', '([\w\W]+?)'\);")
             # Extract CAPTCHA URL. Note: it's changing on each subsequent request, do not render response page in browser!
             url_match = re.search(img_url_ptrn, html_data)
@@ -194,16 +197,17 @@ class RequestManager:
         return html_data
 
     def handle_captcha(self, captcha_url):
-        print("Handling CAPTCHA from the next URL: {url}".format(url=captcha_url))
+        event_msg = "Handling CAPTCHA from the next URL: {url}".format(url=captcha_url)
+        write_log_message(self.events_file, event_msg)
+
         response = urlopen(captcha_url)
         img_bytes = response.read()
         captcha_text = self.get_captcha_text(img_bytes)
 
         self.submit_captcha(captcha_text)
-        with open('CAPTCHA_submissions_log.txt', 'a') as f:
-            f.write("Time: {time}: submitted CAPTCHA through Antigate, text: {text}".format(time=time.ctime(),
-                                                                                            text=captcha_text))
-        captcha_file = os.path.join(self.user_path, 'official_captchas', '{text}_test_human.png'.format(text=captcha_text))
+        event_msg = "Submitted CAPTCHA through Antigate, text: {text}".format(text=captcha_text)
+        write_log_message(self.events_file, event_msg)
+        captcha_file = os.path.join(self.run_path, 'triggered_captchas', '{text}_test_human.png'.format(text=captcha_text))
         with open(captcha_file, 'wb') as f:
             f.write(img_bytes)
 
@@ -251,7 +255,8 @@ class RequestManager:
         url = "http://{host}/game.php".format(host=self.host)
 
         req = Request(url, data=data, headers=headers)
-        print(req.headers, req.data, req.full_url)
+        event_msg = str(req.headers) + str(req.data) + str(req.full_url)
+        write_log_message(self.events_file, event_msg)
         urlopen(req)
 
     def expiration_check(self, html_data):
@@ -262,7 +267,7 @@ class RequestManager:
         expiration_ptrn = re.compile('<h2>Session expired</h2>')
         match = re.search(expiration_ptrn, html_data)
         if match:
-            print("Session expired...Don't worry, masta!")
+            write_log_message(self.events_file, "Session expired...Don't worry, masta!")
             return True
 
     def login_to_server(self):
@@ -408,7 +413,7 @@ class RequestManager:
         """
         if self.browser == 'Chrome':
             chr_cookies = r'C:\Users\Troll\AppData\Local\Google\Chrome\User Data\Default\Cookies'
-        my_cookies_f = os.path.join(self.user_path, "cookies")
+        my_cookies_f = os.path.join(self.run_path, "cookies")
         shutil.copyfile(chr_cookies, my_cookies_f)
         return my_cookies_f
 
@@ -468,8 +473,9 @@ class DummyRequestManager:
             html_data = f.read()
         return html_data
 
-    def get_reports_page(self):
-        report_pages = ['report_page.html']
+    def get_reports_page(self, from_page=0):
+        report_pages = ['report_page.html', 'report_page_with_new_supports.html',
+                        'report_page2.html']
         report_page_file = random.choice(report_pages)
         report_page_path = os.path.join('test_html', report_page_file)
         with open(report_page_path) as f:
@@ -477,7 +483,15 @@ class DummyRequestManager:
         return html_data
 
     def get_report(self, url):
-        reports = ['single_report_green.html', 'single_report_yellow.html']
+        reports = ['single_report_yellow.html',
+                   'red_blue_html_report.html',
+                   'single_report_blue.html',
+                   'yellow_report_w_defence.html',
+                   'single_report_support.html',
+                   'float_report.html',
+                   'single_report_green.html',
+                   'green_report_wo_scouts.html',
+                   'single_report_red.html']
 
         report_file = random.choice(reports)
         report_path = os.path.join('test_html', report_file)

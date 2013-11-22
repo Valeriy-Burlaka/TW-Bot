@@ -5,6 +5,7 @@ import json
 import time
 import random
 from threading import Thread
+from data_management import write_log_message
 
 class VillageManager(Thread):
     """
@@ -15,13 +16,14 @@ class VillageManager(Thread):
     making decisions about resources usage.
     """
 
-    def __init__(self, request_manager, lock, main_id, farm_with,
+    def __init__(self, request_manager, lock, main_id, farm_with, events_file,
                  use_def_to_farm=False, t_limit_to_leave=4):
         Thread.__init__(self)
         self.request_manager = request_manager
         self.lock = lock
         self.main_id = main_id
         self.farm_with = farm_with
+        self.events_file = events_file
         self.player_villages = self.build_player_villages(use_def_to_farm)
         self.t_limit = t_limit_to_leave
         self.farming_villages = self.get_farming_villages()
@@ -91,7 +93,15 @@ class VillageManager(Thread):
         farming_villages = {v_id: pv for v_id, pv in self.player_villages.items() if v_id in self.farm_with}
         for pv in farming_villages.values():
             pv.set_preferred_farm_radius(self.t_limit)
-            print("PV radius: ", pv.radius)
+
+        for pv in farming_villages.values():
+            event_msg = """{pv}.
+                            Farm radius: {radius}.
+                            Total troops/looting capacity: {troops}/{loot}""".format(pv=pv, radius=pv.radius,
+                                                                                    troops=pv.total_troops_count,
+                                                                                    loot=pv.total_looting_capacity)
+            print(event_msg)
+            write_log_message(self.events_file, event_msg)
 
         return farming_villages
 
@@ -160,9 +170,9 @@ class PlayerVillage:
                 count = int(self.troops_data_on_init[unit_name]['all_count'])
                 total_troops_count[unit] = count
 
-        print("total troops count", total_troops_count)
+        self.total_troops_count = total_troops_count
         total_looting_capacity = sum((unit.haul * count for unit, count in total_troops_count.items()))
-        print("total looting capacity", total_looting_capacity)
+        self.total_looting_capacity = total_looting_capacity
         capacity_by_speed = {}
         for unit, count in total_troops_count.items():
             if unit.speed in capacity_by_speed:

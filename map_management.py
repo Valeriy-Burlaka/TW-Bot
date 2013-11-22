@@ -6,6 +6,7 @@ import time
 import json
 import random
 from math import sqrt
+from data_management import write_log_message
 
 
 class Map:
@@ -16,9 +17,11 @@ class Map:
     Responsible for storing and updating villages in a local shelve file.
     """
 
-    def __init__(self, base_x, base_y, request_manager, lock,  depth=2, mapfile='map'):
+    def __init__(self, base_x, base_y, request_manager, lock, run_path, events_file, depth=2, mapfile='map'):
         self.request_manager = request_manager  # instance of RequestManager
         self.lock = lock
+        self.run_path = run_path
+        self.events_file = events_file
         self.villages = {}  # Will be {(x,y): {'village': Village, 'distance': int}
         self.mapfile = mapfile
         self.build_villages(base_x, base_y, depth)
@@ -60,7 +63,8 @@ class Map:
         Villages construction using corners as new start point.
         """
         depth -= 1
-        print(x, y, 'depth:', depth)
+        event_msg = "Started to build villages from ({x},{y}) base point. Map depth={depth}".format(x=x,y=y,depth=depth)
+        write_log_message(self.events_file, event_msg)
         map_html = self.get_map_overview(x, y)
         sectors = self.get_map_data(map_html)   # list of dicts, each dict represents 1 sector
         for sector in sectors:
@@ -90,12 +94,13 @@ class Map:
 
             if depth:
                 sector_corners = self.get_sector_corners(sector_coords)
-                print('corners: ', sector_corners)
+                event_msg = "Calculated the next sector corners: {}".format(sector_corners)
+                write_log_message(self.events_file, event_msg)
                 for corner in sector_corners:
                     time.sleep(random.random() * 6)
                     self.build_villages(*corner, depth=depth)
 
-        with open('villages_upon_map_init.txt', 'w') as f:
+        with open("{run_path}/villages_upon_map_init.txt".format(run_path=self.run_path), 'w') as f:
             f.write(str(self.villages))
 
     def get_map_overview(self, x, y):

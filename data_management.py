@@ -1,9 +1,15 @@
 __author__ = 'Troll'
 
 import re
+import os
 import time
 import random
 
+def write_log_message(filename, message):
+    t_str = "{time}: ".format(time.ctime(time.mktime(time.gmtime())))
+    message = t_str + message + "\n"
+    with open(filename, 'a') as f:
+        f.write(message)
 
 class ReportBuilder:
     """
@@ -16,9 +22,11 @@ class ReportBuilder:
     attack reports, so using regular expressions instead.
     """
 
-    def __init__(self, request_manager, lock):
+    def __init__(self, request_manager, lock, run_path):
         self.request_manager = request_manager  # instance of RequestManager
         self.lock = lock    # shared instance of Bot's lock
+        self.report_path = os.path.join(run_path, "run_reports")
+        if not os.path.exists(self.report_path): os.mkdir(self.report_path)
 
     def get_new_reports(self, reports_count):
         """
@@ -28,7 +36,7 @@ class ReportBuilder:
         Returns mapping {(x, y): AttackReport, ..}, where (x,y) =
         coordinates of attacked village.
         """
-        new_reports = {}
+        new_reports = []
         # 12 reports per page. e.g.: if there 25 new reports, request 1, 2 & 3 report pages.
         pages = reports_count / 12 if reports_count%12 == 0 else (reports_count / 12) + 1
         # (+1) is a hardcoded sanity check: new reports may be shifted from page by trade reports, etc.
@@ -37,13 +45,22 @@ class ReportBuilder:
             reports_page = self.get_reports_page(page)
             battle_reports = self.get_reports_from_page(reports_page)
             for report_data in battle_reports:
-                html_report, coords = self.get_single_report(report_data)
+                html_report = self.get_single_report(report_data)
                 attack_report = AttackReport(html_report)
-                if attack_report.is_valid_report:
-                #print("Created valid report for: {}".format(coords))
-                    new_reports[coords] = attack_report
-                else:
-                    print("Invalid report on coords: {}".format(coords))
+                if not attack_report.status:    # skip non-battle reports
+                    continue
+                elif attack_report.status == 'red' or attack_report.status == 'red_blue':
+                    filename = "critical_report_{t}.html".format(t=attack_report.t_of_attack)
+                    filepath = os.path.join(self.report_path, filename)
+                    with open(filepath, 'w') as f:
+                        f.write(attack_report.data)
+                elif attack_report.status == 'yellow':
+                    filename = "warning_report_{t}.html".format(t=attack_report.t_of_attack)
+                    filepath = os.path.join(self.report_path, filename)
+                    with open(filepath, 'w') as f:
+                        f.write(attack_report.data)
+
+                new_reports.append(attack_report)
 
         return new_reports
 
@@ -63,41 +80,30 @@ class ReportBuilder:
 
     def get_reports_from_page(self, reports_page):
         """
-        Extracts single reports from report table and filters out
-        non-green/yellow reports (only green & yellow can contain info
-        about looted & remaining village capacity.
+        Extracts single reports from report table.
         Returns list which contains HTML chunks, each with URL for single report.
         """
         single_report_ptrn = re.compile(r'<input name="id_[\W\w]+?</tr>')
         reports_list = re.findall(single_report_ptrn, reports_page)
         reports_list = [x for x in reports_list if '(new)' in x]    # get reports marked as "new"
-        battle_reports = []
-        for report in reports_list: # filter out all support/recon/red reports
-            match = re.search(r'<img src[\W\w]+?(yellow)|(green)\.png', report)
-            if match:
-                battle_reports.append(report)
-
-        return battle_reports
+        return reports_list
 
     def get_single_report(self, report):
         """
         Extracts report URL from given HTML and requests
         single report page from server. Returns HTML page
-        of single attack report & coordinates of village that was attacked.
+        of single attack report.
         """
         href_ptrn = re.compile(r'<a href="([\W\w]+?)">')
-        coords_ptrn = re.compile(r'(\d{3})\|(\d{3})')
         url = re.search(href_ptrn, report)
         url = url.group(1)
         url = url.replace('&amp;', '&')
-        coords = re.search(coords_ptrn, report)
-        coords = (int(coords.group(1)), int(coords.group(2)))
         # Do not hit server too frequently
-        time.sleep(random.random() * 5)
+#        time.sleep(random.random() * 5)
         self.lock.acquire()
         html_report = self.request_manager.get_report(url)
         self.lock.release()
-        return html_report, coords
+        return html_report
 
 
 class AttackReport:
@@ -111,37 +117,73 @@ class AttackReport:
 
     def __init__(self, str_html):
         self.data = str_html
-        self.is_valid_report = True
+        self.status = None
+        self.coords = None
+        self.t_of_attack = None
+        self.defended = None
+        self.mine_levels = None
+        self.remaining_capacity = None
+        self.looted_capacity = None
+        self.storage_level = None
+        self.wall_level = None
         self.build_report()
 
     def build_report(self):
-        """
-        Invokes each method that sets field and checks
-        if self.is_valid_report is still True.
-        Returns if any of fields was not set (non-valid battle report)
-        """
-        field_setters = [self.set_status, self.set_t_of_attack,
-                         self.set_mines_level, self.set_capacities]
-        for setter in field_setters:
-            if self.is_valid_report:
+        # check if report has color status (green, blue, etc.). Otherwise we faced with non-battle report (supply/support)
+        self.set_attack_status()
+        if not self.status:
+            return
+        elif self.status == 'red':  # No troops returned. No information collected.
+            self.set_t_of_attack()
+            self.set_target_coordinates()
+            self.defended = True
+            return
+        else:
+            field_setters = [self.set_target_coordinates, self.set_t_of_attack, self.set_defence,
+                             self.set_mines_level, self.set_capacities, self.set_storage_level,
+                             self.set_wall_level]
+            for setter in field_setters:
                 setter()
-            else: return
 
-    def set_status(self):
-        match = re.search(r'/graphic/dots/(\w+).png', self.data)    # green, yellow
+    def set_attack_status(self):
+        status_ptrn = re.compile(r'/graphic/dots/([\W\w]+?)\.png')
+        match = re.search(status_ptrn, self.data)
         if match:
             self.status = match.group(1)
-        else: self.is_valid_report = False
+
+    def set_target_coordinates(self):
+        coords_ptrn = re.compile(r"attacks[\w\W]+?(\d{3})\|(\d{3})")
+        match = re.search(coords_ptrn, self.data)
+        # Didn't place NoneType check for match here:
+        # 1. We suppose all non-battle reports are filtered out
+        # 2. If Bot has flushed reports of kind "Bad guy attacks Player", player's
+        # coordinates will not be found in list of farmed villages & just skipped.
+        self.coords = (int(match.group(1)), int(match.group(2)))
 
     def set_t_of_attack(self):
         # "Nov 03, 2013  14:01:57"
         pattern = re.compile(r'(\w{3})\s(\d\d),\s(\d{4})\s\s(\d\d):(\d\d):(\d\d)')
         match = re.search(pattern, self.data)
-        if match:
-            str_t = match.group()
-            struct_t = time.strptime(str_t, "%b %d, %Y %H:%M:%S")
-            self.t_of_attack = round(time.mktime(struct_t))
-        else: self.is_valid_report = False
+        str_t = match.group()
+        struct_t = time.strptime(str_t, "%b %d, %Y %H:%M:%S")
+        self.t_of_attack = round(time.mktime(struct_t))
+
+    def set_defence(self):
+        """
+        Simplified way to determine if village is protected:
+        1. We extract chunk of HTML with table of defender's units.
+        2. If unit count == 0, it is stored in "class='unit-item hidden'"
+        3. There are 13 types of units, so if len of re.findall result != 13,
+        there is some defence and it's better to save this report for human evaluation.
+        """
+        defender_section_ptrn = re.compile(r'Defender[\W\w]+?Quantity([\W\w]+?)</tr>')
+        match = re.search(defender_section_ptrn, self.data)
+        defender_troops = match.group(1)
+        units = re.findall(r'unit-item hidden', defender_troops)
+        if len(units) == 13:
+            self.defended = False
+        else:
+            self.defended = True
 
     def set_mines_level(self):
         mines = ["Timber camp", "Clay pit", "Iron mine"]
@@ -181,11 +223,41 @@ class AttackReport:
 
             return i_amount
 
-        if scouted and looted:
+        if scouted:
             self.remaining_capacity = get_haul_amount(scouted.group())
+        else:   # Since we went to attack w/o scout, mark the village as completely looted.
+            self.remaining_capacity = 0
+        if looted:
             self.looted_capacity = get_haul_amount(looted.group())
+        else:   # It was a scout attack, nothing was looted
+            self.looted_capacity = 0
+
+    def set_storage_level(self):
+        storage_ptrn = re.compile(r"Warehouse\s<b>\WLevel\s(\d+)\W</b>")
+        match = re.search(storage_ptrn, self.data)
+        if match:
+            self.storage_level = match.group(1)
+
+    def set_wall_level(self):
+        wall_ptrn = re.compile(r"Wall\s<b>\WLevel\s(\d+)\W</b>")
+        match = re.search(wall_ptrn, self.data)
+        if match:
+            self.wall_level = match.group(1)
         else:
-            self.is_valid_report = False
-            return
+            self.wall_level = 0
+
+    def __str__(self):
+        str_report = """
+        AttackReport: status => {status}, coords => {coords}, attack time => {t},
+        defended? => {defence}, mines => {mines}, scouted => {remaining}, haul => {loot},
+        storage => {storage}, wall => {wall}
+        """.format(status=self.status, coords=self.coords, t=self.t_of_attack,
+                                defence=self.defended, mines=self.mine_levels, remaining=self.remaining_capacity,
+                               loot=self.looted_capacity, storage=self.storage_level, wall=self.wall_level)
+
+        return str_report
+
+    def __repr__(self):
+        return self.__str__()
 
 
