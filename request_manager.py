@@ -179,6 +179,8 @@ class RequestManager:
         bot_ptrn = re.compile(r'<h2>Bot protection</h2>')
         match = re.search(bot_ptrn, html_data)
         if match:   # We have a problem
+            print("Faced CAPTCHA!")
+            os.startfile('notification.mp3')
             img_url_ptrn = re.compile(r"\$\('#bot_check_image'\)\.attr\('src', '([\w\W]+?)'\);")
             # Extract CAPTCHA URL. Note: it's changing on each subsequent request, do not render response page in browser!
             url_match = re.search(img_url_ptrn, html_data)
@@ -192,17 +194,19 @@ class RequestManager:
         return html_data
 
     def handle_captcha(self, captcha_url):
+        print("Handling CAPTCHA from the next URL: {url}".format(url=captcha_url))
         response = urlopen(captcha_url)
         img_bytes = response.read()
         captcha_text = self.get_captcha_text(img_bytes)
-        if captcha_text:
-            self.submit_captcha(captcha_text)
-            with open('CAPTCHA_submissions_log.txt', 'a') as f:
-                f.write("Time: {time}: submitted CAPTCHA through Antigate, text: {text}".format(time=time.ctime(),
-                                                                                                text=captcha_text))
-            captcha_file = os.path.join(self.user_path, 'official_captchas', '{text}_test_human.png'.format(text=captcha_text))
-            with open(captcha_file, 'wb') as f:
-                f.write(img_bytes)
+
+        self.submit_captcha(captcha_text)
+        with open('CAPTCHA_submissions_log.txt', 'a') as f:
+            f.write("Time: {time}: submitted CAPTCHA through Antigate, text: {text}".format(time=time.ctime(),
+                                                                                            text=captcha_text))
+        captcha_file = os.path.join(self.user_path, 'official_captchas', '{text}_test_human.png'.format(text=captcha_text))
+        with open(captcha_file, 'wb') as f:
+            f.write(img_bytes)
+
         return
 
     def get_captcha_text(self, img_bytes):
