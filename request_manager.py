@@ -163,7 +163,15 @@ class RequestManager:
             time.sleep(30 + random.random() * 30)   # do not hit server in a predictable manner
             # re-try to submit the latest Request
             return self.safe_opener(request)
-        except struct.error:    # strange & rare issue when unzipping some of TribalWars responses
+        except ConnectionError: # ConnectionResetError
+            error_info = traceback.format_exception(*sys.exc_info())
+            str_info = "Error information: {info}".format(info=error_info)
+            write_log_message(self.logfile, str_info)
+            time.sleep(30 + random.random() * 30)
+            return self.safe_opener(request)
+        # strange & rare issue when unzipping some of TribalWars responses
+        # usually doesn't harm the whole process, but still searching dependencies.
+        except struct.error:
             error_info = traceback.format_exception(*sys.exc_info())
             str_info = "Error information: {info}".format(info=error_info)
             write_log_message(self.logfile, str_info)

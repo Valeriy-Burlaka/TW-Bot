@@ -56,6 +56,7 @@ class AttackManager(Thread):
             self.attack_observer = AttackObserver(self, data_file=self.observer_file)
             # get list of coordinates where attacks were sent in previous session (and not arrived yet)
             pending_arrival = self.attack_observer.arrival_queue.keys()
+            self.update_self_state()
             self.attack_queue.build_queue(pending_arrival)
             write_log_message(self.events_file, "Attack_queue len on init: {}".format(len(self.attack_queue.queue)))
             self.attack_observer.start()
@@ -118,9 +119,10 @@ class AttackManager(Thread):
             write_log_message(self.logfile, str_info)
         except Exception as e:
             error_info = traceback.format_exception(*sys.exc_info())
-            str_info = "Unexpected exception happened. Error information: {info}".format(info=error_info)
+            str_info = "Unexpected exception occurred. Error information: {info}".format(info=error_info)
             write_log_message(self.logfile, str_info)
             print(e)
+            sys.exit()
 
     def get_attackers(self):
         attackers = []
@@ -315,7 +317,9 @@ class AttackQueue:
         self.units = Unit.build_units()
         self.insert_spy = insert_spy_in_attack
         self.villages = self.map.villages
+        self.queue = {}
         self.visited_villages = {}
+        self.untrusted_villages = {}
 
     def get_targets_in_radius(self):
         """
@@ -341,27 +345,38 @@ class AttackQueue:
             write_log_message(self.events_file, event_msg)
         return targets_by_id
 
-    def build_queue(self, pending_arrival=None):
+    def build_queue(self, pending_arrival):
         """
         Builds queue from villages that are ready for farm.
         Filters out villages, where troops were already sent and have not arrived yet.
         """
         event_msg = "Targets Pending arrival: {}".format(pending_arrival)
-        print(event_msg)
         write_log_message(self.events_file, event_msg)
-        queue = {villa.coords: villa for villa in self.villages.values() if self.is_ready_for_farm(villa)}
-        if pending_arrival:
-            queue = {coords: villa for coords, villa in queue.items() if coords not in pending_arrival}
+        queue = {}
+        for coords, village in self.villages.items():
+            if coords not in pending_arrival and coords not in self.visited_villages:
+                if not village.last_visited:
+                    queue[coords] = village
+                elif village.last_visited:
+                    if self.is_ready_for_farm(village):
+                        queue[coords] = village
+                    else:
+                        # has record about last visit, but there no loot or it has not finished to rest.
+                        # We also can enter to this condition if Village is untrusted, but it is still
+                        # a visited Village, and it will not be placed to .attack_queue.
+                        self.visited_villages[coords] = village
+
         self.queue = queue
 
 
     def is_ready_for_farm(self, village):
-        if village.passes_threshold(self.threshold):
-            return True
-        elif village.is_fresh_meat():
-            return True
-        elif village.finished_rest(self.rest):
-            return True
+        if not village.coords in self.untrusted_villages:
+            if village.finished_rest(self.rest):
+                return True
+            elif village.has_valuable_loot(self.rest):
+                return True
+            else:
+                return False
         else:
             return False
 
@@ -393,9 +408,8 @@ class AttackQueue:
                         return check
             return
         else:
-            print("Queue is empty:( Viva la new queue!")
             write_log_message(self.events_file, "Queue is empty:( Viva la new queue!")
-            self.build_queue()
+            self.build_queue([])
         return
 
     def is_attack_possible(self, villa, dst_from_attacker, troops_count):
@@ -406,19 +420,15 @@ class AttackQueue:
         troops_map = self.get_troops_map(troops_count)
         for unit, count in troops_map:    # (Unit: count)
             time_on_road = self.get_time_on_the_road(dst_from_attacker, unit.speed)
-            if villa.is_fresh_meat():   # No info about last_visited & remaining_capacity
-                estimated_capacity = self.estimate_initial_capacity(villa)
-                units_needed = self.estimate_troops_needed(unit, estimated_capacity)
-            else:
-                t_of_arrival = self.estimate_arrival(time_on_road)
-                estimated_capacity = villa.estimate_capacity(t_of_arrival)
-                units_needed = self.estimate_troops_needed(unit, estimated_capacity)
+            t_of_arrival = self.estimate_arrival(time_on_road)
+            estimated_capacity = villa.estimate_capacity(t_of_arrival)
+            units_needed = self.estimate_troops_needed(unit, estimated_capacity)
             if units_needed <= count:
                 self.evaluate_bot_sanity(unit.name, units_needed, villa)
                 troops_to_send = {unit.name: units_needed}
                 if self.insert_spy:
-                    if 'spy' in troops_count and troops_count['spy'] >= 2:
-                        troops_to_send['spy'] = 2
+                    if 'spy' in troops_count and troops_count['spy'] >= 1:
+                        troops_to_send['spy'] = 1
                 return [troops_to_send, time_on_road]
 
         else: return
@@ -434,24 +444,6 @@ class AttackQueue:
             # sort from slow to fast (Unit.speed is a minutes-per-tile)
         troops_map = sorted(troops_map, key=lambda x: x[0].speed, reverse=True)
         return troops_map
-
-    def estimate_initial_capacity(self, villa):
-        """
-        Roughly estimates village capacity basing on its .population
-        """
-        pop = villa.population
-        if pop in range(1, 100):
-            return 1200
-        elif pop in range(100, 200):
-            return 2400
-        elif pop in range(200, 300):
-            return 3200
-        elif pop in range(300, 400):
-            return 4800
-        elif pop in range(400, 600):
-            return 6400
-        else:
-            return 8000
 
     def estimate_troops_needed(self, unit, estimated_capacity):
         return round(estimated_capacity/unit.haul)
@@ -475,18 +467,22 @@ class AttackQueue:
         Checks if some of visited villages can be placed in
         attack queue again (flush_visited_villages)
         """
-        for coords, report in new_reports.items():
+        for attack_report in new_reports:
+            coords = attack_report.coords
             if coords in self.villages:
-                event_msg = "Villa before update: {}".format(self.villages[coords])
-                print(event_msg)
-                write_log_message(self.events_file, event_msg)
-                self.villages[coords].update_stats(report)
-                event_msg = "Villa after update: {}".format(self.villages[coords])
-                print(event_msg)
-                write_log_message(self.events_file, event_msg)
-                # Avoid adding duplicate villages to visited due to user-sent attacks, etc.
-                if coords not in self.visited_villages:
-                    self.visited_villages[coords] = self.villages[coords]
+                village = self.villages[coords]
+                if not village.last_visited or village.last_visited < attack_report.t_of_attack:
+                    event_msg = "Villa before update: {}".format(self.villages[coords])
+                    write_log_message(self.events_file, event_msg)
+                    village.update_stats(attack_report)
+                    self.villages[coords] = village
+                    event_msg = "Villa after update: {}".format(self.villages[coords])
+                    write_log_message(self.events_file, event_msg)
+                    if attack_report.defended:
+                        self.untrusted_villages[coords] = village
+                    # Avoid adding duplicate villages to visited due to user-sent attacks, etc.
+                    if coords not in self.visited_villages:
+                        self.visited_villages[coords] = village
 
         self.flush_visited_villages()
 
@@ -496,22 +492,18 @@ class AttackQueue:
         """
         ready_for_farm = {coords: villa for coords, villa in self.visited_villages.items() if self.is_ready_for_farm(villa)}
         if ready_for_farm:
-            event_msg = "Time: {}, going to flush the next villages: {}".format(time.ctime(), ready_for_farm)
-            print(event_msg)
+            event_msg = "Going to flush the next villages: {}".format(ready_for_farm)
             write_log_message(self.events_file, event_msg)
             event_msg = "Queue length before flushing: {}".format(len(self.queue))
-            print(event_msg)
             write_log_message(self.events_file, event_msg)
-            for coords in ready_for_farm:
-                self.queue[coords] = ready_for_farm[coords]
+            for coords, village in ready_for_farm.items():
+                self.queue[coords] = village
                 self.visited_villages.pop(coords)
 
             event_msg = "Queue length after flushing: {}".format(len(self.queue))
-            print(event_msg)
             write_log_message(self.events_file, event_msg)
 
     def update_villages_in_map(self):
-        #print("Going to update next villages in map: ", self.villages)
         self.map.update_villages(self.villages)
         self.map.update_villages(self.visited_villages)
 
@@ -530,29 +522,9 @@ class AttackQueue:
             if count <= 10 or count >= 480: bot_sane = False
 
         if not bot_sane:
-            event_msg = "WARNING!!! It seems that Bot is in addict!"
-            print(event_msg)
-            write_log_message(self.events_file, event_msg)
-            event_msg = "Check attack sent to {coords} (troops sent: {troops})".format(coords=villa.coords,
-                                                                                troops=(unit_name, count))
-            print(event_msg)
-            write_log_message(self.events_file, event_msg)
-            if villa.last_visited:
-                last_visited = time.ctime(villa.last_visited)
-            else: last_visited = None
-            village_info =  """
-                            Attack target: coords: {coords}, remaining capacity: {remaining}
-                            H-rates: {rates}, Last visited: {visited}, population: {pop}
-                            Fresh?: {fresh}, Rested?: {rested}, Passes thresh?: {pass_thresh}
-                            """.format(coords=villa.coords, remaining=villa.remaining_capacity,
-                                        rates=villa.h_rates, visited=last_visited, pop=villa.population,
-                                        fresh=villa.is_fresh_meat(), rested=villa.finished_rest(self.rest),
-                                        pass_thresh=villa.passes_threshold(self.threshold))
-            write_log_message(self.events_file, "Suspect attack registered at: {time}".format(time=time.ctime()))
-            write_log_message(self.events_file, "Attack was sent to {coords} with troops {troops})".format(coords=villa.coords,
-                                                                                                            troops=(unit_name, count)))
-            write_log_message(self.events_file, village_info)
-
+            write_log_message(self.events_file, "Suspect Attack was sent to {coords} with troops {troops})".format(coords=villa.coords,                                                                                                            troops=(unit_name, count)))
+            write_log_message(self.events_file, str(villa))
+            print("WARNING: Suspect attack registered! See log message for details.")
 
 class Observer(Thread):
 

@@ -1,5 +1,6 @@
 import tkinter
 from PIL import ImageTk
+import sys
 
 
 
@@ -7,7 +8,8 @@ def submit():
     print(entry.get())
     root.destroy()
 
-captcha_file = '0_32_42_test_human.png'
+print(sys.path)
+captcha_file = 'test_human.png'
 root = tkinter.Tk()
 img = ImageTk.PhotoImage(file=captcha_file)
 label = tkinter.Label(root, image=img)

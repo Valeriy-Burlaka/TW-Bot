@@ -17,18 +17,18 @@ class VillageManager(Thread):
     """
 
     def __init__(self, request_manager, lock, main_id, farm_with, events_file,
-                 use_def_to_farm=False, t_limit_to_leave=4):
+                 use_def_to_farm=False, heavy_is_def=False, t_limit_to_leave=4):
         Thread.__init__(self)
         self.request_manager = request_manager
         self.lock = lock
         self.main_id = main_id
         self.farm_with = farm_with
         self.events_file = events_file
-        self.player_villages = self.build_player_villages(use_def_to_farm)
+        self.player_villages = self.build_player_villages(use_def_to_farm, heavy_is_def)
         self.t_limit = t_limit_to_leave
         self.farming_villages = self.get_farming_villages()
 
-    def build_player_villages(self, use_def):
+    def build_player_villages(self, use_def, heavy_is_def):
         """
         Builds a mapping of PlayerVillage objects from 'overviews' screen
         """
@@ -40,7 +40,7 @@ class VillageManager(Thread):
             villa_id, villa_coords, villa_name = villa_data[0], villa_data[1], villa_data[2]
             time.sleep(random.random() * 3)
             html_data = self.get_train_screen(villa_id)
-            pv = PlayerVillage(villa_id, villa_coords, villa_name, html_data, use_def)
+            pv = PlayerVillage(villa_id, villa_coords, villa_name, html_data, use_def, heavy_is_def)
             player_villages[villa_id] = pv
 
         return player_villages
@@ -130,12 +130,12 @@ class PlayerVillage:
     troops.
     """
 
-    def __init__(self, id, coords, name, train_screen_html, use_def, flag=None):
+    def __init__(self, id, coords, name, train_screen_html, use_def, heavy_is_def, flag=None):
         self.id = id
         self.coords = coords
         self.name = name
         self.flag = flag
-        self.troops_to_use = self.get_troops_group(use_def)
+        self.troops_to_use = self.get_troops_group(use_def, heavy_is_def)
         self.units = self.build_units()
         self.troops_data_on_init = self.get_troops_data(train_screen_html)
         self.troops_count = {}
@@ -184,8 +184,12 @@ class PlayerVillage:
         for speed, amount in capacity_by_speed.items():
             speed = round(60 / speed, 3)  # unit.speed = minutes per tile, so getting tiles-per-hour value here.
             speed_radius = speed * t
-            speed_density = round(amount / total_looting_capacity, 3)
-            radius += speed_radius * speed_density
+            try:
+                speed_density = round(amount / total_looting_capacity, 3)
+                radius += speed_radius * speed_density
+            except ZeroDivisionError:   # means that total looting capacity = 0
+                radius = 0
+                break
 
         self.radius = round(radius, 2)
 
@@ -217,28 +221,16 @@ class PlayerVillage:
         troops_data = json.loads(match.group(1))
         return troops_data
 
-#    def get_troops_map(self):
-#        """
-#        Builds list of dicts {Unit: count} from self.troops_count.
-#        List is used to retain troops order for AttackQueue (from slow to fast)
-#        """
-#        troops_map = []
-#        for unit_name in self.troops_to_use:
-#            if unit_name in self.troops_count:
-#                unit_count = self.troops_count[unit_name]
-#                unit = self.units[unit_name]
-#                troops_map.append({unit: unit_count})
-#
-#        return troops_map
-
     def get_troops_count(self):
         return self.troops_count
 
-    def get_troops_group(self, use_def):
+    def get_troops_group(self, use_def, heavy_is_def):
         if use_def:
             troops_group = ['spear', 'sword', 'archer', 'axe', 'spy', 'light', 'marcher', 'heavy']
         else:
             troops_group = ['axe', 'spy', 'light', 'marcher', 'heavy']
+            if heavy_is_def:
+                troops_group.remove('heavy')
         return troops_group
 
     def __str__(self):

@@ -6,7 +6,7 @@ import time
 import random
 
 def write_log_message(filename, message):
-    t_str = "{time}: ".format(time.ctime(time.mktime(time.gmtime())))
+    t_str = "{time}: ".format(time=time.ctime(time.mktime(time.gmtime())))
     message = t_str + message + "\n"
     with open(filename, 'a') as f:
         f.write(message)
@@ -85,7 +85,7 @@ class ReportBuilder:
         """
         single_report_ptrn = re.compile(r'<input name="id_[\W\w]+?</tr>')
         reports_list = re.findall(single_report_ptrn, reports_page)
-        reports_list = [x for x in reports_list if '(new)' in x]    # get reports marked as "new"
+#        reports_list = [x for x in reports_list if '(new)' in x]    # get reports marked as "new"
         return reports_list
 
     def get_single_report(self, report):
@@ -236,24 +236,26 @@ class AttackReport:
         storage_ptrn = re.compile(r"Warehouse\s<b>\WLevel\s(\d+)\W</b>")
         match = re.search(storage_ptrn, self.data)
         if match:
-            self.storage_level = match.group(1)
+            self.storage_level = int(match.group(1))
 
     def set_wall_level(self):
         wall_ptrn = re.compile(r"Wall\s<b>\WLevel\s(\d+)\W</b>")
         match = re.search(wall_ptrn, self.data)
         if match:
-            self.wall_level = match.group(1)
+            self.wall_level = int(match.group(1))
         else:
             self.wall_level = 0
 
     def __str__(self):
-        str_report = """
-        AttackReport: status => {status}, coords => {coords}, attack time => {t},
-        defended? => {defence}, mines => {mines}, scouted => {remaining}, haul => {loot},
-        storage => {storage}, wall => {wall}
-        """.format(status=self.status, coords=self.coords, t=self.t_of_attack,
-                                defence=self.defended, mines=self.mine_levels, remaining=self.remaining_capacity,
-                               loot=self.looted_capacity, storage=self.storage_level, wall=self.wall_level)
+        str_report = "AttackReport: \t\t  status => {status}, coords => {coords}, attack time => {t},\n\
+                      defended? => {defence}, mines => {mines}, scouted => {remaining}, haul => {loot},\n\
+                      storage => {storage}, wall => {wall}".format(status=self.status, coords=self.coords,
+                                                                   t=time.ctime(self.t_of_attack), defence=self.defended,
+                                                                   mines=self.mine_levels, remaining=self.remaining_capacity,
+                                                                   loot=self.looted_capacity, storage=self.storage_level,
+                                                                   wall=self.wall_level)
+
+
 
         return str_report
 

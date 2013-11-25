@@ -184,53 +184,23 @@ class Map:
 
 class Village:
     """
-    Represents a single village.
+    Represents a single Bonus/Barbarian village.
     'Lives' in Map.
     """
 
     def __init__(self, coords, id, population, bonus=None):
         self.id = id
         self.coords = coords    #tuple (x,y)
-        self.population = population
+        self.population = population    # int
         self.bonus = bonus  # str
         self.mine_levels = None #list [wood, clay, iron], integers
         self.h_rates = None
         self.last_visited = None
         self.remaining_capacity = 0
         self.looted = {"total": 0, "per_visit": []}
-
-    def set_h_rates(self):
-        """Sets a village resource production
-        h/rates basing on mines level & production bonus
-        """
-        rates = self.get_rates_table()
-        self.h_rates = [rates[x] for x in self.mine_levels]
-        if self.bonus:
-            if "all resource type" in self.bonus:
-                self.h_rates = [round(x * 1.3) for x in self.h_rates]
-            elif "wood" in self.bonus:
-                self.h_rates[0] *= 2
-            elif "clay" in self.bonus:
-                self.h_rates[1] *= 2
-            else:
-                self.h_rates[2] *= 2
-
-    def estimate_capacity(self, t_of_arrival):
-        """Estimates village capacity at the moment
-        when troops will arrive to it.
-        Returns int.
-        """
-        if self.last_visited:
-            t_to_arrival = t_of_arrival - self.last_visited
-        else:   # if no info about last_visit, count from now (GMT)
-            t_to_arrival = t_of_arrival - time.mktime(time.gmtime())
-
-        hours = t_to_arrival / 3600
-        estimated_capacity = sum(x * hours for x in self.h_rates)
-        if self.remaining_capacity:
-            estimated_capacity += self.remaining_capacity
-
-        return round(estimated_capacity)
+        self.defended = False
+        self.storage_limit = None
+        self.base_defence = None
 
     def update_stats(self, attack_report):
         """Updates self basing on information of
@@ -238,26 +208,107 @@ class Village:
         about haul looted, haul remaining, mine levels, etc.
         """
         self.last_visited = attack_report.t_of_attack
-        self.mine_levels = attack_report.mine_levels
-        self.set_h_rates()
-        self.remaining_capacity = attack_report.remaining_capacity
+        if attack_report.defended:
+            self.defended = True
+        if attack_report.mine_levels:
+            # A bit ugly assignment procedure, but it is needed to prevent refreshing
+            # of mine levels to 0-level when attacks are sent without scouts (AR will set levels to [0,0,0])
+            # No sane person would destroy mines in Barb villages, so they likely could not decrease their lvl.
+            new_levels = attack_report.mine_levels
+            if self.mine_levels:
+                for index, levels in enumerate(zip(self.mine_levels, new_levels)):
+                    old_level, new_level = levels[0], levels[1]
+                    if new_level > old_level: self.mine_levels[index] = new_level
+            else:
+                self.mine_levels = new_levels
+            self.set_h_rates()
+        if attack_report.remaining_capacity:
+            self.remaining_capacity = attack_report.remaining_capacity
+        if attack_report.storage_level:
+            self.set_storage_limit(attack_report.storage_level)
+        if attack_report.wall_level:
+            self.set_base_defence(attack_report.wall_level)
+        if attack_report.looted_capacity:
+            looted = attack_report.looted_capacity
+            if self.looted["total"]:
+                self.looted["total"] += looted
+            else: self.looted["total"] = looted
+            self.looted["per_visit"].append((self.last_visited, looted,))
 
-        looted = attack_report.looted_capacity
-        self.looted["total"] += looted
-        self.looted["per_visit"].append((self.last_visited, looted,))
 
-    def is_fresh_meat(self):
-        return not self.remaining_capacity and not self.last_visited
+    def set_h_rates(self):
+        """Sets a village resource production
+        h/rates basing on mines level & production bonus
+        """
+        if self.mine_levels:
+            rates = self.get_mine_rates()
+            self.h_rates = [rates[x] for x in self.mine_levels]
+            if self.bonus:
+                if "all resource type" in self.bonus:
+                    self.h_rates = [round(x * 1.3) for x in self.h_rates]
+                elif "wood" in self.bonus:
+                    self.h_rates[0] *= 2
+                elif "clay" in self.bonus:
+                    self.h_rates[1] *= 2
+                else:
+                    self.h_rates[2] *= 2
 
-    def passes_threshold(self, threshold):
-        return self.remaining_capacity > threshold
+    def set_storage_limit(self, storage_level):
+        self.storage_limit = self.get_storage_rates()[storage_level] * 3    # limit * 3 types of resources
+
+    def set_base_defence(self, wall_lvl):
+        self.base_defence = 20 + (wall_lvl * 50)
+
+    def estimate_capacity(self, t_of_arrival):
+        """Estimates village capacity at the moment
+        when troops will arrive to it.
+        """
+        if self.h_rates:
+            t_of_rest = t_of_arrival - self.last_visited
+            hours = t_of_rest / 3600
+            estimated_capacity = sum(x * hours for x in self.h_rates)
+            if self.remaining_capacity:
+                estimated_capacity += self.remaining_capacity
+            if self.storage_limit and estimated_capacity > self.storage_limit:
+                estimated_capacity = self.storage_limit
+        else:
+            estimated_capacity = self.get_default_capacity()
+
+        return round(estimated_capacity)
+
+    def has_valuable_loot(self, rest):
+        if self.h_rates and self.remaining_capacity:
+            # How many hours village has rested before our last visit:
+            rest /= 3600
+            if self.remaining_capacity / sum(self.h_rates) >= rest:
+                return True
+            else:
+                return False
 
     def finished_rest(self, rest):
         if self.last_visited:
             time_gmt = time.mktime(time.gmtime())
             return time_gmt - self.last_visited > rest
 
-    def get_rates_table(self):
+    def get_default_capacity(self):
+        """Roughly estimates village capacity basing on its .population
+        """
+        if self.population in range(1, 100):
+            return 1200
+        elif self.population in range(100, 200):
+            return 2400
+        elif self.population in range(200, 300):
+            return 3200
+        elif self.population in range(300, 400):
+            return 4800
+        elif self.population in range(400, 600):
+            return 6400
+        elif self.population in range(600, 800):
+            return 8000
+        else:
+            return 16000
+
+    def get_mine_rates(self):
         """returns list of h/rates based on info from game Help page.
         Index = mine_level, value = production hour rate.
         (http://help.tribalwars.net/wiki/Timber_camp)
@@ -269,15 +320,25 @@ class Village:
 
         return rates
 
+    def get_storage_rates(self):
+        rates = [500, 1000, 1229, 1512, 1859, 2285, 2810, 3454,
+                 4247, 5222, 6420, 7893, 9705, 11932, 14670, 18037,
+                 22177, 27266, 33523, 41217, 50675, 62305, 76604, 94184,
+                 115798, 142373, 175047, 215219, 264611, 325337, 400000]
+
+        return rates
+
+
     def __str__(self):
-        info = """
-               Village: coords: {coords}, remaining capacity: {remaining} \n
-               H-rates: {rates}, Last visited: {visited}, population: {pop} \n
-               Fresh?: {fresh}, Looted total: {total}\n
-               """.format(coords=self.coords, remaining=self.remaining_capacity,
-                          rates=self.h_rates, visited=time.ctime(self.last_visited),
-                          pop=self.population, fresh=self.is_fresh_meat(),
-                          total=self.looted['total'])
+        info = "Village: \t\tcoords => {coords}, visited => {visit}, \n\
+                remaining capacity => {remaining}, points => {pop}, h-rates => {rates},\n\
+                defended/base_defence? => {defended}/{base_def}, total loot => {total},\n\
+                last loot => {last}, storage => {stor} ".format(coords=self.coords, visit=time.ctime(self.last_visited),
+                                                                remaining=self.remaining_capacity,
+                                                                pop=self.population, rates=self.h_rates, stor=self.storage_limit,
+                                                                defended=self.defended, base_def=self.base_defence,
+                                                                total=self.looted['total'], last=self.looted['per_visit'][-1:])
+
         return info
 
     def __repr__(self):

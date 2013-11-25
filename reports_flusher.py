@@ -1,32 +1,41 @@
+import time
+import sys
+import os
 import re
 from threading import Lock
 from request_manager import  RequestManager
 from village_management import VillageManager
 from attack_management import AttackManager
-from data_management import ReportBuilder, AttackReport
+from data_management import ReportBuilder,AttackReport
 from map_management import Map
 
-lock = Lock()
+run_name = time.strftime("%d %b %H-%M-%S GMT", time.gmtime())
+run_path = os.path.join(sys.path[0], "bot_runs", run_name)
+if not os.path.exists(run_path):
+    os.makedirs(run_path)
+logfile = os.path.join(run_path, "errors_log.txt")
+events_file = os.path.join(run_path, "activity_log.txt")
+
+browser = 'Chrome'
+host = 'en70.tribalwars.net'
+user_name = 'Chebutroll'
+user_pswd = 'cjiy47H5MamVephlVddV'
 base_x = 211
 base_y = 305
 main_id = 127591
-host = 'en70.tribalwars.net'
-browser = 'Chrome'
-user_path = r'C:\Users\Troll\Documents\exercises\TW\clonned_bot'
-user_name = 'Chebutroll'
-user_pswd = 'cjiy47H5MamVephlVddV'
-farm_with = (127591, 126583)
+farm_with = (127591, 126583,)  #(127591, 126583)
 t_limit = 4
 observer_file = 'test_observer_data'
+
+
+lock = Lock()
+request_manager = RequestManager(user_name, user_pswd, browser, host, main_id, run_path, logfile, events_file)
+village_manager = VillageManager(request_manager, lock, main_id, farm_with, events_file, t_limit_to_leave=t_limit)
+report_builder = ReportBuilder(request_manager, lock, run_path)
+map = Map(base_x, base_y, request_manager, lock, run_path, events_file, depth=2, mapfile='new_map')
+attack_manager = AttackManager(request_manager, lock, village_manager, report_builder, map, observer_file, logfile, events_file)
+
 num_pages = 8
-
-request_manager = RequestManager(user_name, user_pswd, user_path, browser, host, main_id)
-village_manager = VillageManager(request_manager, lock, main_id, farm_with, t_limit_to_leave=t_limit)
-report_builder = ReportBuilder(request_manager, lock)
-map = Map(base_x, base_y, request_manager, lock, depth=3, mapfile='map')
-
-attack_manager = AttackManager(request_manager, lock, village_manager, report_builder, map, observer_file)
-
 
 def get_reports_from_table(reports_table):
     single_report_ptrn = re.compile(r'<input name="id_[\W\w]+?</tr>')
@@ -40,20 +49,18 @@ def get_reports_from_table(reports_table):
 
     return battle_reports
 
-flushed_reports = {}
+flushed_reports = []
 for i in range(num_pages):
     report_page = request_manager.get_reports_page(from_page=i*12)
     battle_reports = get_reports_from_table(report_page)
     for report in battle_reports:
-        html_report, coordinates = report_builder.get_single_report(report)
+        html_report = report_builder.get_single_report(report)
         attack_report = AttackReport(html_report)
-        if attack_report.is_valid_report:
-            flushed_reports[coordinates] = attack_report
-        else:
-            with open('bad_reports/{coords}_invalid_report.html'.format(coords=coordinates), 'w') as f:
-                f.write(html_report)
+        flushed_reports.append(attack_report)
 
-for coords, report in flushed_reports.items():
+
+for report in flushed_reports:
+    coords = report.coords
     if coords in attack_manager.attack_queue.villages:
         villa = attack_manager.attack_queue.villages[coords]
         print('Villa before update: ', villa)
