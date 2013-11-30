@@ -121,23 +121,18 @@ class RequestManager:
         self.replace_global_id(headers, village_id)
         headers['Content-Length'] = len(data)
         req = Request(url, headers=headers, data=data)
-        try:
-            response = urlopen(req)
-            # after POSTing an attack, Game automatically redirects to rally point
-            self.get_rally_overview(village_id)
-            return response.getheader('Date')
-        except HTTPError as e:
-            info = traceback.format_exception(*sys.exc_info())
-            with open('errors_log.txt', 'a') as f:
-                f.write("Time: {time}; Error information: {info}\n".format(time=time.ctime(), info=info))
-            print(e)
+        response = urlopen(req)
+        # after POSTing an attack, Game automatically redirects to rally point
+        self.get_rally_overview(village_id)
+        return response.getheader('Date')
 
     def safe_opener(self, request):
         """
         Wraps almost all calls to Game server into:
         1. Unzipping & decoding
-        2. Protection check
-        Returns unzipped&decoded response data
+        2. Session expiration check (invokes login procedure if session has expired)
+        3. Protection check
+        Returns unzipped & decoded response data.
         """
         try:
             response = urlopen(request)
@@ -150,7 +145,6 @@ class RequestManager:
                 response_data = self.protection_check(self.unpack_decode(data))
             else:
                 response_data = self.protection_check(self.unpack_decode(data))
-
             return response_data
         except HTTPError:
             error_info = traceback.format_exception(*sys.exc_info())
@@ -161,25 +155,19 @@ class RequestManager:
             str_info = "Error information: {info}".format(info=error_info)
             write_log_message(self.logfile, str_info)
             time.sleep(30 + random.random() * 30)   # do not hit server in a predictable manner
-            # re-try to submit the latest Request
-            return self.safe_opener(request)
+            return self.safe_opener(request)    # re-submit the latest Request
         except ConnectionError: # ConnectionResetError
             error_info = traceback.format_exception(*sys.exc_info())
             str_info = "Error information: {info}".format(info=error_info)
             write_log_message(self.logfile, str_info)
             time.sleep(30 + random.random() * 30)
             return self.safe_opener(request)
-        # strange & rare issue when unzipping some of TribalWars responses
-        # usually doesn't harm the whole process, but still searching dependencies.
+        # strange & rare issue when unzipping some of TribalWars responses.
+        # never reproduced 2 times in row (when repeating request)
         except struct.error:
             error_info = traceback.format_exception(*sys.exc_info())
             str_info = "Error information: {info}".format(info=error_info)
             write_log_message(self.logfile, str_info)
-
-            t = time.gmtime()
-            f_corrupted = os.path.join(self.run_path, '{h}{m}{s}_struct_error_data.txt'.format(h=t[3],m=t[4],s=t[5]))
-            with open(f_corrupted, 'wb') as f:
-                f.write(data)
             return self.safe_opener(request)
 
     def unpack_decode(self, data):
@@ -197,11 +185,8 @@ class RequestManager:
             url_match = re.search(img_url_ptrn, html_data)
             if url_match:
                 captcha_url = 'http://{host}{match}'.format(host=self.host, match=url_match.group(1))
-                try:
-                    self.handle_captcha(captcha_url)
-                except Exception as e:
-                    print(e)
-                    return
+                self.handle_captcha(captcha_url)
+
         return html_data
 
     def handle_captcha(self, captcha_url):
@@ -215,7 +200,7 @@ class RequestManager:
         self.submit_captcha(captcha_text)
         event_msg = "Submitted CAPTCHA through Antigate, text: {text}".format(text=captcha_text)
         write_log_message(self.events_file, event_msg)
-        captcha_file = os.path.join(self.run_path, 'triggered_captchas', '{text}_test_human.png'.format(text=captcha_text))
+        captcha_file = os.path.join(self.run_path, '{text}_test_human.png'.format(text=captcha_text))
         with open(captcha_file, 'wb') as f:
             f.write(img_bytes)
 
@@ -241,8 +226,9 @@ class RequestManager:
             if captcha_status == 'CAPCHA_NOT_READY':    # It's not a typo (CAPCHA)
                 time.sleep(5)
                 continue
-            elif captcha_status.startswith('ERROR'):
-                raise Exception("Badly formed request to AntiGate service!")
+            elif captcha_status == ('ERROR_NO_SLOT_AVAILABLE'):
+                time.sleep(10)
+                return self.get_captcha_text(img_bytes)
             elif captcha_status.startswith('OK'):
                 captcha_text = captcha_status.split('|')[1]
 
@@ -272,8 +258,7 @@ class RequestManager:
         Checks if session has expired (specific header will be in
         HTML response. If so, invokes login procedure.
         """
-        expiration_ptrn = re.compile('<h2>Session expired</h2>')
-        match = re.search(expiration_ptrn, html_data)
+        match = re.search('Session expired', html_data)
         if match:
             write_log_message(self.events_file, "Session expired...Don't worry, masta!")
             return True

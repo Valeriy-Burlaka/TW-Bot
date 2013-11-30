@@ -226,7 +226,7 @@ class Village:
             self.remaining_capacity = attack_report.remaining_capacity
         if attack_report.storage_level:
             self.set_storage_limit(attack_report.storage_level)
-        if attack_report.wall_level:
+        if attack_report.wall_level is not None:
             self.set_base_defence(attack_report.wall_level)
         if attack_report.looted_capacity:
             looted = attack_report.looted_capacity

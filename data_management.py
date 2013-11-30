@@ -4,6 +4,8 @@ import re
 import os
 import time
 import random
+import sys
+import traceback
 
 def write_log_message(filename, message):
     t_str = "{time}: ".format(time=time.ctime(time.mktime(time.gmtime())))
@@ -26,6 +28,7 @@ class ReportBuilder:
         self.request_manager = request_manager  # instance of RequestManager
         self.lock = lock    # shared instance of Bot's lock
         self.report_path = os.path.join(run_path, "run_reports")
+        self.report_errors = os.path.join(self.report_path, "report_errors.txt")
         if not os.path.exists(self.report_path): os.mkdir(self.report_path)
 
     def get_new_reports(self, reports_count):
@@ -45,8 +48,26 @@ class ReportBuilder:
             reports_page = self.get_reports_page(page)
             battle_reports = self.get_reports_from_page(reports_page)
             for report_data in battle_reports:
-                html_report = self.get_single_report(report_data)
-                attack_report = AttackReport(html_report)
+                try:
+                    html_report = self.get_single_report(report_data)
+                    attack_report = AttackReport(html_report)
+                except TypeError:
+                    error_info = traceback.format_exception(*sys.exc_info())
+                    str_info = "Error information: {info}_{t}".format(info=error_info, t=round(time.time()))
+                    write_log_message(self.report_errors, str_info)
+                    filename = "Type_exception_report_data_{t}.html".format(t=round(time.time()))
+                    filename = os.path.join(self.report_path, filename)
+                    with open(filename, 'w') as f:
+                        f.write(report_data)
+                except AttributeError:
+                    error_info = traceback.format_exception(*sys.exc_info())
+                    str_info = "Error information: {info}_{t}".format(info=error_info, t=round(time.time()))
+                    write_log_message(self.report_errors, str_info)
+                    filename = "Attribute_exception_report_{t}.html".format(t=round(time.time()))
+                    filename = os.path.join(self.report_path, filename)
+                    with open(filename, 'w') as f:
+                        f.write(html_report)
+
                 if not attack_report.status:    # skip non-battle reports
                     continue
                 elif attack_report.status == 'red' or attack_report.status == 'red_blue':
@@ -158,15 +179,19 @@ class AttackReport:
         # 1. We suppose all non-battle reports are filtered out
         # 2. If Bot has flushed reports of kind "Bad guy attacks Player", player's
         # coordinates will not be found in list of farmed villages & just skipped.
-        self.coords = (int(match.group(1)), int(match.group(2)))
+        if match:
+            self.coords = (int(match.group(1)), int(match.group(2)))
+        else: # battle, but non-attack report (e.g. "support has been attacked"
+            self.coords = (0, 0)    # set non-existing coordinates
 
     def set_t_of_attack(self):
         # "Nov 03, 2013  14:01:57"
         pattern = re.compile(r'(\w{3})\s(\d\d),\s(\d{4})\s\s(\d\d):(\d\d):(\d\d)')
         match = re.search(pattern, self.data)
-        str_t = match.group()
-        struct_t = time.strptime(str_t, "%b %d, %Y %H:%M:%S")
-        self.t_of_attack = round(time.mktime(struct_t))
+        if match:
+            str_t = match.group()
+            struct_t = time.strptime(str_t, "%b %d, %Y %H:%M:%S")
+            self.t_of_attack = round(time.mktime(struct_t))
 
     def set_defence(self):
         """
@@ -178,12 +203,13 @@ class AttackReport:
         """
         defender_section_ptrn = re.compile(r'Defender[\W\w]+?Quantity([\W\w]+?)</tr>')
         match = re.search(defender_section_ptrn, self.data)
-        defender_troops = match.group(1)
-        units = re.findall(r'unit-item hidden', defender_troops)
-        if len(units) == 13:
-            self.defended = False
-        else:
-            self.defended = True
+        if match:
+            defender_troops = match.group(1)
+            empty_slots = re.findall(r'unit-item hidden', defender_troops)
+            if len(empty_slots) == 13:
+                self.defended = False
+            else:
+                self.defended = True
 
     def set_mines_level(self):
         mines = ["Timber camp", "Clay pit", "Iron mine"]
