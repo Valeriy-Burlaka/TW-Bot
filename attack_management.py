@@ -289,7 +289,7 @@ class AttackQueue:
         self.attackers = attackers
         self.map = map
         self.events_file = events_file
-        self.rest = farm_frequency
+        self.rest = farm_frequency  # hours
         self.targets_by_id = self.get_targets_in_radius()
         self.villages = self.map.villages
         self.queue = {}

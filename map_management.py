@@ -279,7 +279,6 @@ class Village:
     def has_valuable_loot(self, rest):
         if self.h_rates and self.remaining_capacity:
             # How many hours village has rested before our last visit:
-            rest /= 3600
             if self.remaining_capacity / sum(self.h_rates) >= rest:
                 return True
             else:
@@ -288,7 +287,7 @@ class Village:
     def finished_rest(self, rest):
         if self.last_visited:
             time_gmt = time.mktime(time.gmtime())
-            return time_gmt - self.last_visited > rest
+            return time_gmt - self.last_visited > rest * 3600
 
     def get_default_capacity(self):
         """Roughly estimates village capacity basing on its .population
