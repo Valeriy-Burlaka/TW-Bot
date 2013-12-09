@@ -25,26 +25,37 @@ user_pswd = 'cjiy47H5MamVephlVddV'
 base_x = 211
 base_y = 305
 main_id = 127591
-farm_with = (127591, 126583,)
+farm_with = (127591, # matriarch
+             126583, # piles
+             124332, # camp
+             135083, # cave
+             136409, # feast
+             135035, # lounge
+             136329, # shame
+             127349, # revenge
+             128145, # hive
+             132326) # voodoo
 t_limit = 4
 observer_file = 'test_observer_data'
 
+submit_id_numbers = {"forum_id": "37442", "thread_id": "135582", "frequency": 1500, "delay": 300}
 lock = Lock()
-request_manager = RequestManager(user_name, user_pswd, browser, host, main_id, run_path, logfile, events_file)
-village_manager = VillageManager(request_manager, lock, main_id, farm_with, events_file, run_path,
-                                use_def_to_farm=False, heavy_is_def=True, t_limit_to_leave=t_limit)
-report_builder = ReportBuilder(request_manager, lock, run_path)
-
-map = Map(base_x, base_y, request_manager, lock, run_path, events_file, depth=2, mapfile='new_map')
-attack_manager = AttackManager(request_manager, lock, village_manager, report_builder, map, observer_file, logfile, events_file)
-
-#new_reports = report_builder.get_new_reports(12 * 9)
-#attack_manager.attack_queue.update_villages(new_reports)
-#attack_manager.attack_queue.update_villages_in_map()
 
 try:
+    request_manager = RequestManager(user_name, user_pswd, browser, host, main_id, run_path, logfile, events_file)
+    village_manager = VillageManager(request_manager, lock, main_id, farm_with, events_file, run_path,
+                                    use_def_to_farm=False, heavy_is_def=False, t_limit_to_leave=t_limit)
+    report_builder = ReportBuilder(request_manager, lock, run_path)
+
+    map = Map(base_x, base_y, request_manager, lock, run_path, events_file, depth=2, mapfile='new_map')
+    attack_manager = AttackManager(request_manager, lock, village_manager, report_builder, map,
+                                    observer_file, logfile, events_file, submit_id_numbers)
+
+    #new_reports = report_builder.get_new_reports(12 * 9)
+    #attack_manager.attack_queue.update_villages(new_reports)
+    #attack_manager.attack_queue.update_villages_in_map()
     attack_manager.start()
-    time.sleep(3600 * 0.1)
+    time.sleep(3600 * 31)
 except KeyboardInterrupt:
     print("Interrupted by user")
 except Exception:

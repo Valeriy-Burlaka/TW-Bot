@@ -4,6 +4,7 @@ import re
 import json
 import time
 import random
+import os
 from threading import Thread
 from data_management import write_log_message
 
@@ -34,13 +35,16 @@ class VillageManager(Thread):
         Builds a mapping of PlayerVillage objects from 'overviews' Game screen
         """
         overviews_html = self.request_manager.get_overviews_screen()
+        with open(os.path.join(self.run_path, "overviews.html"), 'w') as f:
+            f.write(overviews_html)
         villages_data = self.get_villages_data(overviews_html)
+        print(villages_data)
         player_villages = {}
         for villa_data in villages_data:
             villa_id, villa_coords, villa_name = villa_data[0], villa_data[1], villa_data[2]
             pv = PlayerVillage(villa_id, villa_coords, villa_name)
             player_villages[villa_id] = pv
-
+        print(player_villages)
         return player_villages
 
     def get_villages_data(self, html_data):
@@ -71,21 +75,17 @@ class VillageManager(Thread):
             return
 
     def disable_farming_village(self, villa_id):
-        self.player_villages[villa_id].active = False
+        self.farming_villages[villa_id].active = False
 
     def update_troops_count(self, villa_id, troops_sent):
-        pv = self.farming_villages[villa_id]
-        pv.update_troops_count(troops_sent=troops_sent)
-        self.farming_villages[villa_id] = pv
+        self.farming_villages[villa_id].update_troops_count(troops_sent=troops_sent)
 
-    def refresh_village_troops(self, ids):
-        for villa_id in ids:
-            time.sleep(random.random() * 3)
+    def refresh_village_troops(self, villa_id):
+        if villa_id in self.farming_villages:
             train_screen_html = self.get_train_screen(villa_id)
-            pv = self.farming_villages[villa_id]
-            pv.update_troops_count(train_screen_html=train_screen_html)
-            pv.active = True    # since some troops have returned, try to consider villa as attacker again.
-            self.farming_villages[villa_id] = pv
+            self.farming_villages[villa_id].update_troops_count(train_screen_html=train_screen_html)
+            self.farming_villages[villa_id].active = True    # since some troops have returned, try to consider villa as attacker again.
+            time.sleep(random.random() * 3)
 
     def get_farming_villages(self, use_def, heavy_is_def):
         farming_villages = {v_id: pv for v_id, pv in self.player_villages.items() if v_id in self.farm_with}

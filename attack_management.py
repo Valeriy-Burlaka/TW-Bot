@@ -41,7 +41,7 @@ class AttackManager(Thread):
     """
 
     def __init__(self, request_manager, lock, village_manager, report_builder, map, observer_file,
-                 logfile, events_file, t_limit_to_leave=4, farm_frequency=3, insert_spy_in_attack=True):
+                 logfile, events_file, submit_id_numbers, t_limit_to_leave=4, farm_frequency=3, insert_spy_in_attack=True):
         Thread.__init__(self)
         self.request_manager = request_manager  # Shared instance of RequestManager class
         self.village_manager = village_manager  # Shared instance of VillageManager class
@@ -57,6 +57,9 @@ class AttackManager(Thread):
         self.new_battle_reports = 0
         self.some_troops_returned = False
         self.active = False
+        self.in_cycle = False
+        self.submit_id_numbers = submit_id_numbers
+        self.t_of_next_post = 0
 
 
     def run(self):
@@ -74,6 +77,8 @@ class AttackManager(Thread):
 
     def stop(self):
         self.active = False
+        while self.in_cycle:
+            time.sleep(1)
         self.attack_observer.save_registered_attacks()
         self.update_self_state()
         self.attack_queue.update_villages_in_map()
@@ -81,25 +86,31 @@ class AttackManager(Thread):
 
     def cycle(self):
         try:
+            self.in_cycle = True
             self.update_self_state()
             next_attacker = self.village_manager.get_next_attacking_village()   # (_id, troops_count)
             if next_attacker:
                 attacker_id, troops_count = next_attacker[0], next_attacker[1]
-                available_targets = self.attack_queue.get_available_targets(attacker_id)
-                attack_target = self.decision_maker.get_next_attack_target(available_targets, troops_count)
+                attack_target = self.prepare_next_target(attacker_id, troops_count)
                 if attack_target:   # [{unit_name: count, ..}, t_on_road, (x, y)]
                     troops, t_on_road, coords = attack_target[0], attack_target[1], attack_target[2]
-                    self.attack_queue.remove_villa_from_queue(coords)
                     t_of_attack = self.send_attack(attacker_id, coords, troops)
                     if t_of_attack:
+                        self.attack_queue.remove_villa_from_queue(coords)
                         t_of_attack = self.convert_t_to_seconds(t_of_attack)
                         self.update_troops_count(attacker_id, troops)
                         t_of_arrival, t_of_return = t_of_attack + t_on_road, t_of_attack + t_on_road * 2
                         self.attack_observer.register_attack(attacker_id, coords, t_of_arrival, t_of_return)
-                        event_msg = "Attack sent at: {time} from: {source} to: {coords}. Troops: {troops}".format(time=time.ctime(t_of_attack),
-                                                                                                                    source=attacker_id,
-                                                                                                                    coords=coords, troops=troops)
+                        event_msg = "Attack sent at: {t1} from: {s} to: {c}. Troops: {tr}, arrival: {t2}".format(t1=time.ctime(t_of_attack),
+                                                                                                                s=attacker_id, c=coords,
+                                                                                                                tr=troops, t2=t_of_arrival)
                         write_log_message(self.events_file, event_msg)
+                        if self.submit_id_numbers and time.mktime(time.gmtime()) > self.t_of_next_post:
+                            id_of_attack = self.get_id_of_attack(coords, t_of_arrival, attacker_id)
+                            if id_of_attack:
+                                self.post_id_number(id_of_attack)
+                                print("Posted {p_id}. See attacker {a_id}, attack on coords {c}".format(p_id=id_of_attack,a_id=attacker_id, c=coords))
+
                 else: # given player village was not able to send attack
                     event_msg = "Disabling player's village: {id}".format(id=attacker_id)
                     write_log_message(self.events_file, event_msg)
@@ -116,15 +127,27 @@ class AttackManager(Thread):
             error_info = traceback.format_exception(*sys.exc_info())
             str_info = "Error information: {info}".format(info=error_info)
             write_log_message(self.logfile, str_info)
+        finally:
+            self.in_cycle = False
+
+    def prepare_next_target(self, attacker_id, troops_count):
+        available_targets = self.attack_queue.get_available_targets(attacker_id)
+        attack_target = self.decision_maker.get_next_attack_target(available_targets, troops_count)
+        return attack_target
 
     def send_attack(self, attacker_id, coords, troops):
         self.get_rally_overview(attacker_id)
         confirm_data = self.get_confirmation_data(attacker_id, coords, troops)
         confirm_response = self.post_confirmation(attacker_id, confirm_data)
-        ch_token = self.get_ch_token(confirm_response)
+        # Confirmation may be unsuccessful, if there were no enough troops in village (e.g. due to user-sent attacks)
+        try:
+            ch_token = self.get_ch_token(confirm_response)
+        except AttributeError:
+            self.village_manager.refresh_village_troops(attacker_id)
+            return
+
         action_id = self.get_action_id(confirm_response)
         csrf = self.get_csrf_token(confirm_response)
-
         attack_data = self.get_attack_data(coords, troops, ch_token, action_id)
         t_of_attack = self.post_attack(attacker_id, attack_data, csrf)
         return t_of_attack
@@ -172,7 +195,7 @@ class AttackManager(Thread):
         return action_id
 
     def get_csrf_token(self, html_data):
-        csrf_match = re.search(r'csrf":"(\w+)"', html_data)
+        csrf_match = re.search(r'csrf\W:\W(\w+)\W', html_data)
         csrf = csrf_match.group(1)
         return csrf
 
@@ -261,7 +284,8 @@ class AttackManager(Thread):
             event_msg = "There are returns to the next player's villages: {ids}".format(ids=return_ids)
             write_log_message(self.events_file, event_msg)
             self.some_troops_returned = False
-            self.village_manager.refresh_village_troops(return_ids)
+            for villa_id in return_ids:
+                self.village_manager.refresh_village_troops(villa_id)
 
     def update_troops_count(self, attacker_id, troops_sent):
         self.village_manager.update_troops_count(attacker_id, troops_sent)
@@ -275,6 +299,71 @@ class AttackManager(Thread):
         t = time.strptime(t, '%a, %d %b %Y %H:%M:%S')    # returns struct_t
         t = time.mktime(t)
         return t
+
+    def get_id_of_attack(self, coords, t_of_arrival, attacker_id):
+        """
+        Finds an ID of recently sent attack, returns int.
+        1. Requests rally point screen, which contains list of all
+        attacks & returns.
+        2. Finds all <tr>..</tr> elements containing attacks data.
+        3. Finds attacks that match given coordinates. At this point,
+        we're still not sure where is a most recently sent attack
+        (we can have returns from the same coordinates + multiple attacks in progress)
+        4. Restores time of arrival from a given attack data and compares this time
+        with passed t_of_arrival. The trick is, that most of arrivals in rally point
+        screen are stamped relatively from "now" and look like "tomorrows at HH:MM:SS
+        or today at ...", so we just try to find the closest match to passed t_of_arrival
+        """
+        def get_exact_match(possible_matches, t_of_arrival):
+            t_of_arrival = int(t_of_arrival)
+            struct_arrival = time.localtime(t_of_arrival)
+            arrival_y_m_day = ""
+            for i in range(3):
+                arrival_y_m_day += str(struct_arrival[i])
+                arrival_y_m_day += " "
+            for attack_id, t in possible_matches:
+                full_t = arrival_y_m_day + t
+                restored_t = time.strptime(full_t, "%Y %m %d %H:%M:%S")
+                restored_t = int(time.mktime(restored_t))
+                if restored_t in range(t_of_arrival - 5, t_of_arrival + 5):
+                    return attack_id
+
+        rally_screen = self.get_rally_overview(attacker_id)
+        # attack data example: <tr>...<span id="labelText[64035559]">Return from ...(199|293)...<td>today at 11:29:31:...</tr>
+        attacks_ptrn = re.compile(r"<tr>[\W\w]+?labelText\W\d+[\W\w]+?</tr>")
+        all_attacks = re.findall(attacks_ptrn, rally_screen)
+        str_match = r"labelText\W(\d+)[\W\w]+?{x}\|{y}[\W\w]+?at\s(\d\d:\d\d:\d\d)".format(x=coords[0],y=coords[1])
+        match_ptrn = re.compile(str_match)
+        possible_matches = []
+        for attack in all_attacks:
+            match = re.search(match_ptrn, attack)
+            if match: possible_matches.append((match.group(1), match.group(2)))
+        print(possible_matches)
+        id_of_attack = get_exact_match(possible_matches, t_of_arrival)
+        return id_of_attack
+
+    def post_id_number(self, id_of_attack):
+        forum_id = self.submit_id_numbers["forum_id"]
+        thread_id = self.submit_id_numbers["thread_id"]
+        frequency = self.submit_id_numbers["frequency"]
+        random_delay = self.submit_id_numbers["delay"]
+        message_data = [("do", "send"), ("message", id_of_attack)]
+        message_data = urlencode(message_data).encode()
+        self.lock.acquire()
+        self.request_manager.get_tribal_forum_page()
+        self.request_manager.get_forum_screen(forum_id)
+        time.sleep(random.random() * 2)
+        self.request_manager.get_last_thread_page(forum_id, thread_id)
+        time.sleep(random.random() * 3)
+        answer_page = self.request_manager.get_answer_page(forum_id, thread_id)
+        csrf_token = self.get_csrf_token(answer_page)
+        t_of_post = self.request_manager.post_message_to_forum(forum_id, thread_id, csrf_token, message_data)
+        self.lock.release()
+        if t_of_post:
+            t_of_post = self.convert_t_to_seconds(t_of_post)
+            self.t_of_next_post = t_of_post + frequency + random.random() * random_delay
+
+
 
 
 class AttackQueue:

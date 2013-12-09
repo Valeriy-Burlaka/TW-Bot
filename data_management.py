@@ -106,7 +106,7 @@ class ReportBuilder:
         """
         single_report_ptrn = re.compile(r'<input name="id_[\W\w]+?</tr>')
         reports_list = re.findall(single_report_ptrn, reports_page)
-#        reports_list = [x for x in reports_list if '(new)' in x]    # get reports marked as "new"
+        reports_list = [x for x in reports_list if '(new)' in x]    # get reports marked as "new"
         return reports_list
 
     def get_single_report(self, report):
@@ -120,7 +120,7 @@ class ReportBuilder:
         url = url.group(1)
         url = url.replace('&amp;', '&')
         # Do not hit server too frequently
-#        time.sleep(random.random() * 5)
+        time.sleep(random.random() * 2)
         self.lock.acquire()
         html_report = self.request_manager.get_report(url)
         self.lock.release()

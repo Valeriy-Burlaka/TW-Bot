@@ -58,7 +58,8 @@ class RequestManager:
         return self.safe_opener(req)
 
     def get_overviews_screen(self):
-        url = 'http://{host}/game.php?village={id}&screen=overview_villages'.format(host=self.host, id=self.main_id)
+        url = 'http://{host}/game.php?village={id}&screen=overview_villages&mode=combined'.format(host=self.host,
+                                                                                                  id=self.main_id)
         self.referer = 'http://{host}/game.php?village={id}&screen=overview'.format(host=self.host, id=self.main_id)
         headers = self.get_default_headers()
         req = Request(url, headers=headers)
@@ -124,6 +125,68 @@ class RequestManager:
         response = urlopen(req)
         # after POSTing an attack, Game automatically redirects to rally point
         self.get_rally_overview(village_id)
+        return response.getheader('Date')
+
+    def get_tribal_forum_page(self):
+        url = "http://{host}/game.php?village={id}&screen=forum".format(host=self.host, id=self.main_id)
+        self.referer = "http://{host}/game.php?village={id}&screen=overview".format(host=self.host, id=self.main_id)
+        headers = self.get_default_headers()
+        req = Request(url, headers=headers)
+        return self.safe_opener(req)
+
+    def get_forum_screen(self, forum_id):
+        url = "http://{host}/game.php?village={v_id}&screenmode=view_forum&forum_id={f_id}&screen=forum".format(host=self.host,
+                                                                                                                v_id=self.main_id,
+                                                                                                                f_id=forum_id)
+        self.referer = "http://{host}/game.php?village={v_id}&screen=forum".format(host=self.host, v_id=self.main_id)
+        headers = self.get_default_headers()
+        req = Request(url, headers=headers)
+        return self.safe_opener(req)
+
+    def get_last_thread_page(self, forum_id, thread_id):
+        url = "http://{host}/game.php?village={v_id}&screenmode=view_thread&forum_id={f_id}&thread_id={t_id}&page=last&screen=forum".format(
+                                                                                                                                    host=self.host,
+                                                                                                                                    v_id=self.main_id,
+                                                                                                                                    f_id=forum_id,
+                                                                                                                                    t_id=thread_id)
+        self.referer = "http://{host}/game.php?village={v_id}&screenmode=view_forum&forum_id={f_id}&screen=forum".format(host=self.host,
+                                                                                                                        v_id=self.main_id,
+                                                                                                                        f_id=forum_id)
+        headers = self.get_default_headers()
+        req = Request(url, headers=headers)
+        return self.safe_opener(req)
+
+    def get_answer_page(self, forum_id, thread_id):
+        url = "http://{host}/game.php?village={v_id}&screenmode=view_thread&thread_id={t_id}&answer=true&page=last&forum_id={f_id}&screen=forum".format(
+                                                                                                                                                host=self.host,
+                                                                                                                                                v_id=self.main_id,
+                                                                                                                                                f_id=forum_id,
+                                                                                                                                                t_id=thread_id)
+        self.referer = "http://{host}/game.php?village={v_id}&screenmode=view_thread&forum_id={f_id}&thread_id={t_id}&page=last&screen=forum".format(
+                                                                                                                                            host=self.host,
+                                                                                                                                            v_id=self.main_id,
+                                                                                                                                            f_id=forum_id,
+                                                                                                                                            t_id=thread_id)
+        headers = self.get_default_headers()
+        req = Request(url, headers=headers)
+        return self.safe_opener(req)
+
+    def post_message_to_forum(self, forum_id, thread_id, csrf, message_data):
+        # php URLs get longer and longer..
+        url_begin = "http://{host}/game.php?village={v_id}&screenmode=view_thread&action=new_post&h={csrf}".format(host=self.host,
+                                                                                                                  v_id=self.main_id,
+                                                                                                                  csrf=csrf)
+        url_end = "&thread_id={t_id}&answer=true&page=last&forum_id={f_id}&screen=forum".format(t_id=thread_id, f_id=forum_id)
+        url = url_begin + url_end
+        self.referer = "http://{host}/game.php?village={v_id}&screenmode=view_thread&thread_id={t_id}&answer=true&page=last&forum_id={f_id}&screen=forum".format(
+                                                                                                                                                host=self.host,
+                                                                                                                                                v_id=self.main_id,
+                                                                                                                                                f_id=forum_id,
+                                                                                                                                                t_id=thread_id)
+        headers = self.get_default_headers()
+        headers['Content-Length'] = len(message_data)
+        req = Request(url, headers=headers, data=message_data)
+        response = urlopen(req)
         return response.getheader('Date')
 
     def safe_opener(self, request):
@@ -196,7 +259,6 @@ class RequestManager:
         response = urlopen(captcha_url)
         img_bytes = response.read()
         captcha_text = self.get_captcha_text(img_bytes)
-
         self.submit_captcha(captcha_text)
         event_msg = "Submitted CAPTCHA through Antigate, text: {text}".format(text=captcha_text)
         write_log_message(self.events_file, event_msg)
@@ -214,9 +276,14 @@ class RequestManager:
         req = Request('http://antigate.com/in.php', data=req_data)
         response = urlopen(req)
         resp_data = response.read().decode()    # response.read() = b'OK|captcha_ID'
+        if resp_data == ('ERROR_NO_SLOT_AVAILABLE'):
+            time.sleep(10)
+            return self.get_captcha_text(img_bytes)
+        elif resp_data.startswith("ERROR"):
+            raise AttributeError(resp_data)
+
         captcha_id = resp_data.split('|')[1]
-        captcha_url = 'http://antigate.com/res.php?key={api_key}&action=get&id={cap_id}'.format(api_key=self.api_key,
-                                                                                                cap_id=captcha_id)
+        captcha_url = 'http://antigate.com/res.php?key={api_key}&action=get&id={cap_id}'.format(api_key=self.api_key,                                                                                           cap_id=captcha_id)
         captcha_text = ""
         time.sleep(10)  # average time of handling CAPTCHA on AntiGate service
         while not captcha_text:
@@ -226,11 +293,10 @@ class RequestManager:
             if captcha_status == 'CAPCHA_NOT_READY':    # It's not a typo (CAPCHA)
                 time.sleep(5)
                 continue
-            elif captcha_status == ('ERROR_NO_SLOT_AVAILABLE'):
-                time.sleep(10)
-                return self.get_captcha_text(img_bytes)
             elif captcha_status.startswith('OK'):
                 captcha_text = captcha_status.split('|')[1]
+            elif captcha_status.startswith("ERROR"):
+                raise AttributeError(captcha_status)
 
         return captcha_text
 

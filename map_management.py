@@ -152,10 +152,10 @@ class Map:
         name = village_data[2]
         owner = village_data[4]
         # Barbarian or Bonus w/o owner
-        if name == 0 or (name == 'Bonus village' and owner == '0'):
+        if (name == 0 or name == "Bonus village") and owner == "0":
             return True
         else:
-            return
+            return False
 
     def calculate_distance(self, source_coords, target_coords):
         x = target_coords[0]
@@ -266,6 +266,8 @@ class Village:
         if self.h_rates:
             t_of_rest = t_of_arrival - self.last_visited
             hours = t_of_rest / 3600
+            # There no chances that anybody in player's area didn't visit target village over time.
+            if hours >= 8: hours = 8
             estimated_capacity = sum(x * hours for x in self.h_rates)
             if self.remaining_capacity:
                 estimated_capacity += self.remaining_capacity
