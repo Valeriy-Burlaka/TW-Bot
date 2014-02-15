@@ -1,28 +1,27 @@
-__author__ = 'Troll'
-
 import re
 import shelve
 import time
 import json
 import random
+import logging
 from math import sqrt
-from data_management import write_log_message
 
 
 class Map:
-    """A collecton of Villages.
+    """
+    A collecton of barbarian & bonus Villages (neutral).
     Responsible for taking HTML map overview from
     RequestManager and building a mapping of Village objects.
     Responsible for giving a mapping of all villages in a particular range.
     Responsible for storing and updating villages in a local shelve file.
     """
 
-    def __init__(self, base_x, base_y, request_manager, lock, run_path, events_file, depth=2, mapfile='map'):
-        self.request_manager = request_manager  # instance of RequestManager
+    def __init__(self, base_x, base_y, request_manager,
+                 lock, run_path, depth=2, mapfile='map'):
+        self.request_manager = request_manager
         self.lock = lock
         self.run_path = run_path
-        self.events_file = events_file
-        self.villages = {}  # Will be {(x,y): {'village': Village, 'distance': int}
+        self.villages = {}  # {(x,y): {'village': Village, 'distance': int}
         self.mapfile = mapfile
         self.build_villages(base_x, base_y, depth)
         self.get_saved_villages()
@@ -35,8 +34,10 @@ class Map:
         if 'villages' in f:
             still_valid = {}
             for coords, village in f['villages'].items():
-                if coords in self.villages: # Saved village remained Bonus/Barbarian
-                    self.villages[coords] = village  #Update with saved data
+                # Saved village remained Bonus/Barbarian
+                if coords in self.villages:
+                    # Update with saved data
+                    self.villages[coords] = village
                     still_valid[coords] = village
             f['villages'] = still_valid
         f.close()
@@ -63,45 +64,54 @@ class Map:
         Villages construction using corners as new start point.
         """
         depth -= 1
-        event_msg = "Started to build villages from ({x},{y}) base point. Map depth={depth}".format(x=x,y=y,depth=depth)
-        write_log_message(self.events_file, event_msg)
+        event_msg = "Started to build villages from ({x},{y}) base point." \
+                    "Map depth={depth}".format(x=x,y=y,depth=depth)
+        logging.info(event_msg)
         map_html = self.get_map_overview(x, y)
-        sectors = self.get_map_data(map_html)   # list of dicts, each dict represents 1 sector
+        # list of dicts, each dict represents 1 sector
+        sectors = self.get_map_data(map_html)
         for sector in sectors:
             sector_x = sector['x']
             sector_y = sector['y']
-            sector_coords = []  # hold coords of villages found, need to determine sector's corners
-            sector_villages = sector['data']['villages']    # can be either list of dicts or dict of dicts
-            # Some fun below: there are cases, when game stores sector villages in different data types
-            # index is x coordinate, value is a dict of villages which lie on a y axis for given x.
+            # hold coords of villages found, need to determine sector's corners
+            sector_coords = []
+            sector_villages = sector['data']['villages']
+            # Some fun below: there are cases, when game stores
+            # sector villages in different data types.
+            # 1) case:
+            # index is x coordinate, value is a dict of villages
+            # which lie on a y axis for given x.
             if isinstance(sector_villages, list):
                 sector_gen = enumerate(sector_villages)
-            # key is x coordinate, value is a dict of villages which lie on a y axis for given x.
+            # key is x coordinate, value is a dict of villages
+            # which lie on a y axis for given x.
             elif isinstance(sector_villages, dict):
                 sector_gen = sector_villages.items()
 
             for x, y_axis in sector_gen:
                 x = int(x)
                 for y, village_data in y_axis.items():
-                    if self.is_valid(village_data): # check if village is Bonus/Barbarian
+                    # check if village is Bonus/Barbarian
+                    if self.is_valid(village_data):
                         villa_x = sector_x + x
                         villa_y = sector_y + int(y)
                         villa_coords = (villa_x, villa_y)
                         sector_coords.append(villa_coords)
                         if not villa_coords in self.villages:
-                            village = self.get_village(villa_coords, village_data)
+                            village = self.get_village(villa_coords,
+                                                       village_data)
                             self.villages[villa_coords] = village
 
             if depth:
                 sector_corners = self.get_sector_corners(sector_coords)
-                event_msg = "Calculated the next sector corners: {}".format(sector_corners)
-                write_log_message(self.events_file, event_msg)
+                event_msg = "Calculated the next sector " \
+                            "corners: {}".format(sector_corners)
+                logging.info(event_msg)
                 for corner in sector_corners:
                     time.sleep(random.random() * 6)
                     self.build_villages(*corner, depth=depth)
 
-        with open("{run_path}/villages_upon_map_init.txt".format(run_path=self.run_path), 'w') as f:
-            f.write(str(self.villages))
+        logging.info("Villages upon map init: {}".format(self.villages))
 
     def get_map_overview(self, x, y):
         time.sleep(random.random() * 3)
@@ -132,7 +142,8 @@ class Map:
         return corners
 
     def get_village(self, villa_coords, village_data):
-        """Constructs a Village obj from given data
+        """
+        Constructs a Village obj from given data
         """
         id = int(village_data[0])
         population = village_data[3]    # str, e.g. "4.567" (4567)
@@ -167,7 +178,8 @@ class Map:
 
     def get_map_data(self, html_data):
         """Returns dict containing sector data"""
-        ptrn = re.compile('TWMap.sectorPrefech = ([\W\w]+?\]);')    # sectors data
+        # Looking for string containg sector data (JSON)
+        ptrn = re.compile('TWMap.sectorPrefech = ([\W\w]+?\]);')
         match = re.search(ptrn, html_data)
         js_res = match.group(1) # json string
         res = json.loads(js_res)
@@ -190,10 +202,10 @@ class Village:
 
     def __init__(self, coords, id, population, bonus=None):
         self.id = id
-        self.coords = coords    #tuple (x,y)
+        self.coords = coords    # tuple (x,y)
         self.population = population    # int
         self.bonus = bonus  # str
-        self.mine_levels = None #list [wood, clay, iron], integers
+        self.mine_levels = None  # list [wood, clay, iron], integers
         self.h_rates = None
         self.last_visited = None
         self.remaining_capacity = 0
@@ -203,7 +215,8 @@ class Village:
         self.base_defence = None
 
     def update_stats(self, attack_report):
-        """Updates self basing on information of
+        """
+        Updates self basing on information of
         given attack_report object (includes recon info
         about haul looted, haul remaining, mine levels, etc.
         """
@@ -211,14 +224,19 @@ class Village:
         if attack_report.defended:
             self.defended = True
         if attack_report.mine_levels:
-            # A bit ugly assignment procedure, but it is needed to prevent refreshing
-            # of mine levels to 0-level when attacks are sent without scouts (AR will set levels to [0,0,0])
-            # No sane person would destroy mines in Barb villages, so they likely could not decrease their lvl.
+            # A bit ugly assignment procedure, but it is needed
+            # to prevent refreshing of mine levels to 0-level
+            # when attacks are sent without scouts
+            # (AR will set levels to [0,0,0])
+            # No sane person would destroy mines in Barb villages,
+            # so they likely could not decrease their lvl.
             new_levels = attack_report.mine_levels
             if self.mine_levels:
-                for index, levels in enumerate(zip(self.mine_levels, new_levels)):
+                for index, levels in enumerate(zip(self.mine_levels,
+                                                   new_levels)):
                     old_level, new_level = levels[0], levels[1]
-                    if new_level > old_level: self.mine_levels[index] = new_level
+                    if new_level > old_level:
+                        self.mine_levels[index] = new_level
             else:
                 self.mine_levels = new_levels
             self.set_h_rates()
@@ -234,7 +252,6 @@ class Village:
                 self.looted["total"] += looted
             else: self.looted["total"] = looted
             self.looted["per_visit"].append((self.last_visited, looted,))
-
 
     def set_h_rates(self):
         """Sets a village resource production
@@ -254,19 +271,22 @@ class Village:
                     self.h_rates[2] *= 2
 
     def set_storage_limit(self, storage_level):
-        self.storage_limit = self.get_storage_rates()[storage_level] * 3    # limit * 3 types of resources
+        # limit * 3 types of resources
+        self.storage_limit = self.get_storage_rates()[storage_level] * 3
 
     def set_base_defence(self, wall_lvl):
         self.base_defence = 20 + (wall_lvl * 50)
 
     def estimate_capacity(self, t_of_arrival):
-        """Estimates village capacity at the moment
+        """
+        Estimates village capacity at the moment
         when troops will arrive to it.
         """
         if self.h_rates:
             t_of_rest = t_of_arrival - self.last_visited
             hours = t_of_rest / 3600
-            # There no chances that anybody in player's area didn't visit target village over time.
+            # There no chances that anybody in player's
+            # area didn't visit target village over time.
             if hours >= 8: hours = 8
             estimated_capacity = sum(x * hours for x in self.h_rates)
             if self.remaining_capacity:
