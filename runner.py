@@ -1,6 +1,7 @@
 import time
 import sys
 import os
+import logging
 import traceback
 from threading import Lock
 from request_manager import  RequestManager
@@ -9,6 +10,39 @@ from attack_management import AttackManager
 from data_management import ReportBuilder, write_log_message
 from map_management import Map
 
+
+def main(arguments):
+    try:
+        import settings
+    except ImportError:
+        print("Settings file was not found, exiting")
+        sys.exit(1)
+
+    logging_level = 10  # WARNING
+    if len(arguments) > 1:
+        numeric_log_level = getattr(logging, arguments[1].upper(), None)
+        if isinstance(numeric_log_level, int):
+            logging_level = numeric_log_level
+        else:
+            print("Received unknown logging level as first argument."
+                  "Using WARNING level instead")
+
+    logging.basicConfig(filename='log.txt', level=logging_level,
+                        format='%(asctime)s: %(levelname)s: %(message)s',
+                        datefmt='%d/%b/%Y %H:%M:%S %Z %z')
+
+    runner = Runner()
+    runner.start()
+
+
+class Runner:
+    def __init__(self):
+        pass
+
+
+
+if __name__ == '__main__':
+    main(sys.argv)
 
 
 run_name = time.strftime("%d %b %H-%M-%S GMT", time.gmtime())
