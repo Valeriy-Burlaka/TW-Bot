@@ -1,5 +1,3 @@
-__author__ = 'Troll'
-
 import time
 import re
 import random

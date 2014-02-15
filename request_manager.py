@@ -36,11 +36,11 @@ class RequestManager:
 
 
     def __init__(self, user_name, user_pswd, browser, host, main_id, run_path, logfile, events_file,
-                 captcha_api_key='bd676a60b996da118afcb2f12f3182e0'):
+                 antigate_key):
         self.user_name = user_name
         self.user_pswd = user_pswd
         self.browser = browser
-        self.api_key = captcha_api_key
+        self.antigate_key = antigate_key
         self.host = host
         self.main_id = str(main_id)
         self.run_path = run_path
@@ -270,7 +270,7 @@ class RequestManager:
 
     def get_captcha_text(self, img_bytes):
         b64_img = base64.b64encode(img_bytes)
-        req_data = {'method': 'base64', 'key': self.api_key, 'body': b64_img,
+        req_data = {'method': 'base64', 'key': self.antigate_key, 'body': b64_img,
                     'numeric': '1', 'min_len': '6', 'max_len': '6'}
         req_data = urlencode(req_data).encode()
         req = Request('http://antigate.com/in.php', data=req_data)
@@ -283,7 +283,7 @@ class RequestManager:
             raise AttributeError(resp_data)
 
         captcha_id = resp_data.split('|')[1]
-        captcha_url = 'http://antigate.com/res.php?key={api_key}&action=get&id={cap_id}'.format(api_key=self.api_key,                                                                                           cap_id=captcha_id)
+        captcha_url = 'http://antigate.com/res.php?key={api_key}&action=get&id={cap_id}'.format(api_key=self.antigate_key,                                                                                           cap_id=captcha_id)
         captcha_text = ""
         time.sleep(10)  # average time of handling CAPTCHA on AntiGate service
         while not captcha_text:

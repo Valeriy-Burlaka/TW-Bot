@@ -15,30 +15,9 @@ run_name = time.strftime("%d %b %H-%M-%S GMT", time.gmtime())
 run_path = os.path.join(sys.path[0], "bot_runs", run_name)
 if not os.path.exists(run_path):
     os.makedirs(run_path)
+
 logfile = os.path.join(run_path, "errors_log.txt")
-events_file = os.path.join(run_path, "activity_log.txt")
 
-browser = 'Chrome'
-host = 'en70.tribalwars.net'
-user_name = 'Chebutroll'
-user_pswd = 'cjiy47H5MamVephlVddV'
-base_x = 211
-base_y = 305
-main_id = 127591
-farm_with = (127591, # matriarch
-             126583, # piles
-             124332, # camp
-             135083, # cave
-             136409, # feast
-             135035, # lounge
-             136329, # shame
-             127349, # revenge
-             128145, # hive
-             132326) # voodoo
-t_limit = 4
-observer_file = 'test_observer_data'
-
-submit_id_numbers = {"forum_id": "37442", "thread_id": "135582", "frequency": 1500, "delay": 300}
 lock = Lock()
 
 try:
