@@ -1,0 +1,7 @@
+__pycache__/*
+*.pyc
+bad_reports/*
+.py3/*
+*~
+.*~
+
