@@ -30,9 +30,6 @@ try:
     attack_manager = AttackManager(request_manager, lock, village_manager, report_builder, map,
                                     observer_file, logfile, events_file, submit_id_numbers)
 
-    #new_reports = report_builder.get_new_reports(12 * 9)
-    #attack_manager.attack_queue.update_villages(new_reports)
-    #attack_manager.attack_queue.update_villages_in_map()
     attack_manager.start()
     time.sleep(3600 * 31)
 except KeyboardInterrupt:

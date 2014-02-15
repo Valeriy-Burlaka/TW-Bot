@@ -11,6 +11,8 @@ USER = 'Chebutroll'
 PASSWORD = 'cjiy47H5MamVephlVddV'
 # Antigate service API key
 ANTIGATE_KEY = 'bd676a60b996da118afcb2f12f3182e0'
+# How long bot should mock barbarians (hours)
+FARM_DURATION = 24
 # X|Y coordinates of player's main village
 BASE_X = 211
 BASE_Y = 305
@@ -26,6 +28,10 @@ FARM_WITH = (127591,  # matriarch
              127349,  # revenge
              128145,  # hive
              132326)  # voodoo
+# Whether defensive troops should be used to farm resources
+USE_DEF_TO_FARM = False
+# Whether Heavy Cavalry should be considered as def unit
+HEAVY_IS_DEF = False
 # Maximum allowed time for troops to leave their villages (hours)
 T_LIMIT_TO_LEAVE = 4
 # Where to store information about sent attacks between bot's sessions
