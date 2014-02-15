@@ -1,22 +1,16 @@
-__author__ = 'Troll'
-
 import re
 import os
 import time
 import random
 import sys
 import traceback
+import logging
 
-def write_log_message(filename, message):
-    t_str = "{time}: ".format(time=time.ctime(time.mktime(time.gmtime())))
-    message = t_str + message + "\n"
-    with open(filename, 'a') as f:
-        f.write(message)
 
 class ReportBuilder:
     """
     Component responsible for building AttackReport objects
-    for new game reports. Collects coordinates & report URLs
+    from new game reports. Collects coordinates & report URLs
     for all "new" reports from report overview page and then
     requests each report by URL.
     Neither xml.etree.ElementTree nor xml.dom.minidom
@@ -40,9 +34,11 @@ class ReportBuilder:
         coordinates of attacked village.
         """
         new_reports = []
-        # 12 reports per page. e.g.: if there 25 new reports, request 1, 2 & 3 report pages.
+        # 12 reports per page. e.g.: if there 25 new reports,
+        # request 1, 2 & 3 report pages.
         pages = reports_count / 12 if reports_count%12 == 0 else (reports_count / 12) + 1
-        # (+1) is a hardcoded sanity check: new reports may be shifted from page by trade reports, etc.
+        # (+1) is a hardcoded sanity check: new reports may be
+        # shifted from page by trade reports, etc.
         pages = int(pages) + 1
         for page in range(pages):
             reports_page = self.get_reports_page(page)
@@ -53,17 +49,20 @@ class ReportBuilder:
                     attack_report = AttackReport(html_report)
                 except TypeError:
                     error_info = traceback.format_exception(*sys.exc_info())
-                    str_info = "Error information: {info}_{t}".format(info=error_info, t=round(time.time()))
-                    write_log_message(self.report_errors, str_info)
-                    filename = "Type_exception_report_data_{t}.html".format(t=round(time.time()))
+                    logging.error(error_info)
+                    # Hunting bug with TypeError raised on some game reports
+                    # Save problem report data to a local file for further
+                    # investigation
+                    filename = "Type_exception_report_data_" \
+                               "{t}.html".format(t=round(time.time()))
                     filename = os.path.join(self.report_path, filename)
                     with open(filename, 'w') as f:
                         f.write(report_data)
                 except AttributeError:
                     error_info = traceback.format_exception(*sys.exc_info())
-                    str_info = "Error information: {info}_{t}".format(info=error_info, t=round(time.time()))
-                    write_log_message(self.report_errors, str_info)
-                    filename = "Attribute_exception_report_{t}.html".format(t=round(time.time()))
+                    logging.error(error_info)
+                    filename = "Attribute_exception_report_" \
+                               "{t}.html".format(t=round(time.time()))
                     filename = os.path.join(self.report_path, filename)
                     with open(filename, 'w') as f:
                         f.write(html_report)
@@ -71,12 +70,14 @@ class ReportBuilder:
                 if not attack_report.status:    # skip non-battle reports
                     continue
                 elif attack_report.status == 'red' or attack_report.status == 'red_blue':
-                    filename = "critical_report_{t}.html".format(t=attack_report.t_of_attack)
+                    filename = "critical_report_" \
+                               "{t}.html".format(t=attack_report.t_of_attack)
                     filepath = os.path.join(self.report_path, filename)
                     with open(filepath, 'w') as f:
                         f.write(attack_report.data)
                 elif attack_report.status == 'yellow':
-                    filename = "warning_report_{t}.html".format(t=attack_report.t_of_attack)
+                    filename = "warning_report_" \
+                               "{t}.html".format(t=attack_report.t_of_attack)
                     filepath = os.path.join(self.report_path, filename)
                     with open(filepath, 'w') as f:
                         f.write(attack_report.data)
@@ -150,7 +151,8 @@ class AttackReport:
         self.build_report()
 
     def build_report(self):
-        # check if report has color status (green, blue, etc.). Otherwise we faced with non-battle report (supply/support)
+        # check if report has color status (green, blue, etc.).
+        # Otherwise we faced with non-battle report (supply/support)
         self.set_attack_status()
         if not self.status:
             return
@@ -199,7 +201,8 @@ class AttackReport:
         1. We extract chunk of HTML with table of defender's units.
         2. If unit count == 0, it is stored in "class='unit-item hidden'"
         3. There are 13 types of units, so if len of re.findall result != 13,
-        there is some defence and it's better to save this report for human evaluation.
+        there is some defence and it's better to save this report
+        for human evaluation.
         """
         defender_section_ptrn = re.compile(r'Defender[\W\w]+?Quantity([\W\w]+?)</tr>')
         match = re.search(defender_section_ptrn, self.data)
@@ -215,7 +218,8 @@ class AttackReport:
         mines = ["Timber camp", "Clay pit", "Iron mine"]
         levels = []
         for mine in mines:
-            search = r'{}\s<b>\WLevel\s(\d+)\W</b>'.format(mine) # "Barracks <b>(Level 4)</b>"
+            # "Barracks <b>(Level 4)</b>"
+            search = r'{}\s<b>\WLevel\s(\d+)\W</b>'.format(mine)
             match = re.search(search, self.data)
             if match:
                 levels.append(int(match.group(1)))
@@ -251,7 +255,9 @@ class AttackReport:
 
         if scouted:
             self.remaining_capacity = get_haul_amount(scouted.group())
-        else:   # Since we went to attack w/o scout, mark the village as completely looted.
+        # Since we went to attack w/o scout, mark the village
+        # as completely looted.
+        else:
             self.remaining_capacity = 0
         if looted:
             self.looted_capacity = get_haul_amount(looted.group())
@@ -273,15 +279,20 @@ class AttackReport:
             self.wall_level = 0
 
     def __str__(self):
-        str_report = "AttackReport: \t\t  status => {status}, coords => {coords}, attack time => {t},\n\
-                      defended? => {defence}, mines => {mines}, scouted => {remaining}, haul => {loot},\n\
-                      storage => {storage}, wall => {wall}".format(status=self.status, coords=self.coords,
-                                                                   t=time.ctime(self.t_of_attack), defence=self.defended,
-                                                                   mines=self.mine_levels, remaining=self.remaining_capacity,
-                                                                   loot=self.looted_capacity, storage=self.storage_level,
-                                                                   wall=self.wall_level)
-
-
+        str_report = "AttackReport: \t\t  status => {status}, coords => " \
+                     "{coords}, attack time => {t},\n\
+                      defended? => {defence}, mines => {mines}, " \
+                     "scouted => {remaining}, haul => {loot},\n\
+                      storage => {storage}, " \
+                     "wall => {wall}".format(status=self.status,
+                                             coords=self.coords,
+                                             t=time.ctime(self.t_of_attack),
+                                             defence=self.defended,
+                                             mines=self.mine_levels,
+                                             remaining=self.remaining_capacity,
+                                             loot=self.looted_capacity,
+                                             storage=self.storage_level,
+                                             wall=self.wall_level)
 
         return str_report
 

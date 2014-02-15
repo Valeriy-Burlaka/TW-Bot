@@ -7,7 +7,7 @@ from threading import Lock
 from request_manager import  RequestManager
 from village_management import VillageManager
 from attack_management import AttackManager
-from data_management import ReportBuilder, write_log_message
+from data_management import ReportBuilder
 from map_management import Map
 
 
