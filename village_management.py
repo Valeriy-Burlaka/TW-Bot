@@ -1,12 +1,11 @@
-__author__ = 'Troll'
-
 import re
 import json
 import time
 import random
 import os
+import logging
 from threading import Thread
-from data_management import write_log_message
+
 
 class VillageManager(Thread):
     """
@@ -17,18 +16,18 @@ class VillageManager(Thread):
     making decisions about resources usage.
     """
 
-    def __init__(self, request_manager, lock, main_id, farm_with, events_file, run_path,
+    def __init__(self, request_manager, lock, main_id, farm_with, run_path,
                  use_def_to_farm=False, heavy_is_def=False, t_limit_to_leave=4):
         Thread.__init__(self)
         self.request_manager = request_manager
         self.lock = lock
         self.main_id = main_id
         self.farm_with = farm_with
-        self.events_file = events_file
         self.run_path = run_path
         self.player_villages = self.build_player_villages()
         self.t_limit = t_limit_to_leave
-        self.farming_villages = self.get_farming_villages(use_def_to_farm, heavy_is_def)
+        self.farming_villages = self.get_farming_villages(use_def_to_farm,
+                                                          heavy_is_def)
 
     def build_player_villages(self):
         """
@@ -50,7 +49,8 @@ class VillageManager(Thread):
     def get_villages_data(self, html_data):
         """
         Parses "Overviews" game screen to extract player's villages.
-        Returns list of tuples (int(villa_id), str(villa_name), tuple(villa_coordinates))
+        Returns list of tuples (int(villa_id), str(villa_name),
+        tuple(villa_coordinates))
         """
         villa_info_ptrn = re.compile(r'<span id="label_text_(\d+)">([\W\w]+?)\((\d{3})\|(\d{3})')
         villages_data = re.findall(villa_info_ptrn, html_data)
@@ -63,8 +63,8 @@ class VillageManager(Thread):
         return villages_data
 
     def get_next_attacking_village(self):
-        active_farming_villages = {v_id: v for v_id, v in self.farming_villages.items() if v.active}
-#        print("VM: active farmers: ", active_farming_villages)
+        active_farming_villages = {v_id: v for v_id, v in
+                                   self.farming_villages.items() if v.active}
         if active_farming_villages:
             attackers = list(active_farming_villages.values())
             next_attacker = random.choice(attackers)
@@ -84,11 +84,15 @@ class VillageManager(Thread):
         if villa_id in self.farming_villages:
             train_screen_html = self.get_train_screen(villa_id)
             self.farming_villages[villa_id].update_troops_count(train_screen_html=train_screen_html)
-            self.farming_villages[villa_id].active = True    # since some troops have returned, try to consider villa as attacker again.
+            # since some troops have returned, try
+            # to consider villa as attacker again.
+            self.farming_villages[villa_id].active = True
             time.sleep(random.random() * 3)
 
     def get_farming_villages(self, use_def, heavy_is_def):
-        farming_villages = {v_id: pv for v_id, pv in self.player_villages.items() if v_id in self.farm_with}
+        farming_villages = {v_id: pv for v_id, pv in
+                            self.player_villages.items() if
+                            v_id in self.farm_with}
         for pv in farming_villages.values():
             pv.set_troops_to_use(use_def, heavy_is_def)
             html_data = self.get_train_screen(pv.id)
@@ -97,8 +101,7 @@ class VillageManager(Thread):
             time.sleep(random.random() * 3)
 
         for pv in farming_villages.values():
-            print(pv)
-            write_log_message(self.events_file, str(pv))
+            logging.info(str(pv))
 
         return farming_villages
 
@@ -178,9 +181,11 @@ class PlayerVillage:
 
     def get_troops_data(self, html_data):
         """
-        Returns dict containing all troops data for a given village (current & total)
+        Returns dict containing all troops data for
+        a given village (current & total)
         """
-        data_ptrn = re.compile(r'UnitPopup.unit_data = ([\w\W]+);[\s]*UnitPopup[\w\W]+')
+        data_ptrn = re.compile(r'UnitPopup.unit_data = '
+                               r'([\w\W]+);[\s]*UnitPopup[\w\W]+')
         match = re.search(data_ptrn, html_data)
         troops_data = json.loads(match.group(1))
         return troops_data
@@ -199,8 +204,13 @@ class PlayerVillage:
         self.troops_to_use = troops_group
 
     def __str__(self):
-        str_villa = "PlayerVillage: id: {id}, coords: {coords}, name: {name},\n current_troops: {troops}, farm radius: {radius}"
-        return str_villa.format(id=self.id, coords=self.coords, name=self.name, troops=self.troops_count, radius=self.radius)
+        return "PlayerVillage: id: {id}, coords: {coords}, " \
+               "name: {name},\n current_troops: {troops}, " \
+               "farm radius: {radius}".format(id=self.id,
+                                              coords=self.coords,
+                                              name=self.name,
+                                              troops=self.troops_count,
+                                              radius=self.radius)
 
     def __repr__(self):
         return self.__str__()
@@ -233,14 +243,17 @@ class Unit:
 
     @classmethod
     def get_def_names(cls):
-        return ['spear', 'sword', 'archer', 'axe', 'spy', 'light', 'marcher', 'heavy']
+        return ['spear', 'sword', 'archer', 'axe', 'spy',
+                'light', 'marcher', 'heavy']
 
     @classmethod
     def get_off_names(cls):
         return ['axe', 'spy', 'light', 'marcher', 'heavy']
 
     def __str__(self):
-        return "Unit:=>{0}, speed:=>{1}, haul:=>{2}".format(self.name, self.speed, self.haul)
+        return "Unit:=>{0}, speed:=>{1}, haul:=>{2}".format(self.name,
+                                                            self.speed,
+                                                            self.haul)
 
     def __repr__(self):
         return self.__str__()
