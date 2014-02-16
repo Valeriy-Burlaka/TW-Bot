@@ -84,7 +84,9 @@ class VillageManager(Thread):
         if villa_id in self.farming_villages:
             train_screen_html = self.get_train_screen(villa_id)
             self.farming_villages[villa_id].update_troops_count(train_screen_html=train_screen_html)
-            self.farming_villages[villa_id].active = True    # since some troops have returned, try to consider villa as attacker again.
+            # since some troops have returned, try
+            # to consider villa as attacker again.
+            self.farming_villages[villa_id].active = True
             time.sleep(random.random() * 3)
 
     def get_farming_villages(self, use_def, heavy_is_def):

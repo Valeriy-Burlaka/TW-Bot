@@ -86,9 +86,4 @@ if __name__ == '__main__':
         main(sys.argv)
     except SystemExit:
         print("Exiting now")
-
-
-
-
-
-
+        os._exit(1)

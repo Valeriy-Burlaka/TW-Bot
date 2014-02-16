@@ -71,9 +71,9 @@ class RequestManager:
     def get_village_overview(self, village_id):
         url = 'http://{host}/game.php?village={id}&' \
               'screen=overview'.format(host=self.host, id=village_id)
-        self.referer =  'http://{host}/game.php?village={id}&' \
-                        'screen=overview_villages'.format(host=self.host,
-                                                          id=self.main_id)
+        self.referer = 'http://{host}/game.php?village={id}&' \
+                       'screen=overview_villages'.format(host=self.host,
+                                                         id=self.main_id)
         headers = self.get_default_headers()
         req = Request(url, headers=headers)
         return self.safe_opener(req)
