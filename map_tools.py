@@ -131,6 +131,62 @@ class MapMath:
         return targets
 
 
+class MapStorage:
+    """
+    Delegates save & update operations to one of storage-helpers
+    """
+
+    def __init__(self, storage_type='local_file', storage_name='map_data'):
+        if storage_type == 'local_file':
+            self.storage_processor = LocalStorage(storage_name)
+        else:
+            raise NotImplementedError("Specified storage type for map data"
+                                      "is not implemented yet!")
+
+    def get_saved_villages(self):
+        saved_villages = self.storage_processor.get_saved_villages()
+        return saved_villages
+
+    def update_villages(self, villages):
+        self.storage_processor.update_villages(villages)
+
+
+class LocalStorage:
+    """
+    Handles retrieval & update of village data saved in a local file.
+
+    Methods:
+
+    get_saved_villages:
+        returns villages that were saved in a local shelve file
+
+    update_villages:
+        updates information about (attacked) villages in a local
+        shelve file
+    """
+
+    def __init__(self, storage_name):
+        self.storage_name = storage_name
+
+    def get_saved_villages(self):
+        storage = shelve.open(self.storage_name)
+        saved_villages = storage.get('villages', {})
+        storage.close()
+        return saved_villages
+
+    def update_villages(self, villages):
+        storage = shelve.open(self.storage_name)
+        if 'villages' in storage:
+            saved_villages = storage['villages']
+        else:
+            saved_villages = {}
+        for coords, village in villages.items():
+            saved_villages[coords] = village
+
+        storage['villages'] = saved_villages
+        storage.close()
+
+
 class Map:
     """
     A collecton of barbarian & bonus Villages (neutral).
@@ -141,45 +197,12 @@ class Map:
     """
 
     def __init__(self, base_x, base_y, request_manager,
-                 lock, run_path, depth=2, mapfile='map'):
+                 lock, run_path, depth=2):
         self.request_manager = request_manager
         self.lock = lock
         self.run_path = run_path
         self.villages = {}  # {(x,y): {'village': Village, 'distance': int}
-        self.mapfile = mapfile
         self.build_villages(base_x, base_y, depth)
-        self.get_saved_villages()
-
-    def get_saved_villages(self):
-        """Searches for already existing villages in a local
-        shelve file and updates self.villages if any.
-        """
-        f = shelve.open(self.mapfile)
-        if 'villages' in f:
-            still_valid = {}
-            for coords, village in f['villages'].items():
-                # Saved village remained Bonus/Barbarian
-                if coords in self.villages:
-                    # Update with saved data
-                    self.villages[coords] = village
-                    still_valid[coords] = village
-            f['villages'] = still_valid
-        f.close()
-
-    def update_villages(self, villages):
-        """Updates info about attacked villages in self.villages
-        and in mapfile.
-        """
-        f = shelve.open(self.mapfile)
-        if 'villages' in f:
-            saved_villages = f['villages']
-        else:
-            saved_villages = {}
-        for coords, village in villages.items():
-            saved_villages[coords] = village
-            self.villages[coords] = village
-        f['villages'] = saved_villages
-        f.close()
 
     def build_villages(self, x, y, depth):
         """Extracts village's data from sector data.
@@ -194,15 +217,14 @@ class Map:
         map_html = self.get_map_overview(x, y)
         # list of dicts, each dict represents 1 sector
 
-
-            if depth:
-                sector_corners = self.get_sector_corners(sector_coords)
-                event_msg = "Calculated the next sector " \
-                            "corners: {}".format(sector_corners)
-                logging.info(event_msg)
-                for corner in sector_corners:
-                    time.sleep(random.random() * 6)
-                    self.build_villages(*corner, depth=depth)
+        if depth:
+            sector_corners = self.get_sector_corners(sector_coords)
+            event_msg = "Calculated the next sector " \
+                        "corners: {}".format(sector_corners)
+            logging.info(event_msg)
+            for corner in sector_corners:
+                time.sleep(random.random() * 6)
+                self.build_villages(*corner, depth=depth)
 
         logging.info("Villages upon map init: {}".format(self.villages))
 
@@ -212,8 +234,6 @@ class Map:
         html_data = self.request_manager.get_map_overview(x, y)
         self.lock.release()
         return html_data
-
-
 
     def get_village(self, villa_coords, village_data):
         """
