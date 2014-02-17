@@ -6,24 +6,33 @@ import os
 import logging
 from threading import Thread
 
+from map_tools import MapStorage, MapParser, MapMath
+
 
 class VillageManager(Thread):
     """
 
     """
 
-    def __init__(self, request_manager, lock, main_id, farm_with, run_path,
-                 use_def_to_farm=False, heavy_is_def=False, t_limit_to_leave=4):
+    def __init__(self, request_manager, lock, farm_with, trusted_targets, run_path,
+                 map_depth=2, storage_type='local_file', 
+                 storage_file_name='map_data', use_def_to_farm=False,  
+                 heavy_is_def=False, t_limit_to_leave=4):
         Thread.__init__(self)
         self.request_manager = request_manager
         self.lock = lock
-        self.main_id = main_id
         self.farm_with = farm_with
         self.run_path = run_path
+        self.map_depth = map_depth
+        self.map_storage = MapStorage(storage_type, storage_file_name)
+        self.map_parser = MapParser()
         self.player_villages = self.build_player_villages()
         self.t_limit = t_limit_to_leave
         self.farming_villages = self.get_farming_villages(use_def_to_farm,
                                                           heavy_is_def)
+        self.trusted_targets = trusted_targets
+        self.target_villages = self.get_target_villages()
+        self.targets_by_id = self.get_targets_by_attacker_id()
 
     def build_player_villages(self):
         """
@@ -33,13 +42,13 @@ class VillageManager(Thread):
         with open(os.path.join(self.run_path, "overviews.html"), 'w') as f:
             f.write(overviews_html)
         villages_data = self.get_villages_data(overviews_html)
-        print(villages_data)
+        logging.debug(villages_data)
         player_villages = {}
         for villa_data in villages_data:
             villa_id, villa_coords, villa_name = villa_data[0], villa_data[1], villa_data[2]
-            pv = PlayerVillage(villa_id, villa_coords, villa_name)
-            player_villages[villa_id] = pv
-        print(player_villages)
+            player_village = PlayerVillage(villa_id, villa_coords, villa_name)
+            player_villages[villa_id] = player_village
+        logging.debug(player_villages)
         return player_villages
 
     @staticmethod
@@ -58,9 +67,166 @@ class VillageManager(Thread):
             villages_data[i] = (villa_id, (villa_x, villa_y), villa_name)
 
         return villages_data
+    
+    def get_farming_villages(self, use_def, heavy_is_def):
+        farming_villages = {villa_id: player_village for villa_id, player_village in
+                            self.player_villages.items() if
+                            villa_id in self.farm_with}
+        for player_village in farming_villages.values():
+            player_village.set_troops_to_use(use_def, heavy_is_def)
+            html_data = self.get_train_screen(player_village.id)
+            player_village.set_farm_radius(html_data, self.t_limit)
+            player_village.update_troops_count(train_screen_html=html_data)
+            time.sleep(random.random() * 3)
 
+        for player_village in farming_villages.values():
+            logging.info(str(player_village))
+
+        return farming_villages  
+        
+    def get_attackers(self):
+        attackers = []
+        for player_village in self.farming_villages.values():
+            attacker_data = (player_village.id, player_village.coords,
+                             player_village.radius)
+            attackers.append(attacker_data)
+
+        return attackers
+    
+    def get_target_villages(self):
+        """
+        Returns mapping of valid target villages (that may be farmed):
+        1. Retrieves previously stored villages
+        2. Retrieves sectors_data for each attacker
+        3. Composes mapping of target villages from all retrieved sectors.
+        4. Creates new / uses saved Village objects for all valid targets.
+        5. returns mapping {(x_coord, y_coord): Village_obj, ...}
+        """
+        target_villages = {}
+        saved_villages = self.map_storage.get_saved_villages()
+        distinct_farming_centers = [(player_village.coords, player_village.id)
+                                    for player_village
+                                    in self.farming_villages.values()]
+        map_data = self.get_map_data(distinct_farming_centers, self.map_depth)
+        # filter out all villages except Barbarian/Bonus and players villages
+        # explicitly marked as trusted targets
+        map_data = {coords: village_data for coords, village_data in map_data.items()
+                    if self.is_valid_target(village_data) or coords in self.trusted_targets}
+        for coords, village_data in map_data:
+            if coords in saved_villages:
+                target_villages[coords] = saved_villages[coords]
+                # Update info about village population
+                target_villages[coords].population = village_data[3]
+            else:
+                target_villages[coords] = self.build_village(coords, village_data)
+
+        logging.info("Villages collected upon map "
+                     "initialization: {}".format(target_villages))
+
+        return target_villages
+        
+    def get_map_data(self, distinct_farming_centers, map_depth):
+        """
+        Tries to retrieve distinct sectors data for given
+        farming centers.
+        Takes map_depth parameter which allows to get additional
+        sectors_data recursively.
+        That is, if map_depth=1, sectors_data will be retrieved only once
+        (using farming center as a base).
+        If map_depth=2, additional sectors_data will be retrieved for "corners"
+        of 1st-level sectors_data, and so on.
+
+        Merges data from all retrieved sectors and returns dictionary
+        of all found villages data in area: {(x,y): [village_data, ..], ...}
+        """
+        map_depth -= 1
+        map_data = {}
+        while distinct_farming_centers:
+            check_center = distinct_farming_centers[0]
+            center_coords = check_center[0]
+            center_x, center_y = center_coords[0], center_coords[1]
+            center_id = check_center[1]
+            map_overview_html = self.get_map_overview(center_id, center_x, center_y)
+            event_msg = "Retrieving map data from ({x},{y}) base point." \
+                        "Map depth={depth}".format(x=center_x, y=center_y, depth=map_depth)
+            logging.debug(event_msg)
+            sectors_data = self.map_parser.collect_sector_data(map_overview_html)
+            distinct_farming_centers = self.filter_distinct_centers(center_coords,
+                                                                    distinct_farming_centers,
+                                                                    sectors_data)
+            area_data = self.merge_sectors_data(sectors_data)
+            if map_depth:
+                area_coords = area_data.keys()
+                area_corners = MapMath.get_area_corners(area_coords)
+                event_msg = "Calculated the next area corners: {}".format(area_corners)
+                logging.debug(event_msg)
+                for corner in area_corners:
+                    # Delay between "user" requests of map overview
+                    time.sleep(random.random() * 6)
+                    area_data.update(self.get_map_data([corner], map_depth))
+
+            map_data.update(area_data)
+
+        return map_data
+
+    @staticmethod
+    def filter_distinct_centers(current_attacker, centers, sectors_data):
+        """
+        Checks to which sector current attacker belongs and
+        sorts out all attackers that also belong to the same sector.
+        Returns a list of attacking centers that are not "neighbors"
+        of a given attacker.
+        """
+        distinct_centers = []
+        for sector in sectors_data:
+            if current_attacker in sector:
+                for center in centers:
+                    center_coords = center[0]
+                    if center_coords not in sector:
+                        distinct_centers.append(center)
+        return distinct_centers
+
+    @staticmethod
+    def merge_sectors_data(sectors_data):
+        """
+        Merges all given sectors to one area dictionary
+        """
+        area = {}
+        for sector in sectors_data:
+            area.update(sector)
+        return area
+
+    @staticmethod
+    def is_valid_target(village_data):
+        """
+        Checks if village is Barbarian or Bonus without owner.
+        """
+        name = village_data[2]
+        owner = village_data[4]
+        if (name == 0 or name == "Bonus village") and owner == "0":
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def build_village(villa_coords, village_data):
+        """
+        Constructs a Village obj from given data
+        """
+        id = int(village_data[0])
+        # dot-separated str, e.g. "4.567" (=4567)
+        population = village_data[3]
+        population = int(population.replace('.', ''))
+        if len(village_data) > 6:
+            bonus = village_data[6][0]
+            village = Village(villa_coords, id, population, bonus)
+        else:
+            village = Village(villa_coords, id, population)
+
+        return village
+    
     def get_next_attacking_village(self):
-        active_farming_villages = {v_id: v for v_id, v in
+        active_farming_villages = {villa_id: v for villa_id, v in
                                    self.farming_villages.items() if v.active}
         if active_farming_villages:
             attackers = list(active_farming_villages.values())
@@ -84,32 +250,15 @@ class VillageManager(Thread):
             # since some troops have returned, try
             # to consider villa as attacker again.
             self.farming_villages[villa_id].active = True
-            time.sleep(random.random() * 3)
-
-    def get_farming_villages(self, use_def, heavy_is_def):
-        farming_villages = {v_id: pv for v_id, pv in
-                            self.player_villages.items() if
-                            v_id in self.farm_with}
-        for pv in farming_villages.values():
-            pv.set_troops_to_use(use_def, heavy_is_def)
-            html_data = self.get_train_screen(pv.id)
-            pv.set_farm_radius(html_data, self.t_limit)
-            pv.update_troops_count(train_screen_html=html_data)
-            time.sleep(random.random() * 3)
-
-        for pv in farming_villages.values():
-            logging.info(str(pv))
-
-        return farming_villages
-
-    def get_attackers(self):
-        attackers = []
-        for pv in self.farming_villages.values():
-            attacker_data = (pv.id, pv.coords, pv.radius)
-            attackers.append(attacker_data)
-
-        return attackers
-
+            time.sleep(random.random() * 3)     
+    
+    def get_map_overview(self, village_id, x, y):
+        time.sleep(random.random() * 3)
+        # Call to lock is not needed here, because getting
+        # map overview is synchronous process.
+        html_data = self.request_manager.get_map_overview(village_id, x, y)
+        return html_data
+    
     def get_train_screen(self, villa_id):
         self.lock.acquire()
         train_screen_html = self.request_manager.get_train_screen(villa_id)

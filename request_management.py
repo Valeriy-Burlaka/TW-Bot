@@ -48,10 +48,10 @@ class RequestManager:
         self.set_cookies()
         self.referer = None
 
-    def get_map_overview(self, x, y):
+    def get_map_overview(self, village_id, x, y):
         url = 'http://{host}/game.php?village={id}&x={x}&y={y}&' \
               'screen=map'.format(host=self.host,
-                                  id=self.main_id, x=x, y=y)
+                                  id=village_id, x=x, y=y)
         self.referer = url
         headers = self.get_default_headers()
         req = Request(url, headers=headers)

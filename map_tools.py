@@ -1,8 +1,6 @@
 import re
 import shelve
-import time
 import json
-import random
 import logging
 from math import sqrt
 
@@ -126,7 +124,8 @@ class MapMath:
         targets = []
         for coords, villa in villages.items():
             distance = MapMath.calculate_distance(source_coords, coords)
-            if distance <= radius: targets.append((coords, distance))
+            if distance <= radius:
+                targets.append((coords, distance))
 
         return targets
 
@@ -136,7 +135,7 @@ class MapStorage:
     Delegates save & update operations to one of storage-helpers
     """
 
-    def __init__(self, storage_type='local_file', storage_name='map_data'):
+    def __init__(self, storage_type, storage_name):
         if storage_type == 'local_file':
             self.storage_processor = LocalStorage(storage_name)
         else:
@@ -185,80 +184,4 @@ class LocalStorage:
 
         storage['villages'] = saved_villages
         storage.close()
-
-
-class Map:
-    """
-    A collecton of barbarian & bonus Villages (neutral).
-    Responsible for taking HTML map overview from
-    RequestManager and building a mapping of Village objects.
-    Responsible for giving a mapping of all villages in a particular range.
-    Responsible for storing and updating villages in a local shelve file.
-    """
-
-    def __init__(self, base_x, base_y, request_manager,
-                 lock, run_path, depth=2):
-        self.request_manager = request_manager
-        self.lock = lock
-        self.run_path = run_path
-        self.villages = {}  # {(x,y): {'village': Village, 'distance': int}
-        self.build_villages(base_x, base_y, depth)
-
-    def build_villages(self, x, y, depth):
-        """Extracts village's data from sector data.
-        Constructs Village objects with villages data.
-        If depth > 1, requests sector's corners & recursively repeats
-        Villages construction using corners as new start point.
-        """
-        depth -= 1
-        event_msg = "Started to build villages from ({x},{y}) base point." \
-                    "Map depth={depth}".format(x=x,y=y,depth=depth)
-        logging.info(event_msg)
-        map_html = self.get_map_overview(x, y)
-        # list of dicts, each dict represents 1 sector
-
-        if depth:
-            sector_corners = self.get_sector_corners(sector_coords)
-            event_msg = "Calculated the next sector " \
-                        "corners: {}".format(sector_corners)
-            logging.info(event_msg)
-            for corner in sector_corners:
-                time.sleep(random.random() * 6)
-                self.build_villages(*corner, depth=depth)
-
-        logging.info("Villages upon map init: {}".format(self.villages))
-
-    def get_map_overview(self, x, y):
-        time.sleep(random.random() * 3)
-        self.lock.acquire()
-        html_data = self.request_manager.get_map_overview(x, y)
-        self.lock.release()
-        return html_data
-
-    def get_village(self, villa_coords, village_data):
-        """
-        Constructs a Village obj from given data
-        """
-        id = int(village_data[0])
-        population = village_data[3]    # str, e.g. "4.567" (4567)
-        population = int(population.replace('.', ''))
-        if len(village_data) > 6:
-            bonus = village_data[6][0]
-            village = Village(villa_coords, id, population, bonus)
-        else:
-            village = Village(villa_coords, id, population)
-
-        return village
-
-    def is_valid(self, village_data):
-        """Checks if village is Barbarian or Bonus
-        without owner. Returns True/False
-        """
-        name = village_data[2]
-        owner = village_data[4]
-        # Barbarian or Bonus w/o owner
-        if (name == 0 or name == "Bonus village") and owner == "0":
-            return True
-        else:
-            return False
 
