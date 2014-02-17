@@ -68,6 +68,67 @@ class MapParser:
         return res
 
 
+class MapMath:
+    """
+    Provides helper methods for operations with villages on map.
+
+    Methods:
+
+    calculate_distance:
+        takes source and target coordinates
+        returns rounded distance between them
+
+    get_area_corners:
+        takes a sequence of coordinates and tries to find
+        4 most outer coordinates in this sequence.
+        return list of tuples(x,y)
+
+    get_targets_in_radius:
+        tries to determine which target villages lie in a given
+        radius from source (attacking) village.
+        returns list of tuples:
+        [((target_x_coordinate, target_y_coordinate), distance_to_target), ...]
+    """
+
+    @classmethod
+    def calculate_distance(cls, source_coords, target_coords):
+        x = target_coords[0]
+        y = target_coords[1]
+        side_x = abs(source_coords[0] - x)
+        side_y = abs(source_coords[1] - y)
+        distance = sqrt(side_x**2 + side_y**2)
+        return round(distance, 2)
+
+    @staticmethod
+    def get_area_corners(area_coords):
+        """
+        Determines area's corner points.
+        Returns list of 4 points ( [(x_min, y_min), (x_max, y_max), etc.])
+        """
+        corners = []
+        area_coords = sorted(area_coords)
+        min_min = area_coords[0]
+        max_max = area_coords[-1]
+        corners.extend([min_min, max_max])
+        w_min_x = [x for x in area_coords if x[0] == min_min[0]]
+        if len(w_min_x) > 1:    # if this village is not single on it's axis
+            min_max = sorted(w_min_x)[-1]
+            corners.append(min_max)
+        w_max_x = [x for x in area_coords if x[0] == max_max[0]]
+        if len(w_max_x) > 1:
+            max_min = sorted(w_max_x)[0]
+            corners.append(max_min)
+
+        return corners
+
+    @staticmethod
+    def get_targets_in_radius(source_coords, radius, villages):
+        targets = []
+        for coords, villa in villages.items():
+            distance = MapMath.calculate_distance(source_coords, coords)
+            if distance <= radius: targets.append((coords, distance))
+
+        return targets
 
 
 class Map:
@@ -152,26 +213,7 @@ class Map:
         self.lock.release()
         return html_data
 
-    def get_sector_corners(self, sector_coords):
-        """
-        Determines sector's corner points.
-        Returns list of 4 points ( [(x=min,y=min), (x=max, y=max), etc.])
-        """
-        corners = []
-        sector_coords = sorted(sector_coords)
-        min_min = sector_coords[0]
-        max_max = sector_coords[-1]
-        corners.extend([min_min, max_max])
-        w_min_x = [x for x in sector_coords if x[0] == min_min[0]]
-        if len(w_min_x) > 1:    # if this village is not single on it's axis
-            min_max = sorted(w_min_x)[-1]
-            corners.append(min_max)
-        w_max_x = [x for x in sector_coords if x[0] == max_max[0]]
-        if len(w_max_x) > 1:
-            max_min = sorted(w_max_x)[0]
-            corners.append(max_min)
 
-        return corners
 
     def get_village(self, villa_coords, village_data):
         """
@@ -200,20 +242,3 @@ class Map:
         else:
             return False
 
-    def calculate_distance(self, source_coords, target_coords):
-        x = target_coords[0]
-        y = target_coords[1]
-        side_x = abs(source_coords[0] - x)
-        side_y = abs(source_coords[1] - y)
-        distance = sqrt(side_x**2 + side_y**2)
-        return round(distance, 2)
-
-
-
-    def get_targets_in_radius(self, radius, source_coords):
-        targets = []
-        for coords, villa in self.villages.items():
-            distance = self.calculate_distance(source_coords, coords)
-            if distance <= radius: targets.append((coords, distance))
-
-        return targets
