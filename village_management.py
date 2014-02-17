@@ -7,6 +7,7 @@ import logging
 from threading import Thread
 
 from map_tools import MapStorage, MapParser, MapMath
+from attack_management import Unit
 
 
 class VillageManager(Thread):
@@ -419,49 +420,6 @@ class PlayerVillage:
                                               name=self.name,
                                               troops=self.troops_count,
                                               radius=self.radius)
-
-    def __repr__(self):
-        return self.__str__()
-
-
-class Unit:
-    """Representation of TW unit.
-    """
-
-    def __init__(self, name, attack, speed, haul):
-        self.name = name
-        self.attack = attack
-        self.speed = speed
-        self.haul = haul
-
-    @classmethod
-    def build_units(cls):
-        """
-        Pre-defines Unit objects for each TribalWars unit.
-        """
-        units = {'spear': Unit('spear', 10, 18, 25),
-                 'sword': Unit('sword', 25, 22, 15),
-                 'archer': Unit('archer', 15, 18, 10),
-                 'axe': Unit('axe', 40, 18, 10),
-                 'spy': Unit('spy', 0, 9, 0),
-                 'light': Unit('light', 130, 10, 80),
-                 'marcher': Unit('marcher', 120, 10, 50),
-                 'heavy': Unit('heavy', 150, 11, 50)}
-        return units
-
-    @staticmethod
-    def get_def_names():
-        return ['spear', 'sword', 'archer', 'axe', 'spy',
-                'light', 'marcher', 'heavy']
-
-    @staticmethod
-    def get_off_names():
-        return ['axe', 'spy', 'light', 'marcher', 'heavy']
-
-    def __str__(self):
-        return "Unit:=>{0}, speed:=>{1}, haul:=>{2}".format(self.name,
-                                                            self.speed,
-                                                            self.haul)
 
     def __repr__(self):
         return self.__str__()
