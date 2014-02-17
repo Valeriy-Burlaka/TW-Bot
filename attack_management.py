@@ -39,24 +39,18 @@ class AttackManager(Thread):
     """
 
     def __init__(self, request_manager, lock, village_manager,
-                 report_builder, map, observer_file, submit_id_numbers,
+                 report_builder, observer_file, submit_id_numbers,
                  t_limit_to_leave=4, farm_frequency=3, insert_spy_in_attack=True):
         Thread.__init__(self)
-        # Shared instance of RequestManager class
         self.request_manager = request_manager
-        # Shared instance of VillageManager class
         self.village_manager = village_manager
-        # Shared instance of ReportBuilder class
+        self.lock = lock
         self.report_builder = report_builder
         self.attack_observer = None
-        self.decision_maker = DecisionMaker(t_limit_to_leave,
-                                            insert_spy_in_attack)
-        # Shared instance of Bot's Lock()
-        self.lock = lock
-        self.map = map
+        self.decision_maker = DecisionMaker(t_limit_to_leave, insert_spy_in_attack)
         self.observer_file = observer_file
-        self.attackers = self.village_manager.get_attackers()
-        self.attack_queue = AttackQueue(self.attackers, self.map,
+        self.attack_queue = AttackQueue(self.village_manager.get_attack_targets(),
+                                        self.village_manager.get_targets_by_id(),
                                         farm_frequency)
         self.new_battle_reports = 0
         self.some_troops_returned = False
@@ -87,7 +81,7 @@ class AttackManager(Thread):
             time.sleep(1)
         self.attack_observer.save_registered_attacks()
         self.update_self_state()
-        self.attack_queue.update_villages_in_map()
+        self.village_manager.update_villages_in_storage(self.attack_queue.villages)
         logging.info("Finished to loot barbarians")
 
     def cycle(self):
@@ -404,43 +398,15 @@ class AttackQueue:
     Keeps queue of villages basing on distance to them
     and on remaining/estimated amount of resources to loot.
     Updates villages with new AttackReports.
-    Updates Map with villages.
     """
 
-    def __init__(self, attackers, map, farm_frequency):
-        self.attackers = attackers
-        self.map = map
+    def __init__(self, target_villages, targets_by_id, farm_frequency):
+        self.villages = target_villages
+        self.targets_by_id = targets_by_id
         self.rest = farm_frequency  # hours
-        self.targets_by_id = self.get_targets_in_radius()
-        self.villages = self.map.villages
         self.queue = {}
         self.visited_villages = {}
         self.untrusted_villages = {}
-
-    def get_targets_in_radius(self):
-        """
-        Requests Map for a list of attack targets in a given radius.
-        (Each attacks target is a tuple((x, y), distance_from_attacker)
-        Returns a dict, where keys are attackers id (PlayerVillages), values -
-        list of targets sorted ascending (nearest first)
-        """
-        targets_by_id = {}
-        for attacker_data in self.attackers:    # (villa.id, villa.coords, villa.radius)
-            attacker_id = attacker_data[0]
-            attacker_coords = attacker_data[1]
-            preferred_radius = attacker_data[2]
-            targets_in_radius = self.map.get_targets_in_radius(preferred_radius,
-                                                               attacker_coords)
-            targets_in_radius = sorted(targets_in_radius, key=lambda x: x[1])
-            targets_by_id[attacker_id] = targets_in_radius
-        event_msg = "AttackQueue: targets by id: {}".format(targets_by_id)
-        logging.info(event_msg)
-        for attacker_id, targets in targets_by_id.items():
-            event_msg = "Attacker {id} has {c} villages in " \
-                        "its farm radius".format(id=attacker_id,
-                                                 c=len(targets))
-            logging.info(event_msg)
-        return targets_by_id
 
     def build_queue(self, pending_arrival):
         """
@@ -534,10 +500,6 @@ class AttackQueue:
 
             logging.info("Queue length after flushing: "
                          "{}".format(len(self.queue)))
-
-    def update_villages_in_map(self):
-        self.map.update_villages(self.villages)
-        self.map.update_villages(self.visited_villages)
 
 
 class DecisionMaker:
