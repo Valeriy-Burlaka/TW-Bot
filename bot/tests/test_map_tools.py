@@ -1,28 +1,39 @@
-if __name__ == "__main__" and __package__ is None:
-    import sys, os
-    parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    sys.path.insert(1, parent_dir)
-    import bot
-    __package__ = str("bot")
-    del sys, os
-
+import os
 import unittest
 
 from bot.libs.map_tools import MapStorage, MapParser, MapMath
-from bot.libs.village_management import TargetVillage
-import factories
+
+
+HTML_SOURCES = 'bot/tests/test_data/html'
+
 
 class TestMapParser(unittest.TestCase):
 
     def setUp(self):
         self.parser = MapParser()
+        self.overviews_folder = os.path.join(HTML_SOURCES, 'map_overviews')
+
+    def test_get_map_data_against_all_test_data(self):
+        for filename in os.listdir(self.overviews_folder):
+            with open(os.path.join(self.overviews_folder, filename)) as f:
+                map_data = f.read()
+                sectors_data = self.parser.get_map_data(map_data)
+                self.assertIsInstance(sectors_data, list)
 
     def test_collect_sector_data(self):
-        with open('test_data/html/map_overviews/map_overview_200_300.html') as f:
+        filename = os.path.join(self.overviews_folder, 'map_overview_200_300.html')
+        with open(filename) as f:
             map_data = f.read()
         sectors_data = self.parser.collect_sector_data(map_data)
-        self.assertIsInstance(sectors_data, dict)
+        self.assertIsInstance(sectors_data, list)
+        for sector in sectors_data:
+            self.assertIsInstance(sector, dict)
 
+        first_sector = sectors_data[0]
+        self.assertIn((194, 295), first_sector)
+        self.assertEqual(first_sector[(194, 295)][0], '155394')  # village id
+        self.assertIn((207, 305), first_sector)
+        self.assertEqual(first_sector[(207, 305)][0], '135534')
 
 class TestMapMath(unittest.TestCase):
 
@@ -56,9 +67,6 @@ class TestMapMath(unittest.TestCase):
         self.assertIn((95, 95), target_coords)
         self.assertIn((105, 105), target_coords)
 
-
-
-
     #
     # def save_villages(self, villages):
     #     f = shelve.open(self.mapfile)
@@ -90,5 +98,11 @@ class TestMapMath(unittest.TestCase):
     #         self.assertEqual(villa.remaining_capacity, self.map.villages[coords].remaining_capacity)
     #     f.close()
 
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(MapMath))
+    suite.addTest(unittest.makeSuite(MapParser))
+    return suite
+
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner(verbosity=1).run(suite())

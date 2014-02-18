@@ -31,12 +31,14 @@ class MapParser:
             sector_villages = sector_data['data']['villages']
             # Some fun below: there are cases, when game stores
             # sector villages in different data types.
-            # 1) case: index is x coordinate, value is a dict of villages
-            # that lie on a y axis for given x.
+            # 1) case: 'sector_villages' is a list, where indices are
+            # x coordinates, items on these indices are dicts of villages
+            # that lie on a y axis for this x.
             if isinstance(sector_villages, list):
                 sector_gen = enumerate(sector_villages)
-            # 2) case: key is x coordinate, value is a dict of villages
-            # which lie on a y axis for given x.
+            # 2) case: 'sector_villages' is a dict, where keys are x
+            # coordinates, values are dicts of villages
+            # that lie on a y axis for given x.
             elif isinstance(sector_villages, dict):
                 sector_gen = sector_villages.items()
             assert sector_gen
