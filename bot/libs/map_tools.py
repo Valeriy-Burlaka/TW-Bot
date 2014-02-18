@@ -1,7 +1,6 @@
 import re
 import shelve
 import json
-import logging
 from math import sqrt
 
 

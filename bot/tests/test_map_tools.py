@@ -1,10 +1,5 @@
 if __name__ == "__main__" and __package__ is None:
     import sys, os
-    # The following assumes the script is in the top level of the package
-    # directory.  We use dirname() to help get the parent directory to add to
-    # sys.path, so that we can import the current package.  This is necessary
-    # since when invoked directly, the 'current' package is not automatically
-    # imported.
     parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     sys.path.insert(1, parent_dir)
     import bot
@@ -14,6 +9,19 @@ if __name__ == "__main__" and __package__ is None:
 import unittest
 
 from bot.libs.map_tools import MapStorage, MapParser, MapMath
+from bot.libs.village_management import TargetVillage
+import factories
+
+class TestMapParser(unittest.TestCase):
+
+    def setUp(self):
+        self.parser = MapParser()
+
+    def test_collect_sector_data(self):
+        with open('test_data/html/map_overviews/map_overview_200_300.html') as f:
+            map_data = f.read()
+        sectors_data = self.parser.collect_sector_data(map_data)
+        self.assertIsInstance(sectors_data, dict)
 
 
 class TestMapMath(unittest.TestCase):
@@ -47,6 +55,8 @@ class TestMapMath(unittest.TestCase):
         target_coords = [target[0] for target in targets_in_radius]
         self.assertIn((95, 95), target_coords)
         self.assertIn((105, 105), target_coords)
+
+
 
 
     #

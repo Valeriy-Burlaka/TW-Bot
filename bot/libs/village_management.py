@@ -6,8 +6,8 @@ import os
 import logging
 from threading import Thread
 
-from map_tools import MapStorage, MapParser, MapMath
-from attack_management import Unit
+from bot.libs.map_tools import MapStorage, MapParser, MapMath
+from bot.libs.attack_management import Unit
 
 
 class VillageManager(Thread):
@@ -435,8 +435,8 @@ class TargetVillage:
     Stores statistic about attacks {time_of_visit: looted_resources, ..}
     """
 
-    def __init__(self, coords, id, population, bonus=None):
-        self.id = id
+    def __init__(self, coords, id_, population, bonus=None):
+        self.id = id_
         self.coords = coords    # tuple (x,y)
         self.population = population    # int
         self.bonus = bonus  # str
