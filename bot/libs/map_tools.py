@@ -100,22 +100,32 @@ class MapMath:
     @staticmethod
     def get_area_corners(area_coords):
         """
-        Determines area's corner points.
-        Returns list of 4 points ( [(x_min, y_min), (x_max, y_max), etc.])
+        Roughly determines area's corner points.
+        Returns list of 4 points ( [(x_min, y_min), (x_max, y_max), ....])
         """
-        corners = []
         area_coords = sorted(area_coords)
-        min_min = area_coords[0]
-        max_max = area_coords[-1]
-        corners.extend([min_min, max_max])
-        w_min_x = [x for x in area_coords if x[0] == min_min[0]]
-        if len(w_min_x) > 1:    # if this village is not single on it's axis
-            min_max = sorted(w_min_x)[-1]
-            corners.append(min_max)
-        w_max_x = [x for x in area_coords if x[0] == max_max[0]]
-        if len(w_max_x) > 1:
-            max_min = sorted(w_max_x)[0]
-            corners.append(max_min)
+        min_x_min_y = area_coords[0]
+        max_x_max_y = area_coords[-1]
+        # Sort area coords by Y coordinate and in reversed order.
+        # Thus, 1st item in resulting sequence is a point with
+        # minimum X & maximum Y, last item = maximum X & minimum Y
+        area_coords = sorted(area_coords, key=lambda item: item[1], reverse=True)
+        # Retrieve remaining corner points that are distinct from MIN_MIN
+        # and MAX_MAX points (we can have only one village on the outermost axis,
+        # so, for example, MIN_MIN point will be equal to MIN_MAX point.
+        for point in area_coords:
+            if point != min_x_min_y:
+                min_x_max_y = point
+                break
+        for point in reversed(area_coords):
+            if point != max_x_max_y:
+                max_x_min_y = point
+                break
+        try:
+            corners = [min_x_min_y, max_x_max_y, min_x_max_y, max_x_min_y]
+        # Impossible situation (2 villages in area at all), however..
+        except NameError:
+            corners = [min_x_min_y, max_x_max_y, min_x_min_y, max_x_max_y]
 
         return corners
 
