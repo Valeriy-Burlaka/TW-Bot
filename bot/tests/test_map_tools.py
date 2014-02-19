@@ -1,17 +1,18 @@
 import os
 import unittest
+from unittest import mock
 
-from bot.libs.map_tools import MapStorage, MapParser, MapMath
-
-
-HTML_SOURCES = 'bot/tests/test_data/html'
-
+from bot.libs.map_tools import MapStorage, MapParser, MapMath, LocalStorage
+from bot.tests.factories import TargetVillageFactory
+from bot.tests.helpers import MapStorageHelper
+import settings
 
 class TestMapParser(unittest.TestCase):
 
     def setUp(self):
         self.parser = MapParser()
-        self.overviews_folder = os.path.join(HTML_SOURCES, 'map_overviews')
+        self.overviews_folder = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+                                             'map_overviews')
 
     def test_get_map_data_against_all_test_data(self):
         for filename in os.listdir(self.overviews_folder):
@@ -67,7 +68,43 @@ class TestMapMath(unittest.TestCase):
         self.assertIn((95, 95), target_coords)
         self.assertIn((105, 105), target_coords)
 
-    #
+
+class TestMapStorage(unittest.TestCase):
+
+    def setUp(self):
+        self.helper = MapStorageHelper()
+        self.storage_folder = self.helper.create_test_storage()
+        self.storage_name = os.path.join(self.storage_folder, 'test_storage')
+
+    def tearDown(self):
+        self.helper.clean_test_storage()
+
+    def test_init_with_local_processor(self):
+        map_storage = MapStorage(storage_type='local_file',
+                                 storage_name=self.storage_name)
+        self.assertIsInstance(map_storage.storage_processor, LocalStorage)
+
+    def test_init_with_non_existing_processor(self):
+        self.assertRaises(NotImplementedError, MapStorage, 'not_implemented', 'test')
+
+    @mock.patch('bot.libs.map_tools.LocalStorage', autospec=True)
+    def test_retrieve_from_local_delegated_to_processor(self, mocked_storage):
+        map_storage = MapStorage(storage_type='local_file',
+                                 storage_name=self.storage_name)
+        processor = map_storage.storage_processor
+        map_storage.get_saved_villages()
+        processor.get_saved_villages.assert_called_once_with()
+
+    @mock.patch('bot.libs.map_tools.LocalStorage', autospec=True)
+    def test_save_to_local_delegated_to_processor(self, mocked_storage):
+        map_storage = MapStorage(storage_type='local_file',
+                                 storage_name=self.storage_name)
+        processor = map_storage.storage_processor
+        villages = {(0, 0): []}
+        map_storage.update_villages(villages)
+        processor.update_villages.assert_called_once_with(villages)
+
+
     # def save_villages(self, villages):
     #     f = shelve.open(self.mapfile)
     #     if 'villages' in f:
@@ -99,9 +136,9 @@ class TestMapMath(unittest.TestCase):
     #     f.close()
 
 def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(MapMath))
-    suite.addTest(unittest.makeSuite(MapParser))
+    suite = unittest.TestSuite(tests=(TestMapMath,
+                                      TestMapParser,
+                                      TestMapStorage))
     return suite
 
 if __name__ == '__main__':

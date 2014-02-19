@@ -46,3 +46,7 @@ if SUBMIT_ID_INFO:
     SUBMIT_IDS = SUBMIT_ID_INFO
 else:
     SUBMIT_IDS = False
+
+# Test & source data location
+MAP_DATA_FOLDER = 'bot/runtime_data/map'
+HTML_TEST_DATA_FOLDER = 'bot/tests/test_data/html'
