@@ -77,6 +77,11 @@ class VillageManager(Thread):
         return self.targets_by_id
 
     def get_next_attacking_village(self):
+        """
+        Randomly decides which PlayerVillage from list of active
+        attacking villages should attack next.
+        Returns tuple(attacker_id, attacker_troops)
+        """
         active_farming_villages = {villa_id: v for villa_id, v in
                                    self.farming_villages.items() if v.active}
         if active_farming_villages:
@@ -90,9 +95,18 @@ class VillageManager(Thread):
         self.farming_villages[villa_id].active = False
 
     def update_troops_count(self, villa_id, troops_sent):
+        """
+        Updates attacker's (PlayerVillage) troops count according
+        to amount of troops that were sent in attack.
+        """
         self.farming_villages[villa_id].update_troops_count(troops_sent=troops_sent)
 
     def refresh_village_troops(self, villa_id):
+        """
+        Requests Games' train screen (where all troops for PlayerVillage
+        are displayed) and passes it to given PlayerVillage to update
+        troops count
+        """
         if villa_id in self.farming_villages:
             train_screen_html = self._get_train_screen(villa_id)
             self.farming_villages[villa_id].update_troops_count(train_screen_html=train_screen_html)
@@ -353,8 +367,9 @@ class VillageManager(Thread):
     def _get_map_overview(self, village_id, x, y):
         if not settings.DEBUG:
             time.sleep(random.random() * 3)
-        # Call to lock is not needed here, because getting
-        # map overview is synchronous process.
+        # Call to lock is not needed here, because map_overviews are
+        # requested upon VillageManager init and thus are performed
+        # synchronously.
         html_data = self.request_manager.get_map_overview(village_id, x, y)
         return html_data
     
