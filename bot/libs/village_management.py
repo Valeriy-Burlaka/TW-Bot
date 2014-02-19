@@ -7,6 +7,7 @@ from threading import Thread
 
 from bot.libs.map_tools import MapStorage, MapParser, MapMath
 from bot.libs.attack_management import Unit
+import settings
 
 
 class VillageManager(Thread):
@@ -84,8 +85,6 @@ class VillageManager(Thread):
             attacker_id = next_attacker.id
             attacker_troops = next_attacker.get_troops_count()
             return (attacker_id, attacker_troops)
-        else:
-            return
 
     def disable_farming_village(self, villa_id):
         self.farming_villages[villa_id].active = False
@@ -100,7 +99,8 @@ class VillageManager(Thread):
             # since some troops have returned, try
             # to consider villa as attacker again.
             self.farming_villages[villa_id].active = True
-            time.sleep(random.random() * 3)
+            if not settings.DEBUG:
+                time.sleep(random.random() * 3)
 
     def update_villages_in_storage(self, villages):
         self.map_storage.update_villages(villages)
@@ -189,7 +189,8 @@ class VillageManager(Thread):
             html_data = self._get_train_screen(player_village.id)
             player_village.set_farm_radius(html_data, t_limit_to_leave)
             player_village.update_troops_count(train_screen_html=html_data)
-            time.sleep(random.random() * 3)
+            if not settings.DEBUG:
+                time.sleep(random.random() * 3)
 
         for player_village in farming_villages.values():
             logging.info(str(player_village))
@@ -285,7 +286,8 @@ class VillageManager(Thread):
 
                 for corner in area_corners:
                     # Delay between "user" requests of map overview
-                    time.sleep(random.random() * 6)
+                    if not settings.DEBUG:
+                        time.sleep(random.random() * 6)
                     area_data.update(self._get_map_data([corner], map_depth))
 
             map_data.update(area_data)
@@ -349,7 +351,8 @@ class VillageManager(Thread):
         return village
     
     def _get_map_overview(self, village_id, x, y):
-        time.sleep(random.random() * 3)
+        if not settings.DEBUG:
+            time.sleep(random.random() * 3)
         # Call to lock is not needed here, because getting
         # map overview is synchronous process.
         html_data = self.request_manager.get_map_overview(village_id, x, y)

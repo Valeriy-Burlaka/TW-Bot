@@ -5,6 +5,9 @@
 BROWSER = 'Chrome'
 # Game host
 HOST = 'en70.tribalwars.net'
+# Set to True to disable time.sleep() calls inside the code
+# (e.g. to run tests or to receive game-ban)
+DEBUG = False
 # Tribal Wars user data (account & password, needed to re-connect
 # user when session expired
 USER = 'Chebutroll'
