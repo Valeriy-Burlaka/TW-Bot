@@ -1,4 +1,5 @@
 import os
+import shelve
 import unittest
 from unittest import mock
 
@@ -105,35 +106,66 @@ class TestMapStorage(unittest.TestCase):
         processor.update_villages.assert_called_once_with(villages)
 
 
-    # def save_villages(self, villages):
-    #     f = shelve.open(self.mapfile)
-    #     if 'villages' in f:
-    #         temp_villages = f['villages']
-    #     else:
-    #         temp_villages = {}
-    #     for villa in villages:
-    #         temp_villages[villa.coords] = villa
-    #     f['villages'] = temp_villages
-    #     f.close()
-    #
-    #
-    # def test_update_villages(self):
-    #     valid_copies = {}
-    #     for villa in self.valid_villages:
-    #         coords = villa.coords
-    #         valid_copies[coords] = villa
-    #         valid_copies[coords].mine_levels = (1, 1, 1)
-    #         valid_copies[coords].remaining_capacity = 1000
-    #     self.map.update_villages(valid_copies)
-    #     f = shelve.open(self.mapfile)
-    #     for coords, villa in valid_copies.items():
-    #         self.assertTrue(coords in f['villages'])
-    #         self.assertEqual(villa.mine_levels, f['villages'][coords].mine_levels)
-    #         self.assertEqual(villa.remaining_capacity, f['villages'][coords].remaining_capacity)
-    #         self.assertTrue(coords in self.map.villages)
-    #         self.assertEqual(villa.mine_levels, self.map.villages[coords].mine_levels)
-    #         self.assertEqual(villa.remaining_capacity, self.map.villages[coords].remaining_capacity)
-    #     f.close()
+class TestLocalStorage(unittest.TestCase):
+
+    def setUp(self):
+        self.helper = MapStorageHelper()
+        self.storage_folder = self.helper.create_test_storage()
+        self.storage_name = os.path.join(self.storage_folder, 'test_storage')
+
+    def tearDown(self):
+        self.helper.clean_test_storage()
+
+    def test_get_saved_villages(self):
+        storage = LocalStorage(self.storage_name)
+        villages = storage.get_saved_villages()
+        self.assertIsInstance(villages, dict)
+        self.assertEqual(len(villages), 0)
+
+        test_village = TargetVillageFactory()
+        save_data = {}
+        save_data[test_village.coords] = test_village
+        manual_storage = shelve.open(self.storage_name)
+        manual_storage['villages'] = save_data
+        manual_storage.close()
+        villages = storage.get_saved_villages()
+        self.assertIsInstance(villages, dict)
+        self.assertEqual(len(villages), 1)
+        self.assertIn(test_village.coords, villages)
+        self.assertEqual(test_village.id, villages[test_village.coords].id)
+
+    def test_update_villages(self):
+        storage = LocalStorage(self.storage_name)
+        test_villages = TargetVillageFactory.build_batch(5)
+
+        save_data = {village.coords: village for village in test_villages}
+        storage.update_villages(save_data)
+        manual_storage = shelve.open(self.storage_name)
+        self.assertIn('villages', manual_storage)
+        self.assertCountEqual(manual_storage['villages'], save_data)
+        manual_storage.close()
+
+        for village in test_villages:
+            village.mine_levels = (10, 10, 10)
+            village.remaining_capacity = 10000
+            village.last_visited = 100000
+            village.defended = True
+        save_data = {village.coords: village for village in test_villages}
+        storage.update_villages(save_data)
+        manual_storage = shelve.open(self.storage_name)
+        self.assertIn('villages', manual_storage)
+        for village in test_villages:
+            saved_village = manual_storage['villages'][village.coords]
+            self.assertEqual(village.coords, saved_village.coords)
+            self.assertEqual(village.id, saved_village.id)
+            self.assertEqual(village.mine_levels, saved_village.mine_levels)
+            self.assertEqual(village.population, saved_village.population)
+            self.assertEqual(village.remaining_capacity, saved_village.remaining_capacity)
+            self.assertEqual(village.last_visited, saved_village.last_visited)
+            self.assertEqual(village.defended, saved_village.defended)
+
+        manual_storage.close()
+
 
 def suite():
     suite = unittest.TestSuite(tests=(TestMapMath,
