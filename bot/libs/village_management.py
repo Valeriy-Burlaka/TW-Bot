@@ -56,8 +56,8 @@ class VillageManager(Thread):
         parameters & current self.player_villages,
     """
 
-    def __init__(self, request_manager, lock, trusted_targets, map_depth=2,
-                 storage_type='local_file',  storage_file_name='map_data'):
+    def __init__(self, request_manager, lock, trusted_targets=None, map_depth=2,
+                 storage_type='local_file', storage_file_name='map_data'):
         Thread.__init__(self)
         self.request_manager = request_manager
         self.lock = lock
@@ -89,7 +89,7 @@ class VillageManager(Thread):
             next_attacker = random.choice(attackers)
             attacker_id = next_attacker.id
             attacker_troops = next_attacker.get_troops_count()
-            return (attacker_id, attacker_troops)
+            return attacker_id, attacker_troops
 
     def disable_farming_village(self, villa_id):
         self.farming_villages[villa_id].active = False
@@ -142,7 +142,7 @@ class VillageManager(Thread):
         """
         Returns mapping of valid target villages (that may be farmed):
         1. Retrieves previously stored villages
-        2. Retrieves sectors_data for each attacker
+        2. Retrieves sectors_data for each potential attacker
         3. Composes mapping of target villages from all retrieved sectors.
         4. Creates new / uses saved Village objects for all valid targets.
         5. returns mapping {(x_coord, y_coord): Village_obj, ...}
@@ -151,7 +151,7 @@ class VillageManager(Thread):
         saved_villages = self.map_storage.get_saved_villages()
         distinct_farming_centers = [(player_village.coords, player_village.id)
                                     for player_village
-                                    in self.farming_villages.values()]
+                                    in self.player_villages.values()]
         map_data = self._get_map_data(distinct_farming_centers, self.map_depth)
         # filter out all villages except Barbarian/Bonus and players villages
         # explicitly marked as trusted targets
@@ -288,8 +288,8 @@ class VillageManager(Thread):
 
             sectors_data = self.map_parser.collect_sector_data(map_overview_html)
             distinct_farming_centers = self._filter_distinct_centers(center_coords,
-                                                                    distinct_farming_centers,
-                                                                    sectors_data)
+                                                                     distinct_farming_centers,
+                                                                     sectors_data)
             area_data = self._merge_sectors_data(sectors_data)
             if map_depth > 0:
                 area_coords = area_data.keys()
@@ -352,15 +352,15 @@ class VillageManager(Thread):
         """
         Constructs a Village obj from given data
         """
-        id = int(village_data[0])
+        id_ = int(village_data[0])
         # dot-separated str, e.g. "4.567" (=4567)
         population = village_data[3]
         population = int(population.replace('.', ''))
         if len(village_data) > 6:
             bonus = village_data[6][0]
-            village = TargetVillage(villa_coords, id, population, bonus)
+            village = TargetVillage(villa_coords, id_, population, bonus)
         else:
-            village = TargetVillage(villa_coords, id, population)
+            village = TargetVillage(villa_coords, id_, population)
 
         return village
     
@@ -399,8 +399,8 @@ class PlayerVillage:
     troops.
     """
 
-    def __init__(self, id, coords, name, flag=None):
-        self.id = id
+    def __init__(self, id_, coords, name, flag=None):
+        self.id = id_
         self.coords = coords
         self.name = name
         self.flag = flag
@@ -414,7 +414,8 @@ class PlayerVillage:
         units = Unit.build_units()
         speeds_list = []
         for unit_name in self.troops_to_use:
-            if unit_name == 'spy': continue
+            if unit_name == 'spy':
+                continue
             if unit_name in troops_data:
                 unit_speed = units[unit_name].speed
                 # Per Game, speed is reversed value (minutes-per-tile),
@@ -538,7 +539,8 @@ class TargetVillage:
             looted = attack_report.looted_capacity
             if self.looted["total"]:
                 self.looted["total"] += looted
-            else: self.looted["total"] = looted
+            else:
+                self.looted["total"] = looted
             self.looted["per_visit"].append((self.last_visited, looted,))
 
     def set_h_rates(self):
@@ -575,7 +577,8 @@ class TargetVillage:
             hours = t_of_rest / 3600
             # There no chances that anybody in player's
             # area didn't visit target village over time.
-            if hours >= 8: hours = 8
+            if hours >= 8:
+                hours = 8
             estimated_capacity = sum(x * hours for x in self.h_rates)
             if self.remaining_capacity:
                 estimated_capacity += self.remaining_capacity
