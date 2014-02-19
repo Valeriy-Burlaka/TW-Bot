@@ -8,6 +8,7 @@ from bot.tests.factories import TargetVillageFactory
 from bot.tests.helpers import MapStorageHelper
 import settings
 
+
 class TestMapParser(unittest.TestCase):
 
     def setUp(self):
@@ -153,6 +154,7 @@ class TestLocalStorage(unittest.TestCase):
         save_data = {village.coords: village for village in test_villages}
         storage.update_villages(save_data)
         manual_storage = shelve.open(self.storage_name)
+
         self.assertIn('villages', manual_storage)
         for village in test_villages:
             saved_village = manual_storage['villages'][village.coords]
@@ -163,7 +165,6 @@ class TestLocalStorage(unittest.TestCase):
             self.assertEqual(village.remaining_capacity, saved_village.remaining_capacity)
             self.assertEqual(village.last_visited, saved_village.last_visited)
             self.assertEqual(village.defended, saved_village.defended)
-
         manual_storage.close()
 
 
