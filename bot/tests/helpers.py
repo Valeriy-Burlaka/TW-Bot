@@ -3,6 +3,7 @@ import shutil
 from unittest import mock
 
 import settings
+from bot.libs.request_management import RequestManager
 
 
 class MapStorageHelper:
@@ -24,14 +25,12 @@ class MapStorageHelper:
 class MockCollection:
 
     @staticmethod
-    def get_patched_lock():
+    def get_mocked_lock():
         config = {'acquire.return_value': None, 'release.return_value': None}
-        patched_lock = mock.Mock(**config)
-        return patched_lock
+        mocked_lock = mock.Mock(**config)
+        return mocked_lock
 
     @staticmethod
-    def get_patched_request_manager():
-        patcher = mock.patch('bot.libs.request_management.RequestManager',
-                             autospec=True)
-        patched_rm = patcher.start()
-        return patched_rm
+    def get_mocked_request_manager():
+        mocked_rm = mock.Mock(spec=RequestManager)
+        return mocked_rm

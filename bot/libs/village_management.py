@@ -163,7 +163,7 @@ class VillageManager(Thread):
                 # Update info about village population
                 target_villages[coords].population = village_data[3]
             else:
-                target_villages[coords] = self._build_village(coords, village_data)
+                target_villages[coords] = self._build_target_village(coords, village_data)
 
         logging.info("Villages collected upon map "
                      "initialization: {}".format(target_villages))
@@ -275,7 +275,8 @@ class VillageManager(Thread):
         """
         map_depth -= 1
         map_data = {}
-        while distinct_farming_centers:
+        while distinct_farming_centers: # list of farming centers
+            # check_center: ((x_coord, y_coord), village_id))
             check_center = distinct_farming_centers[0]
             center_coords = check_center[0]
             center_x, center_y = center_coords[0], center_coords[1]
@@ -299,10 +300,13 @@ class VillageManager(Thread):
                 logging.debug(event_msg)
 
                 for corner in area_corners:
+                    # area_data[(x, y)] - village data, 0 index = str(village_id)
+                    corner_id = int(area_data[corner][0])
+                    centers =[(corner, corner_id)]
                     # Delay between "user" requests of map overview
                     if not settings.DEBUG:
                         time.sleep(random.random() * 6)
-                    area_data.update(self._get_map_data([corner], map_depth))
+                    area_data.update(self._get_map_data(centers, map_depth))
 
             map_data.update(area_data)
 
@@ -348,7 +352,7 @@ class VillageManager(Thread):
             return False
 
     @staticmethod
-    def _build_village(villa_coords, village_data):
+    def _build_target_village(villa_coords, village_data):
         """
         Constructs a Village obj from given data
         """

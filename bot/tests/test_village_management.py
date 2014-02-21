@@ -1,35 +1,279 @@
+import os
 import unittest
-from unittest import mock
-from threading import Lock
+from unittest.mock import call, patch
 
 import settings
 from bot.tests.helpers import MockCollection
-from bot.libs.village_management import VillageManager
+from bot.libs.village_management import VillageManager, TargetVillage
+
 
 class TestVillageManager(unittest.TestCase):
 
     def setUp(self):
-        # Patch LocalStorage class to avoid garbage-creation
+        settings.DEBUG = True
+        # Patch MapStorage class to avoid garbage-creation
         # (shelve file)
-        with mock.patch('bot.libs.map_tools.LocalStorage',
+        with patch('bot.libs.village_management.MapStorage',
                         autospec=True) as patched_storage:
-            patched_storage.get_saved_villages.return_value = {}
-            patched_lock = MockCollection.get_patched_lock()
-            patched_rm = self.get_patched_request_manager()
-
-            self.village_manager = VillageManager(patched_rm, patched_lock)
+            # Patch MapParser to control return value of .collect_sectors_data
+            # method in tests
+            with patch('bot.libs.village_management.MapParser') as patched_parser:
+                patched_storage.get_saved_villages.return_value = {}
+                mocked_lock = MockCollection.get_mocked_lock()
+                mocked_rm = self.get_mocked_request_manager()
+                self.village_manager = VillageManager(mocked_rm, mocked_lock)
 
     def tearDown(self):
-        pass
+        settings.DEBUG = False
 
-    @staticmethod
-    def get_patched_request_manager():
-        patched_rm = MockCollection.get_patched_request_manager()
-        patched_rm.get_map_overview.return_value = ''
-        patched_rm.get_train_screen.return_value = ''
-        patched_rm.get_overviews_screen.return_value = ''
-        patched_rm.get_village_overview.return_value = ''
-        return patched_rm
+    def get_mocked_request_manager(self):
+        mocked_rm = MockCollection.get_mocked_request_manager()
+        config = {'get_map_overview.return_value': '',
+                  'get_train_screen.return_value': '',
+                  'get_overviews_screen.return_value': '',
+                  'get_village_overview.return_value': ''}
+        mocked_rm.configure_mock(**config)
+
+        return mocked_rm
+
+    def test_get_map_data(self):
+        # refresh calls to request_manager:
+        self.village_manager.request_manager.method_calls = []
+        # 1 case: ._get_map_data is called with empty list
+        # of farming centers. expected: return value = empty dict,
+        # no calls to request_manager were performed
+        map_data = self.village_manager._get_map_data([], map_depth=10)
+        self.assertEqual(map_data, {})
+        self.assertEqual(len(self.village_manager.request_manager.method_calls), 0)
+        # 2 case: ._get_map_data is called with 2 farming
+        # centers, that belong to the same sector & with map_depth=1
+        # expected: ._get_map_overview method is called once (for 1st
+        # farming center); no calls to MapMath.get_area_corners method;
+        # return value = merged sectors data.
+        with patch('bot.libs.village_management.MapMath', autospec=True) as map_math:
+            distinct_centers = []
+            distinct_centers.append(((1, 1), 1))  # ((x, y), id)
+            distinct_centers.append(((2, 2), 2))
+            # set return value for .collect_sectors_data of map_parser,
+            # so both centers are in the same sector
+            self.village_manager.map_parser.collect_sector_data.return_value = \
+                [{(1, 1): ['1001'], (2, 2): ['1002'], (3, 3): ['1003']},
+                 {(4, 4): ['1004'], (5, 5): ['1005']},
+                 {(8, 8): ['1008'], (10, 10): ['1010'], (6, 6): ['1006']},
+                 {(0, 0): ['10000'], (0, 1000): ['10001'], (1000, 0): ['10002'],
+                  (1000, 1000): ['10003']}]
+            expected_return_value = {(1, 1): ['1001'], (2, 2): ['1002'],
+                                     (3, 3): ['1003'], (4, 4): ['1004'],
+                                     (5, 5): ['1005'], (6, 6): ['1006'],
+                                     (8, 8): ['1008'], (10, 10): ['1010'],
+                                     (0, 0): ['10000'], (0, 1000): ['10001'],
+                                     (1000, 0): ['10002'], (1000, 1000): ['10003']}
+            map_data = self.village_manager._get_map_data(distinct_centers, map_depth=1)
+            self.assertEqual(map_data, expected_return_value)
+            calls_to_rm = self.village_manager.request_manager.method_calls
+            self.assertEqual(len(calls_to_rm), 1)
+            self.assertIn(call.get_map_overview(1, 1, 1), calls_to_rm)
+            # refresh calls to request_manager:
+            self.village_manager.request_manager.method_calls = []
+            # 3 case: 2 farming centers (same sector), map_depth=2.
+            # expected: _get_map_overview is called 5 times (center +
+            # 4 area corners. return value = merged sectors data
+            map_math.get_area_corners.return_value = [(0, 0), (0, 1000),
+                                                      (1000, 0), (1000, 1000)]
+            map_data = self.village_manager._get_map_data(distinct_centers, map_depth=2)
+            self.assertEqual(map_data, expected_return_value)
+            calls_to_rm = self.village_manager.request_manager.method_calls
+            self.assertEqual(len(calls_to_rm), 5)
+            self.assertIn(call.get_map_overview(1, 1, 1), calls_to_rm)
+            self.assertIn(call.get_map_overview(10000, 0, 0), calls_to_rm)
+            self.assertIn(call.get_map_overview(10001, 0, 1000), calls_to_rm)
+            self.assertIn(call.get_map_overview(10002, 1000, 0), calls_to_rm)
+            self.assertIn(call.get_map_overview(10003, 1000, 1000), calls_to_rm)
+            # refresh calls to request_manager:
+            self.village_manager.request_manager.method_calls = []
+            # 4 case: 2 farming centers in distinct sectors, map_depth=2.
+            # expected: _get_map_overview is called 10 times (each center &
+            # 4 area corners for each center. return value = merged sectors data
+            self.village_manager.map_parser.collect_sector_data.return_value = \
+                [{(1, 1): ['1001'], (3, 3): ['1003'], (1000, 1000): ['10003']},
+                 {(2, 2): ['1002'], (4, 4): ['1004'], (5, 5): ['1005']},
+                 {(8, 8): ['1008'], (10, 10): ['1010'], (6, 6): ['1006']},
+                 {(0, 0): ['10000'], (0, 1000): ['10001'], (1000, 0): ['10002']}]
+            map_data = self.village_manager._get_map_data(distinct_centers, map_depth=2)
+            self.assertEqual(map_data, expected_return_value)
+            calls_to_rm = self.village_manager.request_manager.method_calls
+            expected_calls = [call.get_map_overview(1, 1, 1),
+                              call.get_map_overview(2, 2, 2),
+                              call.get_map_overview(10000, 0, 0),
+                              call.get_map_overview(10000, 0, 0),
+                              call.get_map_overview(10001, 0, 1000),
+                              call.get_map_overview(10001, 0, 1000),
+                              call.get_map_overview(10002, 1000, 0),
+                              call.get_map_overview(10002, 1000, 0),
+                              call.get_map_overview(10003, 1000, 1000),
+                              call.get_map_overview(10003, 1000, 1000)]
+            self.assertCountEqual(expected_calls, calls_to_rm)
+
+    def test_filter_distinct_centers(self):
+        """
+        Possible situations:
+        1) All farming centers lie in the same sector as
+        current attacker: expected return = [] (empty list)
+        2) All farming centers lie in different sectors
+        from attacker: expected return = list with all centers,
+        current attacker not in returned list
+        3) Some farming centers do lie in the same sector as
+        current attacker and some centers do not. expected
+        return: list with centers that do not lie in attacker's
+        sector, attacker is not in returned list.
+        Expected returned type = list of tuples, where each tuple
+        is (x, y) coordinates
+        """
+        current_attacker = (1, 1)
+        centers = [((2, 2), 'a'), ((3, 3), 'b'), ((4, 4), 'c'), ((5, 5), 'd')]
+        # some non-centers point added for plausibility
+        all_in_one_data = [{(1, 1): '', (2, 2): '', (3, 3): '',
+                            (4, 4): '', (5, 5): ''}, {(6, 6): '', (7, 7): ''}]
+        distinct_centers = self.village_manager._filter_distinct_centers(
+            current_attacker, centers, all_in_one_data)
+        self.assertEqual(distinct_centers, [])
+
+        all_in_separate = [{(1, 1): '', (10, 10): ''}, {(2, 2): '', (3, 3): ''},
+                           {(4, 4): '', (8, 8): '', (10, 10): '', (5, 5): ''}]
+        distinct_centers = self.village_manager._filter_distinct_centers(
+            current_attacker, centers, all_in_separate)
+        self.assertCountEqual(distinct_centers, centers)
+
+        in_same_and_separate = [{(1, 1): '', (2, 2): '', (3, 3): ''},
+                                {(4, 4): '', (7, 7): '', (9, 9): ''},
+                                {(5, 5): '', (6, 6): ''}]
+        distinct_centers = self.village_manager._filter_distinct_centers(
+            current_attacker, centers, in_same_and_separate)
+        self.assertCountEqual(distinct_centers, [((4, 4), 'c'), ((5, 5), 'd')])
+
+    def test_merge_sectors_data(self):
+        sectors_data_unique = [{(1, 1): 'test11', (2, 2): 'test22'},
+                               {(3, 3): 'test33', (4, 4): 'test44'}]
+        expected = {(1, 1): 'test11', (2, 2): 'test22',
+                    (3, 3): 'test33', (4, 4): 'test44'}
+        actual = self.village_manager._merge_sectors_data(sectors_data_unique)
+        self.assertTrue(expected, actual)
+
+        sectors_data_non_unique = [{(1, 1): 'test11', (2, 2): 'test22'},
+                                   {(1, 1): 'test33', (4, 4): 'test44'}]
+        expected = {(1, 1): 'test33', (2, 2): 'test22',  (4, 4): 'test44'}
+        actual = self.village_manager._merge_sectors_data(sectors_data_non_unique)
+        self.assertTrue(expected, actual)
+
+    def test_is_valid_target(self):
+        # [2] = village_name ("Bonus village" for bonus villages
+        # & 0 for barbarian villages)
+        # [4] = owner ('0' if no owner)
+        v_data_barbarian = ['150281', 4, 0, '128', '0', '100']
+        check = self.village_manager._is_valid_target(v_data_barbarian)
+        self.assertTrue(check)
+
+        v_data_player = ['153507', 5, 'lucien88s village', '85', '9141558', '100']
+        check = self.village_manager._is_valid_target(v_data_player)
+        self.assertFalse(check)
+
+        v_data_bonus_wo_owner = ['150639', 16, 'Bonus village', '103', '0',
+                                 '100', ['33% faster recruitment in the stables',
+                                         'bonus/stable.png']]
+        check = self.village_manager._is_valid_target(v_data_bonus_wo_owner)
+        self.assertTrue(check)
+        v_data_bonus_w_owner = ['150639', 16, 'Bonus village', '103', '1000000',
+                                 '100', ['33% faster recruitment in the stables',
+                                         'bonus/stable.png']]
+        check = self.village_manager._is_valid_target(v_data_bonus_w_owner)
+        self.assertFalse(check)
+
+    def test_build_target_village(self):
+        """
+        Checks TargetVillage construction with valid input.
+        All input (village_data) for TargetVillages construction
+        is received by parsing Game's map overview pages. If
+        Game will start to provide village_data that is structured
+        in a different way, it will be not enough to just handle
+        'TypeError' on this method level.
+        """
+        villa_coords = (1, 1)
+        # [0] = id_, [3] = population. Other values are not needed
+        village_data_wo_bonus = ['157956', 5, 'Guest201197s village',
+                                 '40', '10201197', '100']
+        villa = self.village_manager._build_target_village(villa_coords,
+                                                           village_data_wo_bonus)
+        self.assertIsInstance(villa, TargetVillage)
+        self.assertEqual(villa.coords, villa_coords)
+        self.assertEqual(villa.id, 157956)  # str id is converted to int
+        self.assertEqual(villa.population, 40)  # as well as population
+        self.assertIsNone(villa.bonus)
+
+        # [6] = bonus data; [6][0] = str bonus, [6][1] = picture for bonus
+        # (not needed)
+        village_data_w_bonus = ['147081', 16, 'Bonus village', '101', '0',
+                                '100',
+                                ['30% more resources are produced (all '
+                                 'resource types)', 'bonus/all.png']]
+        villa = self.village_manager._build_target_village(villa_coords,
+                                                           village_data_w_bonus)
+        self.assertIsInstance(villa, TargetVillage)
+        self.assertEqual(villa.coords, villa_coords)
+        self.assertEqual(villa.id, 147081)
+        self.assertEqual(villa.population, 101)
+        self.assertEqual(villa.bonus, village_data_w_bonus[6][0])
+
+    def test_get_map_overview(self):
+        villa_id = 1
+        x = y = 0
+        self.village_manager._get_map_overview(villa_id, x, y)
+        # village_manager.lock is acquired/released only once,
+        # upon village_manager __init__. _get_map_overview() method
+        # call doesn't acquire lock.
+        expected_lock_calls = [call.acquire(), call.release()]
+        self.assertEqual(expected_lock_calls,
+                         self.village_manager.lock.method_calls)
+        self.village_manager.request_manager.get_map_overview.\
+            assert_called_once_with(villa_id, x, y)
+
+    def test_get_train_screen(self):
+        villa_id = 1
+        self.village_manager._get_train_screen(villa_id)
+        # village_manager.lock is acquired/released once
+        # upon __init__ + this method call
+        expected_lock_calls = [call.acquire(), call.release(),
+                               call.acquire(), call.release()]
+        self.assertEqual(expected_lock_calls,
+                         self.village_manager.lock.method_calls)
+        self.village_manager.request_manager.get_train_screen.\
+            assert_called_once_with(villa_id)
+
+    def test_get_overviews_screen(self):
+        self.village_manager._get_overviews_screen()
+        # village_manager.lock is acquired/released once
+        # upon __init__ + this method call
+        expected_lock_calls = [call.acquire(), call.release(),
+                               call.acquire(), call.release()]
+        self.assertEqual(expected_lock_calls,
+                         self.village_manager.lock.method_calls)
+        # ._get_overviews_screen is called once upon __init__
+        # (.build_player_villages()) + with this method call
+        expected_rm_calls = [call.get_overviews_screen(),
+                             call.get_overviews_screen()]
+        self.assertEqual(expected_rm_calls,
+                         self.village_manager.request_manager.method_calls)
+
+    def test_get_village_overview(self):
+        villa_id = 1
+        self.village_manager._get_village_overview(villa_id)
+        # village_manager.lock is acquired/released once
+        # upon __init__ + this method call
+        expected_lock_calls = [call.acquire(), call.release(),
+                               call.acquire(), call.release()]
+        self.assertEqual(expected_lock_calls,
+                         self.village_manager.lock.method_calls)
+        self.village_manager.request_manager.get_village_overview.\
+            assert_called_once_with(villa_id)
 
 
 # class TestPlayerVillage(unittest.TestCase):
