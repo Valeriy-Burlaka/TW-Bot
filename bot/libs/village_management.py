@@ -58,7 +58,7 @@ class VillageManager(Thread):
         parameters & current self.player_villages,
     """
 
-    def __init__(self, request_manager, lock, trusted_targets=None, map_depth=2,
+    def __init__(self, request_manager, lock, trusted_targets=(), map_depth=2,
                  storage_type='local_file', storage_file_name='map_data'):
         Thread.__init__(self)
         self.request_manager = request_manager
@@ -159,11 +159,11 @@ class VillageManager(Thread):
         # explicitly marked as trusted targets
         map_data = {coords: village_data for coords, village_data in map_data.items()
                     if self._is_valid_target(village_data) or coords in self.trusted_targets}
-        for coords, village_data in map_data:
+        for coords, village_data in map_data.items():
             if coords in saved_villages:
                 target_villages[coords] = saved_villages[coords]
                 # Update info about village population
-                target_villages[coords].population = village_data[3]
+                target_villages[coords].population = int(village_data[3])
             else:
                 target_villages[coords] = self._build_target_village(coords, village_data)
 

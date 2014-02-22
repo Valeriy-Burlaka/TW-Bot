@@ -40,6 +40,105 @@ class TestVillageManager(unittest.TestCase):
 
         return patched_rm
 
+    def test_build_target_villages(self):
+        self.assertEqual(self.village_manager.target_villages, {})
+        self.assertEqual(self.village_manager.trusted_targets, ())
+        self.village_manager._get_map_data = Mock()
+        # create stub for map_data that will contain both valid
+        # (bonus/barb) & invalid villages (with owner != '0') villages
+        # {(x, y): [village_data], ..} where village_data[0] = id,
+        # [2] = name, [3] = population, [4] = owner ([1] & [5] - unused)
+        map_data = {(1, 1): ['100000', 4, 0, '78', '0', '100'],
+                    (2, 2): ['100001', 4, 'Bonus village', '125', '0', '100',
+                             ['a', 'b']],
+                    # invalid
+                    (3, 3): ['100002', 5, 'Mordor', '666', 'non-empty', '100'],
+                    (4, 4): ['100003', 5, 'Rohan', '777', 'non-empty', '100']}
+        self.village_manager._get_map_data.return_value = map_data
+        # 1 case, base scenarion: no saved villages, no trusted villages;
+        # resulting .target_villages should contain 2 (valid) TargetVillages
+        target_villages = self.village_manager.build_target_villages()
+        self.assertEqual(len(target_villages), 2)
+        self.assertIn((1, 1), target_villages)
+        self.assertIsInstance(target_villages[(1, 1)], TargetVillage)
+        self.assertEqual(target_villages[(1, 1)].id, 100000)
+        self.assertEqual(target_villages[(1, 1)].coords, (1, 1))
+        self.assertEqual(target_villages[(1, 1)].population, 78)
+        self.assertIn((2, 2), target_villages)
+        self.assertIsInstance(target_villages[(2, 2)], TargetVillage)
+        self.assertEqual(target_villages[(2, 2)].id, 100001)
+        self.assertEqual(target_villages[(2, 2)].coords, (2, 2))
+        self.assertEqual(target_villages[(2, 2)].population, 125)
+        # 2 case, extended scenario: 2 saved villages, 1 is knowingly
+        # 'invalid'; no trusted villages.
+        # expected: there are 2 villages in .target_villages & the one,
+        # that was saved has updated .population & retained h/rates.
+        valid_saved = TargetVillage((1, 1), 100000, 10)
+        valid_saved.h_rates = (10, 10, 10)
+        invalid_saved = TargetVillage((3, 3), 100002, 10)
+        invalid_saved.h_rates = (15, 15, 15)
+        saved_villages = {(1, 1): valid_saved, (3, 3): invalid_saved}
+        self.village_manager.map_storage.get_saved_villages.return_value = \
+            saved_villages
+
+        target_villages = self.village_manager.build_target_villages()
+        self.assertEqual(len(target_villages), 2)
+        self.assertIn((1, 1), target_villages)
+        self.assertIsInstance(target_villages[(1, 1)], TargetVillage)
+        self.assertEqual(target_villages[(1, 1)].id, 100000)
+        self.assertEqual(target_villages[(1, 1)].coords, (1, 1))
+        # village that was in saved retained data about h/rates
+        self.assertEqual(target_villages[(1, 1)].h_rates, (10, 10, 10))
+        self.assertEqual(target_villages[(1, 1)].population, 78)
+        self.assertIn((2, 2), target_villages)
+        self.assertIsInstance(target_villages[(2, 2)], TargetVillage)
+        self.assertEqual(target_villages[(2, 2)].id, 100001)
+        self.assertEqual(target_villages[(2, 2)].coords, (2, 2))
+        # village that was not in saved still has no h_rates
+        self.assertEqual(target_villages[(2, 2)].h_rates, None)
+        self.assertEqual(target_villages[(2, 2)].population, 125)
+        # 3 case, extended scenario 2: + 1 saved village, that will
+        # not be in .map_data; .trusted_villages contains both
+        # 'invalid' villages;
+        # expected: there are 4 villages in .target_villages;
+        # village that was not in .map_data is not picked from saved;
+        # villages that were in .map_data & were in saved have
+        # retained state.
+        never_found_village = TargetVillage((5, 5), 100005, 10)
+        saved_villages[(5, 5)] = never_found_village
+        self.village_manager.trusted_targets = ((3, 3), (4, 4))
+
+        target_villages = self.village_manager.build_target_villages()
+        self.assertEqual(len(target_villages), 4)
+        self.assertIn((1, 1), target_villages)
+        self.assertIsInstance(target_villages[(1, 1)], TargetVillage)
+        self.assertEqual(target_villages[(1, 1)].id, 100000)
+        self.assertEqual(target_villages[(1, 1)].coords, (1, 1))
+        # village that was in saved retained data about h/rates
+        self.assertEqual(target_villages[(1, 1)].h_rates, (10, 10, 10))
+        self.assertEqual(target_villages[(1, 1)].population, 78)
+        self.assertIn((2, 2), target_villages)
+        self.assertIsInstance(target_villages[(2, 2)], TargetVillage)
+        self.assertEqual(target_villages[(2, 2)].id, 100001)
+        self.assertEqual(target_villages[(2, 2)].coords, (2, 2))
+        # village that was not in saved still has no h_rates
+        self.assertEqual(target_villages[(2, 2)].h_rates, None)
+        self.assertEqual(target_villages[(2, 2)].population, 125)
+        # saved & trusted
+        self.assertIn((3, 3), target_villages)
+        self.assertIsInstance(target_villages[(3, 3)], TargetVillage)
+        self.assertEqual(target_villages[(3, 3)].id, 100002)
+        self.assertEqual(target_villages[(3, 3)].coords, (3, 3))
+        self.assertEqual(target_villages[(3, 3)].h_rates, (15, 15, 15))
+        self.assertEqual(target_villages[(3, 3)].population, 666)
+        # not saved, trusted
+        self.assertIn((4, 4), target_villages)
+        self.assertIsInstance(target_villages[(4, 4)], TargetVillage)
+        self.assertEqual(target_villages[(4, 4)].id, 100003)
+        self.assertEqual(target_villages[(4, 4)].coords, (4, 4))
+        self.assertEqual(target_villages[(4, 4)].h_rates, None)
+        self.assertEqual(target_villages[(4, 4)].population, 777)
+
     def test_set_farming_villages(self):
         self.village_manager.request_manager.method_calls = []
         # .farming_villages & .player_villages are an empty dicts initially
@@ -47,7 +146,7 @@ class TestVillageManager(unittest.TestCase):
         self.assertEqual(self.village_manager.player_villages, {})
         # sanity check: if there no .player_villages, call to method
         # doesn't fail
-        self.village_manager.set_farming_villages(farm_with=[(1, 1), (2, 2)])
+        self.village_manager.set_farming_villages(farm_with=[1])
         self.assertEqual(self.village_manager.farming_villages, {})
         # Fill .player_villages. PVFactory doesn't suffice here, because
         # we need to stub PlayerVillage methods
