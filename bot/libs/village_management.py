@@ -9,6 +9,8 @@ from bot.libs.map_tools import MapStorage, MapParser, MapMath
 from bot.libs.attack_management import Unit
 import settings
 
+__all__ = ['VillageManager', 'TargetVillage', 'PlayerVillage']
+
 
 class VillageManager(Thread):
     """
@@ -228,9 +230,6 @@ class VillageManager(Thread):
                                                               self.target_villages)
             targets_in_radius = sorted(targets_in_radius, key=lambda x: x[1])
             targets_by_id[attacker_id] = targets_in_radius
-
-        event_msg = "AttackQueue: targets by id: {}".format(targets_by_id)
-        logging.info(event_msg)
 
         for attacker_id, targets in targets_by_id.items():
             event_msg = "Attacker {id} has {c} villages in " \

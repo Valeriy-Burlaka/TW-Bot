@@ -1,10 +1,12 @@
 import os
 import unittest
+from unittest.mock import Mock
 from unittest.mock import call, patch
 
 import settings
 from bot.tests.helpers import MockCollection
-from bot.libs.village_management import VillageManager, TargetVillage
+from bot.tests.factories import PlayerVillageFactory
+from bot.libs.village_management import *
 
 
 class TestVillageManager(unittest.TestCase):
@@ -20,21 +22,121 @@ class TestVillageManager(unittest.TestCase):
             with patch('bot.libs.village_management.MapParser') as patched_parser:
                 patched_storage.get_saved_villages.return_value = {}
                 mocked_lock = MockCollection.get_mocked_lock()
-                mocked_rm = self.get_mocked_request_manager()
-                self.village_manager = VillageManager(mocked_rm, mocked_lock)
+                patched_rm = self.get_patched_request_manager()
+                self.village_manager = VillageManager(patched_rm, mocked_lock)
 
     def tearDown(self):
         settings.DEBUG = False
+        self.rm_patcher.stop()
 
-    def get_mocked_request_manager(self):
-        mocked_rm = MockCollection.get_mocked_request_manager()
+    def get_patched_request_manager(self):
         config = {'get_map_overview.return_value': '',
                   'get_train_screen.return_value': '',
                   'get_overviews_screen.return_value': '',
                   'get_village_overview.return_value': ''}
-        mocked_rm.configure_mock(**config)
+        self.rm_patcher = patch('bot.libs.request_management.RequestManager',
+                                **config)
+        patched_rm = self.rm_patcher.start()
 
-        return mocked_rm
+        return patched_rm
+
+    def test_set_farming_villages(self):
+        self.village_manager.request_manager.method_calls = []
+        # .farming_villages & .player_villages are an empty dicts initially
+        self.assertEqual(self.village_manager.farming_villages, {})
+        self.assertEqual(self.village_manager.player_villages, {})
+        # sanity check: if there no .player_villages, call to method
+        # doesn't fail
+        self.village_manager.set_farming_villages(farm_with=[(1, 1), (2, 2)])
+        self.assertEqual(self.village_manager.farming_villages, {})
+        # Fill .player_villages. PVFactory doesn't suffice here, because
+        # we need to stub PlayerVillage methods
+        pv1 = Mock(spec=PlayerVillage, id=1, coords=(1, 1), radius=1)
+        pv2 = Mock(spec=PlayerVillage, id=2, coords=(2, 2), radius=2)
+        player_villages = {1: pv1, 2: pv2}
+        self.village_manager.player_villages = player_villages
+        # call with all defaults
+        self.village_manager.set_farming_villages()
+        expected_farming_v = player_villages
+        self.assertEqual(self.village_manager.farming_villages,
+                         expected_farming_v)
+
+        for village in self.village_manager.farming_villages.values():
+            village.set_troops_to_use.assert_called_once_with(False, False)
+            self.assertIn(call.get_train_screen(village.id),
+                          self.village_manager.request_manager.method_calls)
+            village.set_farm_radius.assert_called_once_with('', 4)
+            village.update_troops_count.assert_called_once_with(train_screen_html='')
+            village.method_calls = []
+
+        self.village_manager.request_manager.method_calls = []
+
+        # Had to re-create PlayerVillages due to strange behavior
+        # with recording method calls: despite on assigning
+        # method_calls to [], previous calls are somehow tracked. E.g.:
+        # >>>print(village.method_calls, len(village.method_calls)
+        # >>>[call.set_troops_to_use(True, True), call.set_farm_radius('', 10),
+        # >>>call.update_troops_count(train_screen_html='')] 3
+        # >>>village.set_troops_to_use.assert_called_once_with(True, True)
+        # >>>AssertionError: Expected 'set_farm_radius' to be called once.
+        # Called 2 times.
+        pv1 = Mock(spec=PlayerVillage, id=1, coords=(1, 1), radius=1)
+        pv2 = Mock(spec=PlayerVillage, id=2, coords=(2, 2), radius=2)
+        player_villages = {1: pv1, 2: pv2}
+        self.village_manager.player_villages = player_villages
+        self.village_manager.set_farming_villages(farm_with=[1],
+                                                  use_def_to_farm=True,
+                                                  heavy_is_def=True,
+                                                  t_limit_to_leave=10)
+        expected_farming_v = {1: pv1}
+        self.assertEqual(self.village_manager.farming_villages,
+                         expected_farming_v)
+        self.assertEqual(pv2.method_calls, [])
+        for village in self.village_manager.farming_villages.values():
+            village.set_troops_to_use.assert_called_once_with(True, True)
+            self.assertIn(call.get_train_screen(village.id),
+                          self.village_manager.request_manager.method_calls)
+            village.set_farm_radius.assert_called_once_with('', 10)
+            village.update_troops_count.assert_called_once_with(train_screen_html='')
+            village.method_calls = []
+
+    def test_set_targets_by_attacker_id(self):
+        # .targets_by_id & farming villages are an empty dicts initially
+        self.assertEqual(self.village_manager.targets_by_id, {})
+        self.assertEqual(self.village_manager.farming_villages, {})
+        player_villages = PlayerVillageFactory.build_batch(3)
+        self.village_manager.farming_villages = {pv.id: pv for pv in player_villages}
+        with patch('bot.libs.village_management.MapMath', autospec=True) as map_math:
+            # (coordinates, distance)
+            targets_in_radius = [((1, 1), 15), ((2, 2), 11), ((3, 3), 12),
+                                 ((4, 4), 9), ((5, 5), 6), ((6, 6), 1)]
+            map_math.get_targets_in_radius.return_value = targets_in_radius
+
+            # targets should be sorted by distance ascending (nearest first)
+            expected_targets = [((6, 6), 1), ((5, 5), 6), ((4, 4), 9),
+                                ((2, 2), 11), ((3, 3), 12), ((1, 1), 15)]
+            self.village_manager.set_targets_by_attacker_id()
+            self.assertEqual(len(self.village_manager.targets_by_id), 3)
+            for pv in player_villages:
+                self.assertIn(pv.id, self.village_manager.targets_by_id)
+                self.assertEqual(self.village_manager.targets_by_id[pv.id],
+                                 expected_targets)
+        # clean village_manager
+        self.village_manager.targets_by_id = {}
+        self.village_manager.farming_villages = {}
+
+    def test_get_villages_data(self):
+        filename = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+                                'villages_overviews.html')
+        with open(filename) as f:
+            overviews_data = f.read()
+        expected_res = [(127591, (211, 305), 'Lounge of trolls'),
+                        (135035, (210, 305), 'Feast of trolls'),
+                        (135083, (211, 306), 'Cave of trolls'),
+                        (126583, (211, 307), 'Piles of trolls'),
+                        (136329, (212, 305), 'Shame of trolls'),]
+        actual_res = self.village_manager._get_villages_data(overviews_data)
+        self.assertCountEqual(expected_res, actual_res)
 
     def test_get_map_data(self):
         # refresh calls to request_manager:
@@ -226,50 +328,45 @@ class TestVillageManager(unittest.TestCase):
     def test_get_map_overview(self):
         villa_id = 1
         x = y = 0
+        # refresh village_manager.lock calls:
+        self.village_manager.lock.method_calls = []
         self.village_manager._get_map_overview(villa_id, x, y)
-        # village_manager.lock is acquired/released only once,
-        # upon village_manager __init__. _get_map_overview() method
-        # call doesn't acquire lock.
-        expected_lock_calls = [call.acquire(), call.release()]
-        self.assertEqual(expected_lock_calls,
-                         self.village_manager.lock.method_calls)
+        # village_manager.lock is not acquired/released since
+        #  _get_map_overview() method call doesn't acquire lock.
+        self.assertEqual([], self.village_manager.lock.method_calls)
         self.village_manager.request_manager.get_map_overview.\
             assert_called_once_with(villa_id, x, y)
 
     def test_get_train_screen(self):
+        # refresh village_manager.lock calls:
+        self.village_manager.lock.method_calls = []
         villa_id = 1
         self.village_manager._get_train_screen(villa_id)
-        # village_manager.lock is acquired/released once
-        # upon __init__ + this method call
-        expected_lock_calls = [call.acquire(), call.release(),
-                               call.acquire(), call.release()]
+        expected_lock_calls = [call.acquire(), call.release()]
         self.assertEqual(expected_lock_calls,
                          self.village_manager.lock.method_calls)
         self.village_manager.request_manager.get_train_screen.\
             assert_called_once_with(villa_id)
 
     def test_get_overviews_screen(self):
+        # refresh village_manager.lock calls:
+        self.village_manager.lock.method_calls = []
+        # refresh village_manager.request_manager calls
+        self.village_manager.request_manager.method_calls = []
         self.village_manager._get_overviews_screen()
-        # village_manager.lock is acquired/released once
-        # upon __init__ + this method call
-        expected_lock_calls = [call.acquire(), call.release(),
-                               call.acquire(), call.release()]
+        expected_lock_calls = [call.acquire(), call.release()]
         self.assertEqual(expected_lock_calls,
                          self.village_manager.lock.method_calls)
-        # ._get_overviews_screen is called once upon __init__
-        # (.build_player_villages()) + with this method call
-        expected_rm_calls = [call.get_overviews_screen(),
-                             call.get_overviews_screen()]
+        expected_rm_calls = [call.get_overviews_screen()]
         self.assertEqual(expected_rm_calls,
                          self.village_manager.request_manager.method_calls)
 
     def test_get_village_overview(self):
+        # refresh village_manager.lock calls:
+        self.village_manager.lock.method_calls = []
         villa_id = 1
         self.village_manager._get_village_overview(villa_id)
-        # village_manager.lock is acquired/released once
-        # upon __init__ + this method call
-        expected_lock_calls = [call.acquire(), call.release(),
-                               call.acquire(), call.release()]
+        expected_lock_calls = [call.acquire(), call.release()]
         self.assertEqual(expected_lock_calls,
                          self.village_manager.lock.method_calls)
         self.village_manager.request_manager.get_village_overview.\
