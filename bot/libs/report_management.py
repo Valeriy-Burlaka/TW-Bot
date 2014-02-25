@@ -21,6 +21,41 @@ class ReportManager:
     def __init__(self, locale):
         self.locale = locale
 
+    def get_report_urls(self, report_page, only_new=True):
+        report_urls = []
+        reports_raw_list = self._get_reports_from_page(report_page, only_new)
+        for raw_report in reports_raw_list:
+            report_url = self._get_single_report_url(raw_report)
+            report_urls.append(report_url)
+        return report_urls
+
+
+    def _get_reports_from_page(self, reports_page, only_new):
+        """
+        Extracts single reports data from reports page.
+        Returns list of HTML-chunks, containing actual URLs
+        for single reports.
+        """
+        single_report_ptrn = re.compile(r'<input name="id_[\W\w]+?</tr>')
+        reports_list = re.findall(single_report_ptrn, reports_page)
+        if only_new:
+            # get reports marked as "new"
+            reports_list = [x for x in reports_list if '(new)' in x]
+        return reports_list
+
+    def _get_single_report_url(self, report):
+        """
+        Extracts report URL from given HTML and requests
+        single report page from server. Returns HTML page
+        of single attack report.
+        """
+        href_ptrn = re.compile(r'<a href="([\W\w]+?)">')
+        url = re.search(href_ptrn, report)
+        url = url.group(1)
+        url = url.replace('&amp;', '&')
+        return url
+
+
     def get_new_reports(self, reports_count):
         """
         Downloads new battle reports from server.
@@ -95,33 +130,6 @@ class ReportManager:
         match = re.search(reports_page_ptrn, reports_page)
         reports_page = match.group()
         return reports_page
-
-    def get_reports_from_page(self, reports_page):
-        """
-        Extracts single reports from report table.
-        Returns list which contains HTML chunks, each with URL for single report.
-        """
-        single_report_ptrn = re.compile(r'<input name="id_[\W\w]+?</tr>')
-        reports_list = re.findall(single_report_ptrn, reports_page)
-        reports_list = [x for x in reports_list if '(new)' in x]    # get reports marked as "new"
-        return reports_list
-
-    def get_single_report(self, report):
-        """
-        Extracts report URL from given HTML and requests
-        single report page from server. Returns HTML page
-        of single attack report.
-        """
-        href_ptrn = re.compile(r'<a href="([\W\w]+?)">')
-        url = re.search(href_ptrn, report)
-        url = url.group(1)
-        url = url.replace('&amp;', '&')
-        # Do not hit server too frequently
-        time.sleep(random.random() * 2)
-        self.lock.acquire()
-        html_report = self.request_manager.get_report(url)
-        self.lock.release()
-        return html_report
 
 
 class AttackReport:
