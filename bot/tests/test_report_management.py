@@ -183,7 +183,7 @@ class TestAttackReport(unittest.TestCase):
         self.assertEqual(rep.remaining_capacity, 0)
         self.assertEqual(rep.looted_capacity, 71)
         self.assertEqual(rep.wall_level, 0)
-        self.assertIsNone(rep.storage_level)
+        self.assertEqual(rep.storage_level, 0)
 
     def test_scout_report(self):
         """

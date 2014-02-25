@@ -95,33 +95,52 @@ class AttackReport:
         self.build_report()
 
     def build_report(self):
-        # check if report has color status (green, blue, etc.).
-        # Otherwise we faced with non-battle report (supply/support)
-        self.set_attack_status()
+        """
+        Builds info about self from HTML string of report page
+        """
+        # Check if report has color status (green, blue, red, red_blue).
+        # Otherwise we faced with non-battle report (trade/support)
+        self._set_attack_status()
         if not self.status:
             return
         else:
             self.soup = Soup(self.data)
 
-        if self.status == 'red':  # No troops returned. No information collected.
-            self.set_t_of_attack()
-            self.set_target_coordinates()
+        if self.status == 'red':
+            # No troops returned. No information collected.
+            self._set_t_of_attack()
+            self._set_target_coordinates()
             self.defended = True
             return
         else:
-            field_setters = [self.set_target_coordinates, self.set_t_of_attack, self.set_defence,
-                             self.set_mines_level, self.set_capacities, self.set_storage_level,
-                             self.set_wall_level]
+            field_setters = [self._set_target_coordinates,
+                             self._set_t_of_attack,
+                             self._set_defence,
+                             self._set_building_levels,
+                             self._set_capacities]
             for setter in field_setters:
                 setter()
 
-    def set_attack_status(self):
+    def _set_attack_status(self):
+        """
+        Looks for color of image-icon that represents report
+        status.
+        Battle report statuses:
+        red: all died, no information collected about target & battle
+        blue, red_blue: there were only scoutes or all died except scouts
+        (no haul).
+        green, yellow: usual battle report (yellow = some casualties)
+        """
         status_ptrn = re.compile(r'/graphic/dots/([\W\w]+?)\.png')
         match = re.search(status_ptrn, self.data)
         if match:
             self.status = match.group(1)
 
-    def set_target_coordinates(self):
+    def _set_target_coordinates(self):
+        """
+        Sets target coordinates
+        """
+        # span with report header (e.g. foo attacks barBs (220|317))
         target_element = self.soup.find(id='labelText')
         text = target_element.text
         coords_ptrn = re.compile(r"(\d{3})\|(\d{3})")
@@ -132,12 +151,12 @@ class AttackReport:
             # battle, but non-attack report (e.g. "support has been attacked")
             self.coords = (0, 0)    # set non-existing coordinates
 
-    def set_t_of_attack(self):
-        # e.g: "Nov 03, 2013  14:01:57"
+    def _set_t_of_attack(self):
         pattern = re.compile(r"""(\w{3})\s  # abbreviated month name
                                  (\d{2}),\s  # decimal day
                                  (\d{4})\s{1,2}  # year
                                  (\d{2}):(\d{2}):(\d{2})  # hours-minutes-seconds
+                                 # e.g: "Nov 03, 2013  14:01:57"
                               """,
                              re.VERBOSE)
 
@@ -147,14 +166,11 @@ class AttackReport:
             struct_t = time.strptime(str_t, "%b %d, %Y %H:%M:%S")
             self.t_of_attack = round(time.mktime(struct_t))
 
-    def set_defence(self):
+    def _set_defence(self):
         """
         Simplified way to determine if village is protected:
-        1. We extract chunk of HTML with table of defender's units.
-        2. If unit count == 0, it is stored in "class='unit-item hidden'"
-        3. There are 13 types of units, so if len of re.findall result != 13,
-        there is some defence and it's better to save this report
-        for human evaluation.
+        We look for table containing info about defender's troops
+        in DOM and count cells with non-zero unit quantities.
         """
         defender_troops_table = self.soup.find(id="attack_info_def_units")
         defender_troops_quantity = defender_troops_table.findAll('tr')[1]
@@ -166,70 +182,97 @@ class AttackReport:
         else:
             self.defended = True
 
-    def set_mines_level(self):
-        # buildings_table = self.soup.find(id="attack_spy")
+    def _set_building_levels(self):
+        """
+        Looks for DOM element with id="attack_spy" (it will
+        be there if attack was sent with scouts) and sets
+        building levels.
+        """
+        espionage = self.soup.find(id="attack_spy")
+        if espionage is not None:
+            text = espionage.text
+        else:
+            text = ""
         mines = ["Timber camp", "Clay pit", "Iron mine"]
-        levels = []
+        mine_levels = []
         for mine in mines:
-            # "Barracks <b>(Level 4)</b>"
-            search = r'{}\s<b>\WLevel\s(\d+)\W</b>'.format(mine)
-            match = re.search(search, self.data)
+            level = self._get_building_level(text, mine)
+            mine_levels.append(level)
+            self.mine_levels = mine_levels
+        storage = "Warehouse"
+        self.storage_level = self._get_building_level(text, storage)
+        wall = "Wall"
+        self.wall_level = self._get_building_level(text, wall)
+
+    @staticmethod
+    def _get_building_level(text, building_name):
+        """
+        Parses input text to get building level.
+        """
+        search = r'{building}\s\WLevel\s(\d+)\W'.format(building=building_name)
+        match = re.search(search, text)
+        if match:
+            return int(match.group(1))
+        else:
+            # if building name is not found while village was
+            # scouted, this means it's not constructed
+            return 0
+
+    def _set_capacities(self):
+        """
+        Sets information about resources amount that was looted
+        & resources that remained in village.
+        """
+        # in report, if attack was sent with scout
+        espionage = self.soup.find(id="attack_spy")
+        if espionage is not None:
+            text = str(espionage.findAll('tr')[0])
+            remaining_capacity = self._get_haul_amount(text)
+        else:
+            # Since we went to attack w/o scout, mark the village
+            # as completely looted.
+            remaining_capacity = 0
+        self.remaining_capacity = remaining_capacity
+        # in report, if someone from troops sent remained alive
+        attack_results = self.soup.find(id="attack_results")
+        if attack_results is not None:
+            text = str(attack_results.findAll('tr')[0])
+            looted_capacity = self._get_haul_amount(text)
+        else:
+            # Jimmy is dead or Jimmy was just a scout: nothing was looted
+            looted_capacity = 0
+        self.looted_capacity = looted_capacity
+
+    @staticmethod
+    def _get_haul_amount(s_resources):
+        """
+        Parses input string to get resources amount (looted &
+        scouted).
+        Steps are a bit unclear: this is due to the way TW
+        presents scouted & looted resources (values >3 digits
+        are separated by dots between <span>'s, no 'total' for
+        scouted)
+        """
+        # grab the chunk which contains loot info for particular
+        # resource.
+        wood_pattern = re.compile(r'wood[\W\w]{1,200}stone')
+        clay_pattern = re.compile(r'stone[\W\w]{1,200}iron')
+        iron_pattern = re.compile(r'iron[\W\w]+?</td>')
+        i_amount = 0
+        for ptrn in (wood_pattern, clay_pattern, iron_pattern,):
+            match = re.search(ptrn, s_resources)
             if match:
-                levels.append(int(match.group(1)))
+                s_resource = match.group()
+                # floats:
+                amounts = re.findall(r'\d+', s_resource)
+                s_amount = ''
+                for s in amounts:
+                    s_amount += s
+                i_amount += int(s_amount)
             else:
-                levels.append(0)
+                return
 
-        self.mine_levels = levels
-
-    def set_capacities(self):
-        scouted = re.search(r'Resources scouted:[\w\W]+Buildings:', self.data)
-        looted = re.search(r'Haul:[\w\W]+Publicize this report', self.data)
-
-        def get_haul_amount(s_resources):
-            # <span class="icon header stone"> </span>800
-            wood_pattern = re.compile(r'wood[\W\w]{1,200}stone')
-            clay_pattern = re.compile(r'stone[\W\w]{1,200}iron')
-            iron_pattern = re.compile(r'iron[\W\w]+?</td>')
-            i_amount = 0
-            for ptrn in (wood_pattern, clay_pattern, iron_pattern,):
-                match = re.search(ptrn, s_resources)
-                if match:
-                    s_resource = match.group()
-                    # floats: "...wood"> </span>1 span class="grey">.</span>175"
-                    amounts = re.findall(r'\d+', s_resource)
-                    s_amount = ''
-                    for s in amounts:
-                        s_amount += s
-                    i_amount += int(s_amount)
-                else:
-                    return
-
-            return i_amount
-
-        if scouted:
-            self.remaining_capacity = get_haul_amount(scouted.group())
-        # Since we went to attack w/o scout, mark the village
-        # as completely looted.
-        else:
-            self.remaining_capacity = 0
-        if looted:
-            self.looted_capacity = get_haul_amount(looted.group())
-        else:   # It was a scout attack, nothing was looted
-            self.looted_capacity = 0
-
-    def set_storage_level(self):
-        storage_ptrn = re.compile(r"Warehouse\s<b>\WLevel\s(\d+)\W</b>")
-        match = re.search(storage_ptrn, self.data)
-        if match:
-            self.storage_level = int(match.group(1))
-
-    def set_wall_level(self):
-        wall_ptrn = re.compile(r"Wall\s<b>\WLevel\s(\d+)\W</b>")
-        match = re.search(wall_ptrn, self.data)
-        if match:
-            self.wall_level = int(match.group(1))
-        else:
-            self.wall_level = 0
+        return i_amount
 
     def __str__(self):
         str_report = "AttackReport: \t\t  status => {status}, coords => " \
