@@ -1,6 +1,7 @@
 import re
-import os
 import time
+
+from bs4 import BeautifulSoup as Soup
 
 
 class ReportManager:
@@ -90,6 +91,7 @@ class AttackReport:
         self.looted_capacity = None
         self.storage_level = None
         self.wall_level = None
+        self.soup = None
         self.build_report()
 
     def build_report(self):
@@ -98,7 +100,10 @@ class AttackReport:
         self.set_attack_status()
         if not self.status:
             return
-        elif self.status == 'red':  # No troops returned. No information collected.
+        else:
+            self.soup = Soup(self.data)
+
+        if self.status == 'red':  # No troops returned. No information collected.
             self.set_t_of_attack()
             self.set_target_coordinates()
             self.defended = True
@@ -117,20 +122,25 @@ class AttackReport:
             self.status = match.group(1)
 
     def set_target_coordinates(self):
-        coords_ptrn = re.compile(r"attacks[\w\W]+?(\d{3})\|(\d{3})")
-        match = re.search(coords_ptrn, self.data)
-        # Didn't place NoneType check for match here:
-        # 1. We suppose all non-battle reports are filtered out
-        # 2. If Bot has flushed reports of kind "Bad guy attacks Player", player's
-        # coordinates will not be found in list of farmed villages & just skipped.
+        target_element = self.soup.find(id='labelText')
+        text = target_element.text
+        coords_ptrn = re.compile(r"(\d{3})\|(\d{3})")
+        match = re.search(coords_ptrn, text)
         if match:
             self.coords = (int(match.group(1)), int(match.group(2)))
-        else: # battle, but non-attack report (e.g. "support has been attacked"
+        else:
+            # battle, but non-attack report (e.g. "support has been attacked")
             self.coords = (0, 0)    # set non-existing coordinates
 
     def set_t_of_attack(self):
-        # "Nov 03, 2013  14:01:57"
-        pattern = re.compile(r'(\w{3})\s(\d\d),\s(\d{4})\s\s(\d\d):(\d\d):(\d\d)')
+        # e.g: "Nov 03, 2013  14:01:57"
+        pattern = re.compile(r"""(\w{3})\s  # abbreviated month name
+                                 (\d{2}),\s  # decimal day
+                                 (\d{4})\s{1,2}  # year
+                                 (\d{2}):(\d{2}):(\d{2})  # hours-minutes-seconds
+                              """,
+                             re.VERBOSE)
+
         match = re.search(pattern, self.data)
         if match:
             str_t = match.group()
@@ -146,17 +156,18 @@ class AttackReport:
         there is some defence and it's better to save this report
         for human evaluation.
         """
-        defender_section_ptrn = re.compile(r'Defender[\W\w]+?Quantity([\W\w]+?)</tr>')
-        match = re.search(defender_section_ptrn, self.data)
-        if match:
-            defender_troops = match.group(1)
-            empty_slots = re.findall(r'unit-item hidden', defender_troops)
-            if len(empty_slots) == 13:
-                self.defended = False
-            else:
-                self.defended = True
+        defender_troops_table = self.soup.find(id="attack_info_def_units")
+        defender_troops_quantity = defender_troops_table.findAll('tr')[1]
+        # each unit has its own <td> cell. If unit count == 0, <td> class
+        # will be "unit-item hidden"
+        empty_slots = defender_troops_quantity.findAll("td", "unit-item hidden")
+        if len(empty_slots) == 13:
+            self.defended = False
+        else:
+            self.defended = True
 
     def set_mines_level(self):
+        # buildings_table = self.soup.find(id="attack_spy")
         mines = ["Timber camp", "Clay pit", "Iron mine"]
         levels = []
         for mine in mines:
