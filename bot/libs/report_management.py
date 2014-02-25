@@ -1,10 +1,6 @@
 import re
 import os
 import time
-import random
-import sys
-import traceback
-import logging
 
 
 class ReportManager:
@@ -29,6 +25,9 @@ class ReportManager:
             report_urls.append(report_url)
         return report_urls
 
+    def build_report(self, report_page):
+        report = AttackReport(report_page, locale=self.locale)
+        return report
 
     def _get_reports_from_page(self, reports_page, only_new):
         """
@@ -55,69 +54,7 @@ class ReportManager:
         url = url.replace('&amp;', '&')
         return url
 
-
-    def get_new_reports(self, reports_count):
-        """
-        Downloads new battle reports from server.
-        Inits AttackReport objects from downloaded reports.
-        Validates inited AttackReports (all fields are filled)
-        Returns mapping {(x, y): AttackReport, ..}, where (x,y) =
-        coordinates of attacked village.
-        """
-        new_reports = []
-        # 12 reports per page. e.g.: if there 25 new reports,
-        # request 1, 2 & 3 report pages.
-        pages = reports_count / 12 if reports_count%12 == 0 else (reports_count / 12) + 1
-        # (+1) is a hardcoded sanity check: new reports may be
-        # shifted from page by trade reports, etc.
-        pages = int(pages) + 1
-        for page in range(pages):
-            reports_page = self.get_reports_page(page)
-            battle_reports = self.get_reports_from_page(reports_page)
-            for report_data in battle_reports:
-                try:
-                    html_report = self.get_single_report(report_data)
-                    attack_report = AttackReport(html_report)
-                except TypeError:
-                    error_info = traceback.format_exception(*sys.exc_info())
-                    logging.error(error_info)
-                    # Hunting bug with TypeError raised on some game reports
-                    # Save problem report data to a local file for further
-                    # investigation
-                    filename = "Type_exception_report_data_" \
-                               "{t}.html".format(t=round(time.time()))
-                    filename = os.path.join(self.report_path, filename)
-                    with open(filename, 'w') as f:
-                        f.write(report_data)
-                except AttributeError:
-                    error_info = traceback.format_exception(*sys.exc_info())
-                    logging.error(error_info)
-                    filename = "Attribute_exception_report_" \
-                               "{t}.html".format(t=round(time.time()))
-                    filename = os.path.join(self.report_path, filename)
-                    with open(filename, 'w') as f:
-                        f.write(html_report)
-
-                if not attack_report.status:    # skip non-battle reports
-                    continue
-                elif attack_report.status == 'red' or attack_report.status == 'red_blue':
-                    filename = "critical_report_" \
-                               "{t}.html".format(t=attack_report.t_of_attack)
-                    filepath = os.path.join(self.report_path, filename)
-                    with open(filepath, 'w') as f:
-                        f.write(attack_report.data)
-                elif attack_report.status == 'yellow':
-                    filename = "warning_report_" \
-                               "{t}.html".format(t=attack_report.t_of_attack)
-                    filepath = os.path.join(self.report_path, filename)
-                    with open(filepath, 'w') as f:
-                        f.write(attack_report.data)
-
-                new_reports.append(attack_report)
-
-        return new_reports
-
-    def get_reports_page(self, page):
+    def _get_reports_page(self, page):
         """
         Requests default (1st) report page from server.
         We assume that AttackObserver will trigger update of
@@ -141,8 +78,9 @@ class AttackReport:
     attack reports, so using regular expressions instead.
     """
 
-    def __init__(self, str_html):
+    def __init__(self, str_html, locale=None):
         self.data = str_html
+        self.locale = locale
         self.status = None
         self.coords = None
         self.t_of_attack = None

@@ -69,7 +69,15 @@ class TestReportManager(unittest.TestCase):
         actual_urls = rm.get_report_urls(html_data, only_new=False)
         self.assertCountEqual(expected_urls, actual_urls)
 
-    
+    def test_build_report(self):
+        rm = ReportManager(locale={})
+        filepath = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+                                'reports/single_report_test_set',
+                                'en_report_green.html')
+        with open(filepath) as f:
+            html_data = f.read()
+        report = rm.build_report(html_data)
+        self.assertIsInstance(report, AttackReport)
 
 
 class TestAttackReport(unittest.TestCase):
@@ -227,6 +235,21 @@ class TestAttackReport(unittest.TestCase):
             report_data = f.read()
             rep = AttackReport(report_data)
 
+        self.assertIsNone(rep.status)
+        self.assertIsNone(rep.coords)
+        self.assertIsNone(rep.t_of_attack)
+        self.assertIsNone(rep.defended)
+        self.assertIsNone(rep.mine_levels)
+        self.assertIsNone(rep.remaining_capacity)
+        self.assertIsNone(rep.looted_capacity)
+        self.assertIsNone(rep.wall_level)
+        self.assertIsNone(rep.storage_level)
+
+    def test_incorrect_report_data(self):
+        """
+        Checks that AR gracefully handles bad input data
+        """
+        rep = AttackReport('foo bar eggs spam!!!!')
         self.assertIsNone(rep.status)
         self.assertIsNone(rep.coords)
         self.assertIsNone(rep.t_of_attack)
