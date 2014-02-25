@@ -6,19 +6,24 @@ from bs4 import BeautifulSoup as Soup
 
 class ReportManager:
     """
-    Component responsible for building AttackReport objects
-    from new game reports. Collects coordinates & report URLs
-    for all "new" reports from report overview page and then
-    requests each report by URL.
-    Neither xml.etree.ElementTree nor xml.dom.minidom
-    in-build DOM parsers were able to parse TribalWars report page/
-    attack reports, so using regular expressions instead.
+    Helps to create AttackReport objects with the next
+    methods:
+
+    get_report_urls:
+        takes HTML (string) of report page and
+        returns list of URLs for each report on this page
+    build_report:
+        takes HTML (string) of single report and
+        returns new AttackReport object.
     """
 
     def __init__(self, locale):
         self.locale = locale
 
     def get_report_urls(self, report_page, only_new=True):
+        """
+        Extracts URLs for each report on report page,
+        """
         report_urls = []
         reports_raw_list = self._get_reports_from_page(report_page, only_new)
         for raw_report in reports_raw_list:
@@ -30,7 +35,8 @@ class ReportManager:
         report = AttackReport(report_page, locale=self.locale)
         return report
 
-    def _get_reports_from_page(self, reports_page, only_new):
+    @staticmethod
+    def _get_reports_from_page(reports_page, only_new):
         """
         Extracts single reports data from reports page.
         Returns list of HTML-chunks, containing actual URLs
@@ -43,7 +49,8 @@ class ReportManager:
             reports_list = [x for x in reports_list if '(new)' in x]
         return reports_list
 
-    def _get_single_report_url(self, report):
+    @staticmethod
+    def _get_single_report_url(report):
         """
         Extracts report URL from given HTML and requests
         single report page from server. Returns HTML page
@@ -54,20 +61,6 @@ class ReportManager:
         url = url.group(1)
         url = url.replace('&amp;', '&')
         return url
-
-    def _get_reports_page(self, page):
-        """
-        Requests default (1st) report page from server.
-        We assume that AttackObserver will trigger update of
-        reports in time, so no new reports will be after 1st report page.
-        """
-        self.lock.acquire()
-        reports_page = self.request_manager.get_reports_page(from_page=page*12)
-        self.lock.release()
-        reports_page_ptrn = re.compile(r'<table id="report_list"[\W\w]+?</table>')  # table with 12 reports
-        match = re.search(reports_page_ptrn, reports_page)
-        reports_page = match.group()
-        return reports_page
 
 
 class AttackReport:
@@ -294,5 +287,3 @@ class AttackReport:
 
     def __repr__(self):
         return self.__str__()
-
-
