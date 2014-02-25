@@ -24,10 +24,52 @@ class TestReportManager(unittest.TestCase):
             '/game.php?village=127591&mode=all&view=65470230&screen=report',
             '/game.php?village=127591&mode=all&view=65466313&screen=report',
             '/game.php?village=127591&mode=all&view=65462611&screen=report',
-            '/game.php?village=127591&mode=all&view=65456252&screen=report']
+            '/game.php?village=127591&mode=all&view=65456252&screen=report'
+        ]
+        actual_urls = rm.get_report_urls(html_data)
+        self.assertCountEqual(expected_urls, actual_urls)
+        # get both 'new' and not 'new'
+        not_new_reports = [
+            '/game.php?village=127591&mode=all&view=65454256&screen=report',
+            '/game.php?village=127591&mode=all&view=65451253&screen=report',
+            '/game.php?village=127591&mode=all&view=65450705&screen=report',
+            '/game.php?village=127591&mode=all&view=65448219&screen=report',
+            '/game.php?village=127591&mode=all&view=65447724&screen=report',
+            '/game.php?village=127591&mode=all&view=65445091&screen=report',
+            '/game.php?village=127591&mode=all&view=65444232&screen=report'
+        ]
+        expected_urls.extend(not_new_reports)
+        actual_urls = rm.get_report_urls(html_data, only_new=False)
+        self.assertCountEqual(expected_urls, actual_urls)
+
+        filename = os.path.join(self.test_data_path,
+                                'en_report-page_w_new_support.html')
+        with open(filename) as f:
+            html_data = f.read()
+        expected_urls = [
+            '/game.php?village=127591&mode=all&view=65518754&screen=report',
+            '/game.php?village=127591&mode=all&view=65518624&screen=report',
+            '/game.php?village=127591&mode=all&view=65512571&screen=report',
+            '/game.php?village=127591&mode=all&view=65511688&screen=report'
+        ]
         actual_urls = rm.get_report_urls(html_data)
         self.assertCountEqual(expected_urls, actual_urls)
 
+        not_new_reports = [
+            '/game.php?village=127591&mode=all&view=65517350&screen=report',
+            '/game.php?village=127591&mode=all&view=65517299&screen=report',
+            '/game.php?village=127591&mode=all&view=65517137&screen=report',
+            '/game.php?village=127591&mode=all&view=65515964&screen=report',
+            '/game.php?village=127591&mode=all&view=65509197&screen=report',
+            '/game.php?village=127591&mode=all&view=65508754&screen=report',
+            '/game.php?village=127591&mode=all&view=65508039&screen=report',
+            '/game.php?village=127591&mode=all&view=65507562&screen=report'
+        ]
+        expected_urls.extend(not_new_reports)
+        actual_urls = rm.get_report_urls(html_data, only_new=False)
+        self.assertCountEqual(expected_urls, actual_urls)
+
+    
 
 
 class TestAttackReport(unittest.TestCase):
