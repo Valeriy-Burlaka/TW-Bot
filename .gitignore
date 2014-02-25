@@ -6,3 +6,4 @@ bad_reports/*
 .*~
 .idea/*
 runtime_data/*
+*prototype.py
