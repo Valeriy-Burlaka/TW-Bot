@@ -3,6 +3,31 @@ import os
 
 import settings
 from bot.libs.report_management import AttackReport
+from bot.libs.report_management import ReportManager
+
+
+class TestReportManager(unittest.TestCase):
+
+    def setUp(self):
+        self.test_data_path = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+                                           'reports')
+
+    def test_get_report_urls(self):
+        rm = ReportManager(locale={})
+        filename = os.path.join(self.test_data_path,
+                                'en_report-page_w_new_battle.html')
+        with open(filename) as f:
+            html_data = f.read()
+        # get only 'new' reports:
+        expected_urls = [
+            '/game.php?village=127591&mode=all&view=65471139&screen=report',
+            '/game.php?village=127591&mode=all&view=65470230&screen=report',
+            '/game.php?village=127591&mode=all&view=65466313&screen=report',
+            '/game.php?village=127591&mode=all&view=65462611&screen=report',
+            '/game.php?village=127591&mode=all&view=65456252&screen=report']
+        actual_urls = rm.get_report_urls(html_data)
+        self.assertCountEqual(expected_urls, actual_urls)
+
 
 
 class TestAttackReport(unittest.TestCase):
