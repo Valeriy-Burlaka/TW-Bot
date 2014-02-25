@@ -10,7 +10,7 @@ class TestReportManager(unittest.TestCase):
 
     def setUp(self):
         self.test_data_path = os.path.join(settings.HTML_TEST_DATA_FOLDER,
-                                           'reports')
+                                           'reports/report_page_test_set')
 
     def test_get_report_urls(self):
         rm = ReportManager(locale={})

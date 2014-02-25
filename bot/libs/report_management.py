@@ -7,7 +7,7 @@ import traceback
 import logging
 
 
-class ReportBuilder:
+class ReportManager:
     """
     Component responsible for building AttackReport objects
     from new game reports. Collects coordinates & report URLs
@@ -18,12 +18,8 @@ class ReportBuilder:
     attack reports, so using regular expressions instead.
     """
 
-    def __init__(self, request_manager, lock, run_path):
-        self.request_manager = request_manager  # instance of RequestManager
-        self.lock = lock    # shared instance of Bot's lock
-        self.report_path = os.path.join(run_path, "run_reports")
-        self.report_errors = os.path.join(self.report_path, "report_errors.txt")
-        if not os.path.exists(self.report_path): os.mkdir(self.report_path)
+    def __init__(self, locale):
+        self.locale = locale
 
     def get_new_reports(self, reports_count):
         """
