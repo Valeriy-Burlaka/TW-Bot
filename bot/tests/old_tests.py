@@ -130,55 +130,6 @@ class TestAttackQueue(unittest.TestCase):
             self.assertEqual(in_queue_villa.remaining_capacity, report.remaining_capacity)
 
 
-class TestReportBuilder(unittest.TestCase):
-    """
-    Tests for ReportBuilder class.
-    Uses DummyRequestManager class as stub
-    """
-    
-    def setUp(self):
-        self.builder = ReportBuilder(DummyRequestManager(), Lock())
-    
-    def test_get_new_reports(self):
-        new_reports = self.builder.get_new_reports()
-        self.assertTrue(isinstance(new_reports, dict))
-        self.assertEqual(len(new_reports), 3)
-        for key, value in new_reports.items():
-            self.assertIsInstance(key, tuple)
-            self.assertIsInstance(key[0], int)
-            self.assertIsInstance(key[1], int)
-            self.assertIsInstance(value, AttackReport)
-        
-        self.assertTrue((209,309) in new_reports)
-        self.assertTrue((214, 320) in new_reports)
-        self.assertTrue((215, 320) in new_reports)
-        
-        
-
-    
-#    def test_integration_w_village(self):
-#        villa = Village((200, 300), 10000, 100)
-#        villa.update_stats(self.green_report)
-#        self.assertEqual(self.green_report.mine_levels, villa.mine_levels)
-#        self.assertEqual(self.green_report.t_of_attack, villa.last_visited)
-#        self.assertEqual(self.green_report.remaining_capacity, villa.remaining_capacity)
-#        self.assertEqual(self.green_report.looted_capacity, villa.looted["total"])
-#        self.assertEqual(self.green_report.t_of_attack, villa.looted["per_visit"][0][0])
-#        self.assertEqual(self.green_report.looted_capacity, villa.looted["per_visit"][0][1])
-#
-#        villa.update_stats(self.yellow_report)
-#        self.assertEqual(self.yellow_report.mine_levels, villa.mine_levels)
-#        self.assertEqual(self.yellow_report.t_of_attack, villa.last_visited)
-#        self.assertEqual(self.yellow_report.remaining_capacity, villa.remaining_capacity)
-#        total = self.green_report.looted_capacity + self.yellow_report.looted_capacity
-#        self.assertEqual(total, villa.looted["total"])
-#        self.assertEqual(self.yellow_report.t_of_attack, villa.looted["per_visit"][1][0])
-#        self.assertEqual(self.yellow_report.looted_capacity, villa.looted["per_visit"][1][1])
-        
-        
-        
-
-
 if __name__ == '__main__':
     unittest.main()
         

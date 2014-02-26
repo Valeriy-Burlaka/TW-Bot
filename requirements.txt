@@ -1,3 +1,4 @@
 # requirements.txt
 # python3.3 required
-
+beautifulsoup4==4.3.2
+factory-boy==2.3.1
