@@ -25,7 +25,6 @@ FARM_DURATION = 24
 # X|Y coordinates of player's main village
 BASE_X = 211
 BASE_Y = 305
-
 # Id of first user's village is needed as base point to perform
 # some requests
 MAIN_VILLAGE_ID = 127591
