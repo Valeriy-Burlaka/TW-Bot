@@ -58,17 +58,18 @@ class TestMapMath(unittest.TestCase):
     def test_calculate_distance(self):
         self.assertEqual(MapMath.calculate_distance((100, 100), (200, 150)), 111.8)
 
-    def test_get_targets_in_radius(self):
+    def test_get_targets_by_distance(self):
         source_coords = (100, 100)
-        radius = 10
-        dummy_targets = {(95, 95): [], (100, 115): [], (105, 105): [],
-                         (100, 89): []}
-        targets_in_radius = MapMath.get_targets_in_radius(source_coords, radius,
-                                                          dummy_targets)
-        self.assertEqual(len(targets_in_radius), 2)
-        target_coords = [target[0] for target in targets_in_radius]
-        self.assertIn((95, 95), target_coords)
-        self.assertIn((105, 105), target_coords)
+        target_coords = [(94, 94), (100, 115), (105, 105), (100, 89)]
+        # [((x, y), distance_to_source), ...]
+        targets_by_distance = MapMath.get_targets_by_distance(source_coords,
+                                                              target_coords)
+        self.assertEqual(len(targets_by_distance), 4)
+        print(targets_by_distance)
+        self.assertEqual(targets_by_distance[0][0], (105, 105))
+        self.assertEqual(targets_by_distance[1][0], (94, 94))
+        self.assertEqual(targets_by_distance[2][0], (100, 89))
+        self.assertEqual(targets_by_distance[3][0], (100, 115))
 
 
 class TestMapStorage(unittest.TestCase):

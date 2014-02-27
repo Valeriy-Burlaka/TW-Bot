@@ -131,12 +131,13 @@ class MapMath:
         return corners
 
     @staticmethod
-    def get_targets_in_radius(source_coords, radius, villages):
+    def get_targets_by_distance(source_coords, target_coords, sort_by_distance=True):
         targets = []
-        for coords, villa in villages.items():
+        for coords in target_coords:
             distance = MapMath.calculate_distance(source_coords, coords)
-            if distance <= radius:
-                targets.append((coords, distance))
+            targets.append((coords, distance))
+        if sort_by_distance:
+            targets = sorted(targets, key=lambda x: x[1])
 
         return targets
 
