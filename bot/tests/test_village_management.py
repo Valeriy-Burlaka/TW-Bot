@@ -5,7 +5,7 @@ from unittest.mock import call, patch
 
 import settings
 from bot.tests.helpers import MockCollection
-from bot.tests.factories import PlayerVillageFactory
+from bot.tests.factories import PlayerVillageFactory, TargetVillageFactory
 from bot.libs.village_management import *
 
 
@@ -17,212 +17,160 @@ class TestVillageManager(unittest.TestCase):
         # (shelve file)
         with patch('bot.libs.village_management.MapStorage',
                         autospec=True) as patched_storage:
-            # Patch MapParser to control return value of .collect_sectors_data
-            # method in tests
-            with patch('bot.libs.village_management.MapParser') as patched_parser:
-                patched_storage.get_saved_villages.return_value = {}
-                mocked_lock = MockCollection.get_mocked_lock()
-                patched_rm = self.get_patched_request_manager()
-                self.village_manager = VillageManager(patched_rm, mocked_lock)
+            patched_storage.get_saved_villages.return_value = {}
+            self.village_manager = VillageManager(storage_type='local_file',
+                                                  storage_file_name='map_data')
 
     def tearDown(self):
         settings.DEBUG = False
-        self.rm_patcher.stop()
 
-    def get_patched_request_manager(self):
-        config = {'get_map_overview.return_value': '',
-                  'get_train_screen.return_value': '',
-                  'get_overviews_screen.return_value': '',
-                  'get_village_overview.return_value': ''}
-        self.rm_patcher = patch('bot.libs.request_management.RequestManager',
-                                **config)
-        patched_rm = self.rm_patcher.start()
+    # def test_build_target_villages(self):
+    #     self.assertEqual(self.village_manager.target_villages, {})
+    #     self.village_manager._get_map_data = Mock()
+    #     # create stub for map_data that will contain both valid
+    #     # (bonus/barb) & invalid villages (with owner != '0') villages
+    #     # {(x, y): [village_data], ..} where village_data[0] = id,
+    #     # [2] = name, [3] = population, [4] = owner ([1] & [5] - unused)
+    #     map_data = {(1, 1): ['100000', 4, 0, '78', '0', '100'],
+    #                 (2, 2): ['100001', 4, 'Bonus village', '125', '0', '100',
+    #                          ['a', 'b']],
+    #                 # invalid
+    #                 (3, 3): ['100002', 5, 'Mordor', '666', 'non-empty', '100'],
+    #                 (4, 4): ['100003', 5, 'Rohan', '777', 'non-empty', '100']}
+    #     self.village_manager._get_map_data.return_value = map_data
+    #     # 1 case, base scenarion: no saved villages, no trusted villages;
+    #     # resulting .target_villages should contain 2 (valid) TargetVillages
+    #     target_villages = self.village_manager.build_target_villages()
+    #     self.assertEqual(len(target_villages), 2)
+    #     self.assertIn((1, 1), target_villages)
+    #     self.assertIsInstance(target_villages[(1, 1)], TargetVillage)
+    #     self.assertEqual(target_villages[(1, 1)].id, 100000)
+    #     self.assertEqual(target_villages[(1, 1)].coords, (1, 1))
+    #     self.assertEqual(target_villages[(1, 1)].population, 78)
+    #     self.assertIn((2, 2), target_villages)
+    #     self.assertIsInstance(target_villages[(2, 2)], TargetVillage)
+    #     self.assertEqual(target_villages[(2, 2)].id, 100001)
+    #     self.assertEqual(target_villages[(2, 2)].coords, (2, 2))
+    #     self.assertEqual(target_villages[(2, 2)].population, 125)
+    #     # 2 case, extended scenario: 2 saved villages, 1 is knowingly
+    #     # 'invalid'; no trusted villages.
+    #     # expected: there are 2 villages in .target_villages & the one,
+    #     # that was saved has updated .population & retained h/rates.
+    #     valid_saved = TargetVillage((1, 1), 100000, 10)
+    #     valid_saved.h_rates = (10, 10, 10)
+    #     invalid_saved = TargetVillage((3, 3), 100002, 10)
+    #     invalid_saved.h_rates = (15, 15, 15)
+    #     saved_villages = {(1, 1): valid_saved, (3, 3): invalid_saved}
+    #     self.village_manager.map_storage.get_saved_villages.return_value = \
+    #         saved_villages
+    #
+    #     target_villages = self.village_manager.build_target_villages()
+    #     self.assertEqual(len(target_villages), 2)
+    #     self.assertIn((1, 1), target_villages)
+    #     self.assertIsInstance(target_villages[(1, 1)], TargetVillage)
+    #     self.assertEqual(target_villages[(1, 1)].id, 100000)
+    #     self.assertEqual(target_villages[(1, 1)].coords, (1, 1))
+    #     # village that was in saved retained data about h/rates
+    #     self.assertEqual(target_villages[(1, 1)].h_rates, (10, 10, 10))
+    #     self.assertEqual(target_villages[(1, 1)].population, 78)
+    #     self.assertIn((2, 2), target_villages)
+    #     self.assertIsInstance(target_villages[(2, 2)], TargetVillage)
+    #     self.assertEqual(target_villages[(2, 2)].id, 100001)
+    #     self.assertEqual(target_villages[(2, 2)].coords, (2, 2))
+    #     # village that was not in saved still has no h_rates
+    #     self.assertEqual(target_villages[(2, 2)].h_rates, None)
+    #     self.assertEqual(target_villages[(2, 2)].population, 125)
+    #     # 3 case, extended scenario 2: + 1 saved village, that will
+    #     # not be in .map_data; .trusted_villages contains both
+    #     # 'invalid' villages;
+    #     # expected: there are 4 villages in .target_villages;
+    #     # village that was not in .map_data is not picked from saved;
+    #     # villages that were in .map_data & were in saved have
+    #     # retained state.
+    #     never_found_village = TargetVillage((5, 5), 100005, 10)
+    #     saved_villages[(5, 5)] = never_found_village
+    #     self.village_manager.trusted_targets = ((3, 3), (4, 4))
+    #
+    #     target_villages = self.village_manager.build_target_villages()
+    #     self.assertEqual(len(target_villages), 4)
+    #     self.assertIn((1, 1), target_villages)
+    #     self.assertIsInstance(target_villages[(1, 1)], TargetVillage)
+    #     self.assertEqual(target_villages[(1, 1)].id, 100000)
+    #     self.assertEqual(target_villages[(1, 1)].coords, (1, 1))
+    #     # village that was in saved retained data about h/rates
+    #     self.assertEqual(target_villages[(1, 1)].h_rates, (10, 10, 10))
+    #     self.assertEqual(target_villages[(1, 1)].population, 78)
+    #     self.assertIn((2, 2), target_villages)
+    #     self.assertIsInstance(target_villages[(2, 2)], TargetVillage)
+    #     self.assertEqual(target_villages[(2, 2)].id, 100001)
+    #     self.assertEqual(target_villages[(2, 2)].coords, (2, 2))
+    #     # village that was not in saved still has no h_rates
+    #     self.assertEqual(target_villages[(2, 2)].h_rates, None)
+    #     self.assertEqual(target_villages[(2, 2)].population, 125)
+    #     # saved & trusted
+    #     self.assertIn((3, 3), target_villages)
+    #     self.assertIsInstance(target_villages[(3, 3)], TargetVillage)
+    #     self.assertEqual(target_villages[(3, 3)].id, 100002)
+    #     self.assertEqual(target_villages[(3, 3)].coords, (3, 3))
+    #     self.assertEqual(target_villages[(3, 3)].h_rates, (15, 15, 15))
+    #     self.assertEqual(target_villages[(3, 3)].population, 666)
+    #     # not saved, trusted
+    #     self.assertIn((4, 4), target_villages)
+    #     self.assertIsInstance(target_villages[(4, 4)], TargetVillage)
+    #     self.assertEqual(target_villages[(4, 4)].id, 100003)
+    #     self.assertEqual(target_villages[(4, 4)].coords, (4, 4))
+    #     self.assertEqual(target_villages[(4, 4)].h_rates, None)
+    #     self.assertEqual(target_villages[(4, 4)].population, 777)
 
-        return patched_rm
-
-    def test_build_target_villages(self):
-        self.assertEqual(self.village_manager.target_villages, {})
-        self.assertEqual(self.village_manager.trusted_targets, ())
-        self.village_manager._get_map_data = Mock()
-        # create stub for map_data that will contain both valid
-        # (bonus/barb) & invalid villages (with owner != '0') villages
-        # {(x, y): [village_data], ..} where village_data[0] = id,
-        # [2] = name, [3] = population, [4] = owner ([1] & [5] - unused)
-        map_data = {(1, 1): ['100000', 4, 0, '78', '0', '100'],
-                    (2, 2): ['100001', 4, 'Bonus village', '125', '0', '100',
-                             ['a', 'b']],
-                    # invalid
-                    (3, 3): ['100002', 5, 'Mordor', '666', 'non-empty', '100'],
-                    (4, 4): ['100003', 5, 'Rohan', '777', 'non-empty', '100']}
-        self.village_manager._get_map_data.return_value = map_data
-        # 1 case, base scenarion: no saved villages, no trusted villages;
-        # resulting .target_villages should contain 2 (valid) TargetVillages
-        target_villages = self.village_manager.build_target_villages()
-        self.assertEqual(len(target_villages), 2)
-        self.assertIn((1, 1), target_villages)
-        self.assertIsInstance(target_villages[(1, 1)], TargetVillage)
-        self.assertEqual(target_villages[(1, 1)].id, 100000)
-        self.assertEqual(target_villages[(1, 1)].coords, (1, 1))
-        self.assertEqual(target_villages[(1, 1)].population, 78)
-        self.assertIn((2, 2), target_villages)
-        self.assertIsInstance(target_villages[(2, 2)], TargetVillage)
-        self.assertEqual(target_villages[(2, 2)].id, 100001)
-        self.assertEqual(target_villages[(2, 2)].coords, (2, 2))
-        self.assertEqual(target_villages[(2, 2)].population, 125)
-        # 2 case, extended scenario: 2 saved villages, 1 is knowingly
-        # 'invalid'; no trusted villages.
-        # expected: there are 2 villages in .target_villages & the one,
-        # that was saved has updated .population & retained h/rates.
-        valid_saved = TargetVillage((1, 1), 100000, 10)
-        valid_saved.h_rates = (10, 10, 10)
-        invalid_saved = TargetVillage((3, 3), 100002, 10)
-        invalid_saved.h_rates = (15, 15, 15)
-        saved_villages = {(1, 1): valid_saved, (3, 3): invalid_saved}
-        self.village_manager.map_storage.get_saved_villages.return_value = \
-            saved_villages
-
-        target_villages = self.village_manager.build_target_villages()
-        self.assertEqual(len(target_villages), 2)
-        self.assertIn((1, 1), target_villages)
-        self.assertIsInstance(target_villages[(1, 1)], TargetVillage)
-        self.assertEqual(target_villages[(1, 1)].id, 100000)
-        self.assertEqual(target_villages[(1, 1)].coords, (1, 1))
-        # village that was in saved retained data about h/rates
-        self.assertEqual(target_villages[(1, 1)].h_rates, (10, 10, 10))
-        self.assertEqual(target_villages[(1, 1)].population, 78)
-        self.assertIn((2, 2), target_villages)
-        self.assertIsInstance(target_villages[(2, 2)], TargetVillage)
-        self.assertEqual(target_villages[(2, 2)].id, 100001)
-        self.assertEqual(target_villages[(2, 2)].coords, (2, 2))
-        # village that was not in saved still has no h_rates
-        self.assertEqual(target_villages[(2, 2)].h_rates, None)
-        self.assertEqual(target_villages[(2, 2)].population, 125)
-        # 3 case, extended scenario 2: + 1 saved village, that will
-        # not be in .map_data; .trusted_villages contains both
-        # 'invalid' villages;
-        # expected: there are 4 villages in .target_villages;
-        # village that was not in .map_data is not picked from saved;
-        # villages that were in .map_data & were in saved have
-        # retained state.
-        never_found_village = TargetVillage((5, 5), 100005, 10)
-        saved_villages[(5, 5)] = never_found_village
-        self.village_manager.trusted_targets = ((3, 3), (4, 4))
-
-        target_villages = self.village_manager.build_target_villages()
-        self.assertEqual(len(target_villages), 4)
-        self.assertIn((1, 1), target_villages)
-        self.assertIsInstance(target_villages[(1, 1)], TargetVillage)
-        self.assertEqual(target_villages[(1, 1)].id, 100000)
-        self.assertEqual(target_villages[(1, 1)].coords, (1, 1))
-        # village that was in saved retained data about h/rates
-        self.assertEqual(target_villages[(1, 1)].h_rates, (10, 10, 10))
-        self.assertEqual(target_villages[(1, 1)].population, 78)
-        self.assertIn((2, 2), target_villages)
-        self.assertIsInstance(target_villages[(2, 2)], TargetVillage)
-        self.assertEqual(target_villages[(2, 2)].id, 100001)
-        self.assertEqual(target_villages[(2, 2)].coords, (2, 2))
-        # village that was not in saved still has no h_rates
-        self.assertEqual(target_villages[(2, 2)].h_rates, None)
-        self.assertEqual(target_villages[(2, 2)].population, 125)
-        # saved & trusted
-        self.assertIn((3, 3), target_villages)
-        self.assertIsInstance(target_villages[(3, 3)], TargetVillage)
-        self.assertEqual(target_villages[(3, 3)].id, 100002)
-        self.assertEqual(target_villages[(3, 3)].coords, (3, 3))
-        self.assertEqual(target_villages[(3, 3)].h_rates, (15, 15, 15))
-        self.assertEqual(target_villages[(3, 3)].population, 666)
-        # not saved, trusted
-        self.assertIn((4, 4), target_villages)
-        self.assertIsInstance(target_villages[(4, 4)], TargetVillage)
-        self.assertEqual(target_villages[(4, 4)].id, 100003)
-        self.assertEqual(target_villages[(4, 4)].coords, (4, 4))
-        self.assertEqual(target_villages[(4, 4)].h_rates, None)
-        self.assertEqual(target_villages[(4, 4)].population, 777)
-
-    def test_set_farming_villages(self):
-        self.village_manager.request_manager.method_calls = []
+    def test_set_farming_village(self):
         # .farming_villages & .player_villages are an empty dicts initially
         self.assertEqual(self.village_manager.farming_villages, {})
         self.assertEqual(self.village_manager.player_villages, {})
         # sanity check: if there no .player_villages, call to method
         # doesn't fail
-        self.village_manager.set_farming_villages(farm_with=[1])
+        self.village_manager.set_farming_village(1, '')
         self.assertEqual(self.village_manager.farming_villages, {})
         # Fill .player_villages. PVFactory doesn't suffice here, because
         # we need to stub PlayerVillage methods
-        pv1 = Mock(spec=PlayerVillage, id=1, coords=(1, 1), radius=1)
-        pv2 = Mock(spec=PlayerVillage, id=2, coords=(2, 2), radius=2)
-        player_villages = {1: pv1, 2: pv2}
-        self.village_manager.player_villages = player_villages
-        # call with all defaults
-        self.village_manager.set_farming_villages()
-        expected_farming_v = player_villages
-        self.assertEqual(self.village_manager.farming_villages,
-                         expected_farming_v)
+        pv1 = Mock(spec=PlayerVillage, id=1000, coords=(1, 1), attack_targets=[])
+        self.village_manager.player_villages = {1000: pv1}
 
-        for village in self.village_manager.farming_villages.values():
-            village.set_troops_to_use.assert_called_once_with(False, False)
-            self.assertIn(call.get_train_screen(village.id),
-                          self.village_manager.request_manager.method_calls)
-            village.set_farm_radius.assert_called_once_with('', 4)
-            village.update_troops_count.assert_called_once_with(train_screen_html='')
-            village.method_calls = []
+        attack_targets = [((1, 1), 10), ((2, 2), 11)]
+        self.village_manager._get_targets_for_attacker = Mock(return_value=attack_targets)
+        # call with default 'use_def' & 'heavy_is_def'
+        self.village_manager.set_farming_village(1000, 'html')
+        self.assertEqual(len(self.village_manager.farming_villages), 1)
+        self.assertIn(1000, self.village_manager.farming_villages)
+        attacker = self.village_manager.farming_villages[1000]
+        attacker.set_troops_to_use.assert_called_once_with(False, False)
+        attacker.update_troops_count.assert_called_once_with(html_data='html')
+        attacker.set_attack_targets.assert_called_once_with(attack_targets)
 
-        self.village_manager.request_manager.method_calls = []
+        pv2 = Mock(spec=PlayerVillage, id=2000, coords=(2, 2), attack_targets=[])
+        self.village_manager.player_villages[2000] = pv2
 
-        # Had to re-create PlayerVillages due to strange behavior
-        # with recording method calls: despite on assigning
-        # method_calls to [], previous calls are somehow tracked. E.g.:
-        # >>>print(village.method_calls, len(village.method_calls)
-        # >>>[call.set_troops_to_use(True, True), call.set_farm_radius('', 10),
-        # >>>call.update_troops_count(train_screen_html='')] 3
-        # >>>village.set_troops_to_use.assert_called_once_with(True, True)
-        # >>>AssertionError: Expected 'set_farm_radius' to be called once.
-        # Called 2 times.
-        pv1 = Mock(spec=PlayerVillage, id=1, coords=(1, 1), radius=1)
-        pv2 = Mock(spec=PlayerVillage, id=2, coords=(2, 2), radius=2)
-        player_villages = {1: pv1, 2: pv2}
-        self.village_manager.player_villages = player_villages
-        self.village_manager.set_farming_villages(farm_with=[1],
-                                                  use_def_to_farm=True,
-                                                  heavy_is_def=True,
-                                                  t_limit_to_leave=10)
-        expected_farming_v = {1: pv1}
-        self.assertEqual(self.village_manager.farming_villages,
-                         expected_farming_v)
-        self.assertEqual(pv2.method_calls, [])
-        for village in self.village_manager.farming_villages.values():
-            village.set_troops_to_use.assert_called_once_with(True, True)
-            self.assertIn(call.get_train_screen(village.id),
-                          self.village_manager.request_manager.method_calls)
-            village.set_farm_radius.assert_called_once_with('', 10)
-            village.update_troops_count.assert_called_once_with(train_screen_html='')
-            village.method_calls = []
+        self.village_manager.set_farming_village(2000, 'html',
+                                                 use_def_to_farm=True,
+                                                 heavy_is_def=True)
+        self.assertEqual(len(self.village_manager.farming_villages), 2)
+        self.assertIn(2000, self.village_manager.farming_villages)
+        attacker = self.village_manager.farming_villages[2000]
+        attacker.set_troops_to_use.assert_called_once_with(True, True)
+        attacker.update_troops_count.assert_called_once_with(html_data='html')
+        attacker.set_attack_targets.assert_called_once_with(attack_targets)
 
-    def test_set_targets_by_attacker_id(self):
-        # .targets_by_id & farming villages are an empty dicts initially
-        self.assertEqual(self.village_manager.targets_by_id, {})
-        self.assertEqual(self.village_manager.farming_villages, {})
-        player_villages = PlayerVillageFactory.build_batch(3)
-        self.village_manager.farming_villages = {pv.id: pv for pv in player_villages}
+    def test_get_targets_for_attacker(self):
+        self.assertEqual(self.village_manager.target_villages, {})
+        attacker = PlayerVillageFactory()
+        targets = TargetVillageFactory.build_batch(5)
+        self.village_manager.target_villages = {target.coords: target for
+                                                target in targets}
+        attacker_coords = attacker.coords
+        target_coords = self.village_manager.target_villages.keys()
         with patch('bot.libs.village_management.MapMath', autospec=True) as map_math:
-            # (coordinates, distance)
-            targets_in_radius = [((1, 1), 15), ((2, 2), 11), ((3, 3), 12),
-                                 ((4, 4), 9), ((5, 5), 6), ((6, 6), 1)]
-            map_math.get_targets_in_radius.return_value = targets_in_radius
-
-            # targets should be sorted by distance ascending (nearest first)
-            expected_targets = [((6, 6), 1), ((5, 5), 6), ((4, 4), 9),
-                                ((2, 2), 11), ((3, 3), 12), ((1, 1), 15)]
-            self.village_manager.set_targets_by_attacker_id()
-            self.assertEqual(len(self.village_manager.targets_by_id), 3)
-            for pv in player_villages:
-                self.assertIn(pv.id, self.village_manager.targets_by_id)
-                self.assertEqual(self.village_manager.targets_by_id[pv.id],
-                                 expected_targets)
-        # clean village_manager
-        self.village_manager.targets_by_id = {}
-        self.village_manager.farming_villages = {}
+            self.village_manager._get_targets_for_attacker(attacker)
+            map_math.get_targets_by_distance.assert_called_once_with(attacker_coords,
+                                                                     target_coords)
 
     def test_get_villages_data(self):
         filename = os.path.join(settings.HTML_TEST_DATA_FOLDER,
@@ -236,135 +184,6 @@ class TestVillageManager(unittest.TestCase):
                         (136329, (212, 305), 'Shame of trolls'),]
         actual_res = self.village_manager._get_villages_data(overviews_data)
         self.assertCountEqual(expected_res, actual_res)
-
-    def test_get_map_data(self):
-        # refresh calls to request_manager:
-        self.village_manager.request_manager.method_calls = []
-        # 1 case: ._get_map_data is called with empty list
-        # of farming centers. expected: return value = empty dict,
-        # no calls to request_manager were performed
-        map_data = self.village_manager._get_map_data([], map_depth=10)
-        self.assertEqual(map_data, {})
-        self.assertEqual(len(self.village_manager.request_manager.method_calls), 0)
-        # 2 case: ._get_map_data is called with 2 farming
-        # centers, that belong to the same sector & with map_depth=1
-        # expected: ._get_map_overview method is called once (for 1st
-        # farming center); no calls to MapMath.get_area_corners method;
-        # return value = merged sectors data.
-        with patch('bot.libs.village_management.MapMath', autospec=True) as map_math:
-            distinct_centers = []
-            distinct_centers.append(((1, 1), 1))  # ((x, y), id)
-            distinct_centers.append(((2, 2), 2))
-            # set return value for .collect_sectors_data of map_parser,
-            # so both centers are in the same sector
-            self.village_manager.map_parser.collect_sector_data.return_value = \
-                [{(1, 1): ['1001'], (2, 2): ['1002'], (3, 3): ['1003']},
-                 {(4, 4): ['1004'], (5, 5): ['1005']},
-                 {(8, 8): ['1008'], (10, 10): ['1010'], (6, 6): ['1006']},
-                 {(0, 0): ['10000'], (0, 1000): ['10001'], (1000, 0): ['10002'],
-                  (1000, 1000): ['10003']}]
-            expected_return_value = {(1, 1): ['1001'], (2, 2): ['1002'],
-                                     (3, 3): ['1003'], (4, 4): ['1004'],
-                                     (5, 5): ['1005'], (6, 6): ['1006'],
-                                     (8, 8): ['1008'], (10, 10): ['1010'],
-                                     (0, 0): ['10000'], (0, 1000): ['10001'],
-                                     (1000, 0): ['10002'], (1000, 1000): ['10003']}
-            map_data = self.village_manager._get_map_data(distinct_centers, map_depth=1)
-            self.assertEqual(map_data, expected_return_value)
-            calls_to_rm = self.village_manager.request_manager.method_calls
-            self.assertEqual(len(calls_to_rm), 1)
-            self.assertIn(call.get_map_overview(1, 1, 1), calls_to_rm)
-            # refresh calls to request_manager:
-            self.village_manager.request_manager.method_calls = []
-            # 3 case: 2 farming centers (same sector), map_depth=2.
-            # expected: _get_map_overview is called 5 times (center +
-            # 4 area corners. return value = merged sectors data
-            map_math.get_area_corners.return_value = [(0, 0), (0, 1000),
-                                                      (1000, 0), (1000, 1000)]
-            map_data = self.village_manager._get_map_data(distinct_centers, map_depth=2)
-            self.assertEqual(map_data, expected_return_value)
-            calls_to_rm = self.village_manager.request_manager.method_calls
-            self.assertEqual(len(calls_to_rm), 5)
-            self.assertIn(call.get_map_overview(1, 1, 1), calls_to_rm)
-            self.assertIn(call.get_map_overview(10000, 0, 0), calls_to_rm)
-            self.assertIn(call.get_map_overview(10001, 0, 1000), calls_to_rm)
-            self.assertIn(call.get_map_overview(10002, 1000, 0), calls_to_rm)
-            self.assertIn(call.get_map_overview(10003, 1000, 1000), calls_to_rm)
-            # refresh calls to request_manager:
-            self.village_manager.request_manager.method_calls = []
-            # 4 case: 2 farming centers in distinct sectors, map_depth=2.
-            # expected: _get_map_overview is called 10 times (each center &
-            # 4 area corners for each center. return value = merged sectors data
-            self.village_manager.map_parser.collect_sector_data.return_value = \
-                [{(1, 1): ['1001'], (3, 3): ['1003'], (1000, 1000): ['10003']},
-                 {(2, 2): ['1002'], (4, 4): ['1004'], (5, 5): ['1005']},
-                 {(8, 8): ['1008'], (10, 10): ['1010'], (6, 6): ['1006']},
-                 {(0, 0): ['10000'], (0, 1000): ['10001'], (1000, 0): ['10002']}]
-            map_data = self.village_manager._get_map_data(distinct_centers, map_depth=2)
-            self.assertEqual(map_data, expected_return_value)
-            calls_to_rm = self.village_manager.request_manager.method_calls
-            expected_calls = [call.get_map_overview(1, 1, 1),
-                              call.get_map_overview(2, 2, 2),
-                              call.get_map_overview(10000, 0, 0),
-                              call.get_map_overview(10000, 0, 0),
-                              call.get_map_overview(10001, 0, 1000),
-                              call.get_map_overview(10001, 0, 1000),
-                              call.get_map_overview(10002, 1000, 0),
-                              call.get_map_overview(10002, 1000, 0),
-                              call.get_map_overview(10003, 1000, 1000),
-                              call.get_map_overview(10003, 1000, 1000)]
-            self.assertCountEqual(expected_calls, calls_to_rm)
-
-    def test_filter_distinct_centers(self):
-        """
-        Possible situations:
-        1) All farming centers lie in the same sector as
-        current attacker: expected return = [] (empty list)
-        2) All farming centers lie in different sectors
-        from attacker: expected return = list with all centers,
-        current attacker not in returned list
-        3) Some farming centers do lie in the same sector as
-        current attacker and some centers do not. expected
-        return: list with centers that do not lie in attacker's
-        sector, attacker is not in returned list.
-        Expected returned type = list of tuples, where each tuple
-        is (x, y) coordinates
-        """
-        current_attacker = (1, 1)
-        centers = [((2, 2), 'a'), ((3, 3), 'b'), ((4, 4), 'c'), ((5, 5), 'd')]
-        # some non-centers point added for plausibility
-        all_in_one_data = [{(1, 1): '', (2, 2): '', (3, 3): '',
-                            (4, 4): '', (5, 5): ''}, {(6, 6): '', (7, 7): ''}]
-        distinct_centers = self.village_manager._filter_distinct_centers(
-            current_attacker, centers, all_in_one_data)
-        self.assertEqual(distinct_centers, [])
-
-        all_in_separate = [{(1, 1): '', (10, 10): ''}, {(2, 2): '', (3, 3): ''},
-                           {(4, 4): '', (8, 8): '', (10, 10): '', (5, 5): ''}]
-        distinct_centers = self.village_manager._filter_distinct_centers(
-            current_attacker, centers, all_in_separate)
-        self.assertCountEqual(distinct_centers, centers)
-
-        in_same_and_separate = [{(1, 1): '', (2, 2): '', (3, 3): ''},
-                                {(4, 4): '', (7, 7): '', (9, 9): ''},
-                                {(5, 5): '', (6, 6): ''}]
-        distinct_centers = self.village_manager._filter_distinct_centers(
-            current_attacker, centers, in_same_and_separate)
-        self.assertCountEqual(distinct_centers, [((4, 4), 'c'), ((5, 5), 'd')])
-
-    def test_merge_sectors_data(self):
-        sectors_data_unique = [{(1, 1): 'test11', (2, 2): 'test22'},
-                               {(3, 3): 'test33', (4, 4): 'test44'}]
-        expected = {(1, 1): 'test11', (2, 2): 'test22',
-                    (3, 3): 'test33', (4, 4): 'test44'}
-        actual = self.village_manager._merge_sectors_data(sectors_data_unique)
-        self.assertTrue(expected, actual)
-
-        sectors_data_non_unique = [{(1, 1): 'test11', (2, 2): 'test22'},
-                                   {(1, 1): 'test33', (4, 4): 'test44'}]
-        expected = {(1, 1): 'test33', (2, 2): 'test22',  (4, 4): 'test44'}
-        actual = self.village_manager._merge_sectors_data(sectors_data_non_unique)
-        self.assertTrue(expected, actual)
 
     def test_is_valid_target(self):
         # [2] = village_name ("Bonus village" for bonus villages
@@ -403,7 +222,8 @@ class TestVillageManager(unittest.TestCase):
         village_data_wo_bonus = ['157956', 5, 'Guest201197s village',
                                  '40', '10201197', '100']
         villa = self.village_manager._build_target_village(villa_coords,
-                                                           village_data_wo_bonus)
+                                                           village_data_wo_bonus,
+                                                           server_speed=1)
         self.assertIsInstance(villa, TargetVillage)
         self.assertEqual(villa.coords, villa_coords)
         self.assertEqual(villa.id, 157956)  # str id is converted to int
@@ -417,59 +237,14 @@ class TestVillageManager(unittest.TestCase):
                                 ['30% more resources are produced (all '
                                  'resource types)', 'bonus/all.png']]
         villa = self.village_manager._build_target_village(villa_coords,
-                                                           village_data_w_bonus)
+                                                           village_data_w_bonus,
+                                                           server_speed=1)
         self.assertIsInstance(villa, TargetVillage)
         self.assertEqual(villa.coords, villa_coords)
         self.assertEqual(villa.id, 147081)
         self.assertEqual(villa.population, 101)
         self.assertEqual(villa.bonus, village_data_w_bonus[6][0])
 
-    def test_get_map_overview(self):
-        villa_id = 1
-        x = y = 0
-        # refresh village_manager.lock calls:
-        self.village_manager.lock.method_calls = []
-        self.village_manager._get_map_overview(villa_id, x, y)
-        # village_manager.lock is not acquired/released since
-        #  _get_map_overview() method call doesn't acquire lock.
-        self.assertEqual([], self.village_manager.lock.method_calls)
-        self.village_manager.request_manager.get_map_overview.\
-            assert_called_once_with(villa_id, x, y)
-
-    def test_get_train_screen(self):
-        # refresh village_manager.lock calls:
-        self.village_manager.lock.method_calls = []
-        villa_id = 1
-        self.village_manager._get_train_screen(villa_id)
-        expected_lock_calls = [call.acquire(), call.release()]
-        self.assertEqual(expected_lock_calls,
-                         self.village_manager.lock.method_calls)
-        self.village_manager.request_manager.get_train_screen.\
-            assert_called_once_with(villa_id)
-
-    def test_get_overviews_screen(self):
-        # refresh village_manager.lock calls:
-        self.village_manager.lock.method_calls = []
-        # refresh village_manager.request_manager calls
-        self.village_manager.request_manager.method_calls = []
-        self.village_manager._get_overviews_screen()
-        expected_lock_calls = [call.acquire(), call.release()]
-        self.assertEqual(expected_lock_calls,
-                         self.village_manager.lock.method_calls)
-        expected_rm_calls = [call.get_overviews_screen()]
-        self.assertEqual(expected_rm_calls,
-                         self.village_manager.request_manager.method_calls)
-
-    def test_get_village_overview(self):
-        # refresh village_manager.lock calls:
-        self.village_manager.lock.method_calls = []
-        villa_id = 1
-        self.village_manager._get_village_overview(villa_id)
-        expected_lock_calls = [call.acquire(), call.release()]
-        self.assertEqual(expected_lock_calls,
-                         self.village_manager.lock.method_calls)
-        self.village_manager.request_manager.get_village_overview.\
-            assert_called_once_with(villa_id)
 
 
 # class TestPlayerVillage(unittest.TestCase):

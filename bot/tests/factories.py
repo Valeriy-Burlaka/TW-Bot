@@ -34,7 +34,7 @@ class PlayerVillageFactory(factory.Factory):
 
     @factory.lazy_attribute
     def coords(self):
-        return (FuzzyInteger(1, 999).fuzz(), FuzzyInteger(1, 999).fuzz())
+        return FuzzyInteger(1, 999).fuzz(), FuzzyInteger(1, 999).fuzz()
 
     @factory.lazy_attribute
     def id_(self):
