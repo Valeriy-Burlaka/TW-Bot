@@ -344,11 +344,47 @@ class TestVillage(unittest.TestCase):
                                      bonus=None, server_speed=1)
 
     def test_update_stats(self):
+        village = self.village
         # stub ._set_h_rates to disable internal calls of this method
-        self.village._set_h_rates = Mock(return_value=[100, 100, 100])
+        village._set_h_rates = Mock(return_value=[100, 100, 100])
 
-        new_report = AttackReportFactory()
-        self.village.update_stats(new_report)
+        new_report = Mock()
+        config = {'t_of_attack': 1000, 'defended': True,
+                  'mine_levels': [10, 10, 10], 'remaining_capacity': 1000,
+                  'looted_capacity': 2000, 'storage_level': 5,
+                  'wall_level': None}
+        new_report.configure_mock(**config)
+        village.update_stats(new_report)
+        self.assertEqual(village.last_visited, 1000)
+        self.assertTrue(village.defended)
+        self.assertEqual(village.mine_levels, [10, 10, 10])
+        self.assertEqual(village.remaining_capacity, 1000)
+        self.assertIsNotNone(village.storage_limit)
+        self.assertIsNone(village.base_defence)
+        self.assertEqual(village.total_loot, 2000)
+        self.assertEqual(len(village.visits_history), 1)
+        self.assertEqual(village.visits_history[0],
+                         (config['t_of_attack'], config['looted_capacity']))
+
+        new_report = Mock()
+        config['t_of_attack'] = 2000
+        config['defended'] = False
+        config['mine_levels'] = [0, 0, 12]
+        config['remaining_capacity'] = 0
+        config['wall_level'] = 5
+        new_report.configure_mock(**config)
+        village.update_stats(new_report)
+        self.assertEqual(village.last_visited, 2000)
+        self.assertFalse(village.defended)
+        # mine levels were not lowered
+        self.assertEqual(village.mine_levels, [10, 10, 12])
+        self.assertEqual(village.remaining_capacity, 0)
+        self.assertIsNotNone(village.storage_limit)
+        self.assertIsNotNone(village.base_defence)
+        self.assertEqual(village.total_loot, 4000)
+        self.assertEqual(len(village.visits_history), 2)
+        self.assertEqual(village.visits_history[0],
+                         (config['t_of_attack'], config['looted_capacity']))
 
     def test_estimate_capacity(self):
         self.village._get_default_capacity = Mock(return_value=1000)
@@ -441,133 +477,3 @@ class TestVillage(unittest.TestCase):
         self.assertEqual(len(rates), 30)
         self.assertEqual(rates[0], 1000)
         self.assertEqual(rates[29], 400000)
-
-   #  def test_set_h_rates(self):
-   #      self.barb.mine_levels = [10, 11, 12]
-   #      self.barb.set_h_rates()
-   #      self.assertTrue(self.barb.h_rates)
-   #      self.assertEqual(self.barb.h_rates[0], 117)
-   #      self.assertEqual(self.barb.h_rates[1], 136)
-   #      self.assertEqual(self.barb.h_rates[2], 158)
-   #
-   #      self.bonus_all.mine_levels = [9, 9, 9]
-   #      self.bonus_all.set_h_rates()
-   #      self.assertTrue(self.bonus_all.h_rates)
-   #      self.assertEqual(self.bonus_all.h_rates[0], 133)
-   #      self.assertEqual(self.bonus_all.h_rates[1], 133)
-   #      self.assertEqual(self.bonus_all.h_rates[2], 133)
-   #
-   #      self.bonus_wood.mine_levels = [1, 2, 3]
-   #      self.bonus_wood.set_h_rates()
-   #      self.assertTrue(self.bonus_wood.h_rates)
-   #      self.assertEqual(self.bonus_wood.h_rates[0], 60)
-   #      self.assertEqual(self.bonus_wood.h_rates[1], 35)
-   #      self.assertEqual(self.bonus_wood.h_rates[2], 41)
-   #
-   #      self.bonus_clay.mine_levels = [4, 5, 6]
-   #      self.bonus_clay.set_h_rates()
-   #      self.assertTrue(self.bonus_clay.h_rates)
-   #      self.assertEqual(self.bonus_clay.h_rates[0], 47)
-   #      self.assertEqual(self.bonus_clay.h_rates[1], 110)
-   #      self.assertEqual(self.bonus_clay.h_rates[2], 64)
-   #
-   #      self.bonus_iron.mine_levels = [20, 15, 8]
-   #      self.bonus_iron.set_h_rates()
-   #      self.assertTrue(self.bonus_iron.h_rates)
-   #      self.assertEqual(self.bonus_iron.h_rates[0], 530)
-   #      self.assertEqual(self.bonus_iron.h_rates[1], 249)
-   #      self.assertEqual(self.bonus_iron.h_rates[2], 172)
-   #
-   #  def test_estimate_capacity(self):
-   #      self.barb.mine_levels = [20, 20, 20]
-   #      self.barb.set_h_rates()
-   #      self.barb.last_visited = 10000
-   #      self.barb.remaining_capacity = 2000
-   #      self.assertEqual(self.barb.estimate_capacity(17200), 5180)
-   #
-   #      self.barb.remaining_capacity = 0
-   #      self.assertEqual(self.barb.estimate_capacity(17200), 3180)
-   #
-   #      self.barb.last_visited = None
-   #      three_h_production = sum(x * 3 for x in self.barb.h_rates)
-   #      t = time.mktime(time.gmtime())
-   #      t_to_arrival = t + 10800
-   #      self.assertEqual(self.barb.estimate_capacity(t_to_arrival), three_h_production)
-   #
-   #  def test_update_stats(self):
-   #      class dummy_report:
-   #          pass
-   #      report = dummy_report()
-   #      report.t_of_attack = 10000
-   #      report.mine_levels = [13, 14, 15]
-   #      report.remaining_capacity = 3000
-   #      report.looted_capacity = 4000
-   #
-   #      villa = Village((100, 200), 10005, 200)
-   #      villa.update_stats(report)
-   #      self.assertEqual(villa.last_visited, 10000)
-   #      self.assertEqual(villa.mine_levels, [13, 14, 15])
-   #      self.assertEqual(villa.h_rates, [184, 214, 249])
-   #      self.assertEqual(villa.remaining_capacity, 3000)
-   #      self.assertEqual(villa.looted["total"], 4000)
-   #
-   #      report = dummy_report()
-   #      report.t_of_attack = 20000
-   #      report.mine_levels = [17, 18, 19]
-   #      report.remaining_capacity = 0
-   #      report.looted_capacity = 7000
-   #
-   #      villa.update_stats(report)
-   #      self.assertEqual(villa.last_visited, 20000)
-   #      self.assertEqual(villa.mine_levels, [17, 18, 19])
-   #      self.assertEqual(villa.h_rates, [337, 391, 455])
-   #      self.assertEqual(villa.remaining_capacity, 0)
-   #      self.assertEqual(villa.looted["total"], 11000)
-   #      self.assertEqual(len(villa.looted["per_visit"]), 2)
-   #      self.assertEqual(villa.looted["per_visit"][-1][0], villa.last_visited)
-   #      self.assertEqual(villa.looted["per_visit"][-1][1], report.looted_capacity)
-   #
-   #  def test_is_fresh_meat(self):
-   #      fresh_villa = Village((100, 100), 100, 200)
-   #      self.assertTrue(fresh_villa.is_fresh_meat())
-   #      fresh_villa.last_visited = 1
-   #      self.assertFalse(fresh_villa.is_fresh_meat())
-   #
-   #  def test_passes_threshold(self):
-   #      fresh_villa = Village((100, 100), 100, 200)
-   #      threshold = 2400
-   #      fresh_villa.remaining_capacity = threshold - 1
-   #      self.assertFalse(fresh_villa.passes_threshold(threshold))
-   #      fresh_villa.remaining_capacity = threshold + 1
-   #      self.assertTrue(fresh_villa.passes_threshold(threshold))
-   #
-   #  def test_finished_rest(self):
-   #      fresh_villa = Village((100, 100), 100, 200)
-   #      rest = 3600
-   #      fresh_villa.last_visited = time.mktime(time.gmtime()) - (rest - 100)
-   #      self.assertFalse(fresh_villa.finished_rest(rest))
-   #      fresh_villa.last_visited = time.mktime(time.gmtime()) - (rest + 100)
-   #      self.assertTrue(fresh_villa.finished_rest(rest))
-   #
-   # #
-   # # def test_get_village(self):
-   # #      villa_data = ['129795', 16, 'Bonus village', '247', '0', '100',
-   # #                      ['30% more resources are produced (all resource types)', 'bonus/all.png']]
-   # #      villa_coords = (100, 100)
-   # #      villa = self.map.get_village(villa_coords, villa_data, 100)
-   # #      self.assertEqual(villa.coords, villa_coords)
-   # #      self.assertEqual(villa.bonus, villa_data[6][0])
-   # #      self.assertEqual(villa.dist_from_base, 100)
-   #
-   #
-   #  # def test_is_valid(self):
-   #  #     non_valid = [['110479', 7, 'Claus laaan', '952', '10155826', '100'],
-   #  #                  ['128694', 18, 'Bonus village', '313', 'M140', '100', ['100% higher clay production', 'bonus/stone.png']]
-   #  #                  ]
-   #  #     valid = [['129120', 4, 0, '138', '0', '100'],
-   #  #              ['129795', 16, 'Bonus village', '247', '0', '100', ['30% more resources are produced (all resource types)', 'bonus/all.png']]
-   #  #              ]
-   #  #     for villa_data in non_valid:
-   #  #         self.assertFalse(self.map.is_valid(villa_data))
-   #  #     for villa_data in valid:
-   #  #         self.assertTrue(self.map.is_valid(villa_data))

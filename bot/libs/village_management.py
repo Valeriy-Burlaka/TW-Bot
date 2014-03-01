@@ -385,8 +385,7 @@ class TargetVillage:
         about haul looted, haul remaining, mine levels, etc.
         """
         self.last_visited = attack_report.t_of_attack
-        if attack_report.defended:
-            self.defended = True
+        self.defended = attack_report.defended
         if attack_report.mine_levels:
             if self.mine_levels:
                 # No sane person would destroy mines in Barb villages,
@@ -397,7 +396,7 @@ class TargetVillage:
             else:
                 self.mine_levels = attack_report.mine_levels
             self._set_h_rates()
-        if attack_report.remaining_capacity:
+        if attack_report.remaining_capacity is not None:
             self.remaining_capacity = attack_report.remaining_capacity
         if attack_report.storage_level:
             self._set_storage_limit(attack_report.storage_level)
