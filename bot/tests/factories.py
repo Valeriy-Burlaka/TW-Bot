@@ -43,5 +43,3 @@ class PlayerVillageFactory(factory.Factory):
     @factory.lazy_attribute
     def name(self):
         return FuzzyText(prefix="Village ").fuzz()
-
-
