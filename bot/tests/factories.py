@@ -7,6 +7,9 @@ from bot.libs.village_management import TargetVillage
 from bot.libs.village_management import PlayerVillage
 
 
+__all__ = ['TargetVillageFactory', 'PlayerVillageFactory']
+
+
 @factory.use_strategy(factory.BUILD_STRATEGY)
 class TargetVillageFactory(factory.Factory):
     FACTORY_FOR = TargetVillage
@@ -43,5 +46,3 @@ class PlayerVillageFactory(factory.Factory):
     @factory.lazy_attribute
     def name(self):
         return FuzzyText(prefix="Village ").fuzz()
-
-
