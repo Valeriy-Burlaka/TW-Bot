@@ -1,4 +1,5 @@
 import time
+import re
 import shelve
 import logging
 from urllib.parse import urlencode
@@ -118,12 +119,6 @@ class AttackQueue:
 
         self.queue = queue
 
-    def _is_ready_for_farm(self, village):
-        if not village.coords in self.untrusted_villages:
-            if village.finished_rest(self.rest) or \
-                    village.has_valuable_loot(self.rest):
-                return True
-
     def get_available_targets(self, attacker):
         attack_targets = attacker.attack_targets
         available_targets = ((self.queue[coords], dst) for
@@ -160,9 +155,15 @@ class AttackQueue:
                     if coords not in self.visited_villages:
                         self.visited_villages[coords] = village
 
-        self.flush_visited_villages()
+        self._flush_visited_villages()
 
-    def flush_visited_villages(self):
+    def _is_ready_for_farm(self, village):
+        if not village.coords in self.untrusted_villages:
+            if village.finished_rest(self.rest) or \
+                    village.has_valuable_loot(self.rest):
+                return True
+
+    def _flush_visited_villages(self):
         """
         Updates self.queue with villages that could be farmed again.
         """
@@ -366,8 +367,140 @@ class AttackObserver:
         f.close()
 
 
+class AttackHelper:
+    """
+    Contains methods that help to prepare and send attacks:
+
+    get_confirmation_data(rally_html, target_coords, troops_needed):
+        takes rally point HTML (string) & attack details and composes
+        urlencoded request data required to POST attack confirmation
+        (i.e. when user filled desired number of troops to send in
+        rally point and hits 'OK' button.
+    get_ch_token(html_data):
+    get_action_id(html_data):
+    get_csrf_token(html_data):
+        this set of methods helps to unique tokens from html, that
+        are required to POST attack/confirmation.
+    get_attack_data(coords, troops, ch_token, action_id):
+        takes attack details & unique tokens and composes urlencoded
+        request data required to POST attack (i.e. when user hits 'OK'
+        button second time and troops are actually sent)
+    """
+
+    def get_confirmation_data(self, rally_point_html, coords, troops):
+        """
+        Forms request data to POST confirmation.
+
+        Data example:
+        948f507c72264da32c343a=e8432083948f50&template_id=&spear=&sword=&..
+        [all other troops]..&x=211&y=306&attack=Attack,
+        (in order):
+        confirmation token
+        spear, sword = units data (empty value = '')
+        x, y - target
+        attack = action.
+
+        Returns urlencoded str
+        """
+        request_data = []
+        template = ('template_id', '')
+        troops_data = self._build_troops_data(troops)
+        coords = [('x', coords[0]), ('y', coords[1])]
+        action = ('attack', 'Attack')
+
+        request_data.append(self._get_confirmation_token(rally_point_html))
+        request_data.append(template)
+        request_data.extend(troops_data)
+        request_data.extend(coords)
+        request_data.append(action)
+        s_request_data = urlencode(request_data)
+
+        return s_request_data.encode()
+
+    @staticmethod
+    def get_ch_token(html_data):
+        """
+        Extracts unique value (ch token) from hidden field of
+        confirmation screen HTML. Returns tuple ('ch', 'ch_value')
+        """
+        ch_match = re.search(r'type="hidden" name="ch" value="([\w\d]+)"', html_data)
+        ch_token = ('ch', ch_match.group(1))
+        return ch_token
+
+    @staticmethod
+    def get_action_id(html_data):
+        """
+        Extracts unique value (action_id token) from hidden field of
+        confirmation screen HTML. Returns tuple ('action_id', 'value')
+        """
+        actionid_match = re.search(r'type="hidden" name="action_id" value="(\d+)"', html_data)
+        action_id = ('action_id', actionid_match.group(1))
+        return action_id
+
+    @staticmethod
+    def get_csrf_token(html_data):
+        """
+        Extracts csrf token from hidden field of confirmation screen HTML
+        """
+        csrf_match = re.search(r'csrf\W:\W(\w+)\W', html_data)
+        csrf = csrf_match.group(1)
+        return csrf
+
+    def get_attack_data(self, coords, troops, ch_token, action_id):
+        """
+        Forms request data to POST attack.
+
+        Data example:
+        attack=true&ch=2d27ecd3c56dcd001c086a588f2ea6c5dda3b3ac&x=211&
+        y=306&action_id=275824&attack_name=&spear=0&[other troops];
+        where: ch = ch_token, spear, etc. = units data (empty value = 0)
+
+        Returns urlencoded str.
+        """
+        request_data = []
+        attack = ('attack', 'true')
+        coords = [('x', coords[0]), ('y', coords[1])]
+        attack_name = ('attack_name', '')
+        troops_data = self._build_troops_data(troops, empty='0')
+        request_data.append(attack)
+        request_data.append(ch_token)
+        request_data.extend(coords)
+        request_data.append(action_id)
+        request_data.append(attack_name)
+        request_data.extend(troops_data)
+        s_request_data = urlencode(request_data)
+
+        return s_request_data.encode()
+
+    @staticmethod
+    def _get_confirmation_token(rally_point_html):
+        """
+        Extracts player token (confirmation token) from rally point html page
+        """
+        ptrn = re.compile(r'type="hidden" name="([\w\d]+)" value="([\w\d]+)"')
+        match = re.search(ptrn, rally_point_html)
+        return match.group(1), match.group(2)
+
+    @staticmethod
+    def _build_troops_data(troops, empty=''):
+        # spear=&sword=&axe=&archer=&spy=&light=&marcher=&
+        # heavy=&ram=&catapult=&knight=&snob=&
+        units_order = ('spear', 'sword', 'axe', 'archer', 'spy',
+                       'light', 'marcher', 'heavy', 'ram', 'catapult',
+                       'knight', 'snob',)
+        troops_data = []
+        for unit_name in units_order:
+            if unit_name in troops:
+                unit_data = (unit_name, troops[unit_name])
+            else:
+                unit_data = (unit_name, empty)
+            troops_data.append(unit_data)
+        return troops_data
+
+
 class Unit:
-    """Representation of TW unit.
+    """
+    Represents TW unit.
     """
 
     def __init__(self, name, attack, speed, haul):
