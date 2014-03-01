@@ -270,7 +270,19 @@ class PlayerVillage:
     """
     Component responsible for holding & updating info
     about troops in player's villages.
+    Provides the next interface methods:
 
+    update_troops_count(html=None, troops_sent=None):
+        takes 1) either html string of train screen and
+        updates self.troops_count from scratch, or 2)
+        amount of troops sent & subtracts this amount from
+        self.troops_count
+    get_troops_count:
+        returns self.troops_count
+    set_attack_targets(attack_targets):
+        sets self.attack_targets = attack_targets
+    set_troops_to_use(heavy_is_def, use_def_to_farm):
+        sets a list of units that will be used to farm.
     """
 
     def __init__(self, id_, coords, name, flag=None):
@@ -285,36 +297,23 @@ class PlayerVillage:
 
     def update_troops_count(self, html_data=None, troops_sent=None):
         if html_data:
-            troops_data = self.get_troops_data(html_data)
+            troops_data = self._get_troops_data(html_data)
             troops_count = {}
             for unit_name in self.troops_to_use:
                 if unit_name in troops_data:
                     count = int(troops_data[unit_name]['available'])
                     troops_count[unit_name] = count
-
             self.troops_count = troops_count
         if troops_sent:
             if self.troops_count:
                 for name, count in troops_sent.items():
                     self.troops_count[name] -= count
 
-    def set_attack_targets(self, attack_targets):
-        self.attack_targets = attack_targets
-
-    @staticmethod
-    def get_troops_data(html_data):
-        """
-        Returns dict containing all troops data for
-        a given village (current & total)
-        """
-        data_ptrn = re.compile(r'UnitPopup.unit_data = '
-                               r'([\w\W]+);[\s]*UnitPopup[\w\W]+')
-        match = re.search(data_ptrn, html_data)
-        troops_data = json.loads(match.group(1))
-        return troops_data
-
     def get_troops_count(self):
         return self.troops_count
+
+    def set_attack_targets(self, attack_targets):
+        self.attack_targets = attack_targets
 
     def set_troops_to_use(self, use_def, heavy_is_def):
         if use_def:
@@ -326,12 +325,24 @@ class PlayerVillage:
 
         self.troops_to_use = troops_group
 
+    @staticmethod
+    def _get_troops_data(html_data):
+        """
+        Returns dict containing all troops data for
+        a given village (current & total)
+        """
+        data_ptrn = re.compile(r'UnitPopup.unit_data\s?=\s?'
+                               r'([\w\W]+);[\s]*UnitPopup[\w\W]+')
+        match = re.search(data_ptrn, html_data)
+        troops_data = json.loads(match.group(1))
+        return troops_data
+
     def __str__(self):
-        return "PlayerVillage: id: {id}, coords: {coords}, " \
-               "name: {name},\n current_troops: {troops}, ".format(id=self.id,
-                                                                   coords=self.coords,
-                                                                   name=self.name,
-                                                                   troops=self.troops_count,)
+        return "PlayerVillage: id: {id}, coords: {coords}, name: {name},\n" \
+               "current_troops: {troops}".format(id=self.id,
+                                                 coords=self.coords,
+                                                 name=self.name,
+                                                 troops=self.troops_count)
 
     def __repr__(self):
         return self.__str__()

@@ -328,9 +328,52 @@ class TestVillageManager(unittest.TestCase):
         self.assertEqual(villa.bonus, village_data_w_bonus[6][0])
 
 
-
 class TestPlayerVillage(unittest.TestCase):
-    pass
+
+    def setUp(self):
+        filepath = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+                                'train_screen.html')
+        with open(filepath) as f:
+            train_screen_html = f.read()
+        self.data = train_screen_html
+        self.unit_names = ["spear", "sword", "axe", "archer", "spy", "light",
+                           "heavy", "marcher", "ram", "catapult"]
+
+    def test_update_troops_count(self):
+        pv = PlayerVillageFactory()
+
+        pv.troops_to_use = self.unit_names
+        pv.update_troops_count(html_data=self.data)
+        troops = pv.troops_count
+        self.assertEqual(troops["spear"], 370)
+        self.assertEqual(troops["sword"], 458)
+        self.assertEqual(troops["axe"], 33)
+        self.assertEqual(troops["archer"], 117)
+        self.assertEqual(troops["spy"], 395)
+        self.assertEqual(troops["light"], 9)
+        self.assertEqual(troops["marcher"], 18)
+        self.assertEqual(troops["heavy"], 129)
+        self.assertEqual(troops["ram"], 3)
+        self.assertEqual(troops["catapult"], 0)
+
+        pv.troops_to_use = ["light", "axe"]
+        pv.update_troops_count(html_data=self.data)
+        troops = pv.troops_count
+        self.assertEqual(len(troops), 2)
+        self.assertEqual(troops["axe"], 33)
+        self.assertEqual(troops["light"], 9)
+
+        troops_sent = {"axe": 20, "light": 9}
+        pv.update_troops_count(troops_sent=troops_sent)
+        troops = pv.troops_count
+        self.assertEqual(troops["axe"], 13)
+        self.assertEqual(troops["light"], 0)
+
+    def test_get_troops_data(self):
+        pv = PlayerVillageFactory()
+        troops_data = pv._get_troops_data(self.data)
+        for unit_name in self.unit_names:
+            self.assertIn(unit_name, troops_data)
 
 
 class TestVillage(unittest.TestCase):
