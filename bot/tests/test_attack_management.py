@@ -11,7 +11,25 @@ class TestAttackHelper(unittest.TestCase):
     def setUp(self):
         self.ah = AttackHelper()
 
+    def test_set_confirmation_token(self):
+        filepath = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+                                'rally_point_screen.html')
+        with open(filepath) as f:
+            html_data = f.read()
+        self.ah.set_confirmation_token(html_data)
+        self.assertEqual(self.ah.confirmation_token,
+                        ("f7f6174edf55e676607197", "5b6e5334f7f617"))
 
+    def test_get_confirmation_data(self):
+        self.ah.confirmation_token = ("f7f617", "5b6e5")
+        self.ah._build_troops_data = Mock(return_value=[("spear", ''),
+                                                        ("sword", 100),
+                                                        ("spy", 10)])
+        coords = (100, 100)
+        expected_confirm_data = b"f7f617=5b6e5&template_id=&spear=&sword=100" \
+                                b"&spy=10&x=100&y=100&attack=Attack"
+        actual_data = self.ah.get_confirmation_data(coords=coords, troops={})
+        self.assertEqual(expected_confirm_data, actual_data)
 
     def test_get_attack_data(self):
         self.ah._build_troops_data = Mock(return_value=[("spear", 0),
