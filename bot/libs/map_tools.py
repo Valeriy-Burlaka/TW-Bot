@@ -165,16 +165,21 @@ class Storage:
 
 class LocalStorage:
     """
-    Handles retrieval & update of village data saved in a local file.
+    Handles retrieval & update of data saved in a local file.
 
     Methods:
 
     get_saved_villages:
         returns villages that were saved in a local shelve file
-
-    update_villages:
+    update_villages(villages):
         updates information about (attacked) villages in a local
         shelve file
+    save_attacks(arrivals, returns):
+        saves given arrivals & returns in a local shelve file
+    get_saved_arrivals:
+        returns arrivals that were saved in a local shelve file
+    get_saved_returns:
+        returns 'returns', ye.
     """
 
     def __init__(self, storage_name):
@@ -204,14 +209,13 @@ class LocalStorage:
 
     def get_saved_arrivals(self):
         storage = shelve.open(self.storage_name)
-        if 'arrivals' in storage:
-            return storage['arrivals']
+        arrivals = storage.get('arrivals', {})
         storage.close()
+        return arrivals
 
     def get_saved_returns(self):
         storage = shelve.open(self.storage_name)
-        if 'returns' in storage:
-            return storage['returns']
+        returns = storage.get('returns', {})
         storage.close()
-
+        return returns
 

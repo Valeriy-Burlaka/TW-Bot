@@ -167,6 +167,19 @@ class TestLocalStorage(unittest.TestCase):
             self.assertEqual(village.defended, saved_village.defended)
         manual_storage.close()
 
+    def test_save_attacks(self):
+        storage = LocalStorage(self.storage_name)
+        save_data_arrivals = {(1, 1): 1000, (2, 2): 2000, (3, 3): 3000}
+        save_data_returns = {1: [1000, 2000, 3000], 2: [1000, 2000, 3000]}
+
+        storage.save_attacks(arrivals=save_data_arrivals,
+                             returns=save_data_returns)
+        manual_storage = shelve.open(self.storage_name)
+        self.assertIn('arrivals', manual_storage)
+        self.assertEqual(manual_storage['arrivals'], save_data_arrivals)
+        self.assertIn('returns', manual_storage)
+        self.assertEqual(manual_storage['returns'], save_data_returns)
+
 
 def suite():
     suite = unittest.TestSuite(tests=(TestMapMath,

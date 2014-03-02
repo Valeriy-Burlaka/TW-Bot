@@ -1,13 +1,75 @@
 import unittest
 import os
+import time
 from unittest.mock import Mock
 
 import settings
-from bot.libs.attack_management import AttackHelper
+from bot.libs.attack_management import *
 
 
 class TestAttackObserver(unittest.TestCase):
-    pass
+
+    def setUp(self):
+        self.ao = AttackObserver(storage_type='local_file',
+                                 storage_name='data_file')
+
+    def test_restore_saved_attacks(self):
+        """
+        Test that saved arrivals and returns are correctly restored:
+        1. all saved arrivals should be placed in ao.arrival_queue
+        unchanged.
+        2. only those saved returns, that are still in future, should
+        be placed in ao.return_queue
+        """
+        now = time.mktime(time.gmtime())
+        save_data_arrivals = {(1, 1): 1000, (2, 2): 2000, (3, 3): 3000}
+        save_data_returns = {1: [now + 10, now + 20, now - 10],
+                             2: [now + 10, now - 10, now - 20]}
+        self.ao.storage.get_saved_arrivals = Mock(return_value=save_data_arrivals)
+        self.ao.storage.get_saved_returns = Mock(return_value=save_data_returns)
+        self.assertEqual(self.ao.arrival_queue, {})
+        self.assertEqual(self.ao.return_queue, {})
+
+        self.ao.restore_saved_attacks()
+        self.assertEqual(self.ao.arrival_queue, save_data_arrivals)
+        expected_returns = {1: [now + 10, now + 20], 2: [now + 10]}
+        self.assertEqual(self.ao.return_queue, expected_returns)
+
+    def test_is_someone_arrived(self):
+        now = time.mktime(time.gmtime())
+        # {(x, y): t_of_arrival, ..}
+        arrival_queue = {(1, 1): now + 10, (2, 2): now + 20, (3, 3): now - 10,
+                         (4, 4): now + 40, (5, 5): now - 50, (6, 6): now - 60}
+        self.ao.arrival_queue = arrival_queue
+        expected_arrived = 3  # number of arrived attacks (already in past)
+        expected_not_arrived = {(1, 1): now + 10, (2, 2): now + 20, (4, 4): now + 40}
+
+        arrived = self.ao.is_someone_arrived()
+        self.assertEqual(arrived, expected_arrived)
+        self.assertEqual(self.ao.arrival_queue, expected_not_arrived)
+
+    def test_is_someone_returned(self):
+        now = time.mktime(time.gmtime())
+        # {attacker_id: [t_of_return_1, ..., t_of_return_n], ...]
+        return_queue = {1: [now + 10, now + 20, now + 15, now - 10, now - 15],
+                        2: [now - 20, now - 30, now - 15, now - 40, now + 5],
+                        3: [now + 10, now + 5]}
+        self.ao.return_queue = return_queue
+        expected_returns = [1, 2]
+        expected_not_returned = {1: [now + 10, now + 20, now + 15], 2: [now + 5],
+                                 3: [now + 10, now + 5]}
+
+        returned = self.ao.is_someone_returned()
+        self.assertEqual(expected_returns, returned)
+        self.assertEqual(self.ao.return_queue, expected_not_returned)
+
+    def test_register_attack(self):
+        self.assertEqual(self.ao.return_queue, {})
+        self.assertEqual(self.ao.arrival_queue, {})
+        self.ao.register_attack(attacker_id=1, coords=(1, 1), t_of_arrival=10,
+                                t_of_return=20)
+        self.assertEqual(self.ao.arrival_queue, {(1, 1): 10})
+        self.assertEqual(self.ao.return_queue, {1: [20]})
 
 
 class TestAttackHelper(unittest.TestCase):

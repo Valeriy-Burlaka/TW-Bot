@@ -7,6 +7,10 @@ from urllib.parse import urlencode
 from bot.libs.map_tools import Storage
 
 
+__all__ = ['AttackManager', 'DecisionMaker', 'AttackObserver', 'AttackHelper',
+           'AttackQueue']
+
+
 class AttackManager:
     """
 
@@ -291,7 +295,27 @@ class DecisionMaker:
 
 class AttackObserver:
     """
+    Helper class that is responsible for keeping track of
+    troops arrival (in target villages) & troops return
+    (in player villages).
+    Provides the next interface methods:
 
+    restore_saved_attacks:
+        requests saved arrivals & returns from self.storage.
+        places all saved arrivals in self.arrival_queue &
+        all pending returns in sel.return_queue
+    is_someone_arrived:
+        returns number of arrived attacks & removes these
+        attacks from self.arrival_queue
+    is_someone_returned:
+        returns id numbers of player villages, to where some troops
+        have returned & cleans registered returns that are in past
+    register_attack(attacker_id, coords, t_of_arrival, t_of_return):
+        places t_of_return in self.return_queue (appends t_of_return
+        to list of registered returns for a given attacker_id).
+        places (coords): t_of_arrival in self.arrival_queue.
+    save_registered_attacks:
+        asks self.storage to save self.arrival_queue & .return_queue
     """
 
     def __init__(self, storage_type, storage_name):
