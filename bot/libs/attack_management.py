@@ -72,8 +72,7 @@ class AttackManager:
         Converts str time from response.headers('Date') to seconds
         """
         # Sun, 10 Nov 2013 07:30:32 GMT
-        t = t.rstrip(' GMT')
-        t = time.strptime(t, '%a, %d %b %Y %H:%M:%S')
+        t = time.strptime(t, '%a, %d %b %Y %H:%M:%S %Z')
         t = time.mktime(t)
         return t
 
@@ -381,15 +380,12 @@ class AttackHelper:
         required to POST attack confirmation (i.e. when user
         filled desired number of troops to send in rally point
         and hits 'OK' button.
-    get_ch_token(html_data):
-    get_action_id(html_data):
-    get_csrf_token(html_data):
-        this set of methods helps to unique tokens from html, that
-        are required to POST attack/confirmation.
     get_attack_data(coords, troops, ch_token, action_id):
         takes attack details & unique tokens and composes urlencoded
         request data required to POST attack (i.e. when user hits 'OK'
         button second time and troops are actually sent)
+    get_csrf_token(html_data):
+        extracts csrf token from confirmation screen
     """
 
     def __init__(self):
@@ -436,38 +432,7 @@ class AttackHelper:
 
         return s_request_data.encode()
 
-    @staticmethod
-    def get_ch_token(html_data):
-        """
-        Extracts unique value (ch token) from hidden field of
-        confirmation screen HTML. Returns tuple ('ch', 'ch_value')
-        """
-        ch_match = re.search(r'type="hidden" name="ch" value="([\w\d]+)"',
-                             html_data)
-        ch_token = ('ch', ch_match.group(1))
-        return ch_token
-
-    @staticmethod
-    def get_action_id(html_data):
-        """
-        Extracts unique value (action_id token) from hidden field of
-        confirmation screen HTML. Returns tuple ('action_id', 'value')
-        """
-        actionid_match = re.search(r'type="hidden" name="action_id" value="(\d+)"',
-                                   html_data)
-        action_id = ('action_id', actionid_match.group(1))
-        return action_id
-
-    @staticmethod
-    def get_csrf_token(html_data):
-        """
-        Extracts csrf token from hidden field of confirmation screen HTML
-        """
-        csrf_match = re.search(r'csrf\W:\W(\w+)\W', html_data)
-        csrf = csrf_match.group(1)
-        return csrf
-
-    def get_attack_data(self, coords, troops, ch_token, action_id):
+    def get_attack_data(self, coords, troops, confirmation_screen):
         """
         Forms request data to POST attack.
 
@@ -481,17 +446,46 @@ class AttackHelper:
         request_data = []
         attack = ('attack', 'true')
         coords = [('x', coords[0]), ('y', coords[1])]
-        attack_name = ('attack_name', '')
         troops_data = self._build_troops_data(troops, empty='0')
         request_data.append(attack)
-        request_data.append(ch_token)
+        request_data.append(self._get_ch_token(confirmation_screen))
         request_data.extend(coords)
-        request_data.append(action_id)
-        request_data.append(attack_name)
+        request_data.append(self._get_action_id(confirmation_screen))
         request_data.extend(troops_data)
         s_request_data = urlencode(request_data)
 
         return s_request_data.encode()
+
+    @staticmethod
+    def get_csrf_token(html_data):
+        """
+        Extracts csrf token from hidden field of confirmation screen HTML
+        """
+        csrf_match = re.search(r'csrf\W:\W([\w\d]+)\W', html_data)
+        csrf = csrf_match.group(1)
+        return csrf
+
+    @staticmethod
+    def _get_ch_token(html_data):
+        """
+        Extracts unique value (ch token) from hidden field of
+        confirmation screen HTML. Returns tuple ('ch', 'ch_value')
+        """
+        ch_match = re.search(r'type=\Whidden\W name=\Wch\W value=\W([\w\d]+)\W',
+                             html_data)
+        ch_token = ('ch', ch_match.group(1))
+        return ch_token
+
+    @staticmethod
+    def _get_action_id(html_data):
+        """
+        Extracts unique value (action_id token) from hidden field of
+        confirmation screen HTML. Returns tuple ('action_id', 'value')
+        """
+        actionid_match = re.search(r'type=\Whidden\W name=\Waction_id\W value=\W(\d+)\W',
+                                   html_data)
+        action_id = ('action_id', actionid_match.group(1))
+        return action_id
 
     @staticmethod
     def _build_troops_data(troops, empty=''):

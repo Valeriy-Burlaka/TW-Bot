@@ -1,0 +1,635 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:og="http://ogp.me/ns#" xmlns:fb="https://www.facebook.com/2008/fbml">
+	<head>
+		<title>Tribal Wars - The browser game</title>
+
+		<meta id="og_title" property="og:title" content="Tribal Wars"/>
+		<meta id="og_type" property="og:type" content="game"/>
+		<meta id="og_url" property="og:url" content="http://us13.tribalwars.us/stat.php?mode=settings"/>
+		<meta id="og_image" property="og:image" content="http://www.die-staemme.de/graphic/reports/support_arrives.jpg"/>
+		<meta id="og_site_name" property="og:site_name" content="Tribal Wars"/>
+		<meta id="fb_app_id" property="fb:app_id" content="110344252415324"/>
+
+					<meta id="og_description" property="og:description" content="Tribal Wars - The browser game"/>
+		
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta name="description" content="Tribal Wars is a browserbased online game. Every player controls a small village, striving for power and glory." />
+		<meta name="keywords" content="Browser game, Browsergame, Online Game, Online Games, Multiplayer, free, Strategy, Middle Age" />
+		<link rel="stylesheet" type="text/css" href="/merged/index.css?1393253250" />
+
+		<script type="text/javascript" src="/merged/index.js?1393253250"></script>
+
+						<link rel="alternate" type="application/rss+xml" title="Tribal Wars - News" href="http://us13.tribalwars.us/news.php?type=rss2.0" />
+		<script type="text/javascript">
+		//<![CDATA[
+			var mobile = false;
+		//]]>
+		</script>
+	</head>
+
+	<body>
+	
+
+		<div id="index_body">
+			<div id="main">
+						<div id="header">
+				<h1>
+					<a href="/index.php" style="background:url(http://cdn.tribalwars.us/8.19/19813/graphic/lang/en/bg-logo.jpg?c575b) no-repeat 100% 0;">
+						<p style="position: absolute; top: -300px">Tribal Wars - The browser game</p>
+					</a>
+				</h1>
+				<div class="navigation">
+					<div class="navigation-holder">
+						<div class="navigation-wrapper">
+							<div id="navigation_span">
+								~ <a href="ticket.php">Support</a> ~ <a href="rules.php">Rules</a> ~ <a href="http://help.tribalwars.net">Help</a> ~ <a href="http://us.twstats.com/">TW-Stats</a> ~ <a href="stat.php">Statistics</a> ~ <a href="http://forum.tribalwars.us/">Forum</a> ~ <a href="http://help.tribalwars.net/wiki/Tribal_Wars_Team_US">Team</a> ~ <a href="hall_of_fame.php">Hall of Fame</a> ~ <a href="http://www.facebook.com/pages/Tribal-Wars-United-States/193739690649886">Facebook</a> ~  <a href="http://www.tribalwars.us/wallpapers.php" target="_blank">Wallpapers</a>
+							</div>
+						</div>
+				</div>
+				</div>
+							</div>
+			<script type="text/javascript" src="/js/game/unit_popup.js?1393253241"></script>
+
+<script type="text/javascript">
+//<![CDATA[
+	$(function() {
+		UnitPopup.unit_data = {"spear":{"name":"Spear fighter","desc":"The spear fighter is the most basic unit. It is good in defending against cavalry and to start plundering other villages.","wood":50,"stone":30,"iron":10,"pop":1,"speed":18,"attack":10,"attack_buildings":null,"defense":15,"defense_cavalry":45,"defense_archer":20,"carry":25,"type":"infantry","image":"unit\/unit_spear.png","prod_building":"barracks","attackpoints":4,"defpoints":1,"build_time":510,"shortname":"Spear","reqs":[{"building_id":"barracks","building_link":"#","name":"Barracks","level":1}]},"sword":{"name":"Swordsman","desc":"The swordsman is a relatively slow unit effective as defense especially against infantry.","wood":30,"stone":30,"iron":70,"pop":1,"speed":22,"attack":25,"attack_buildings":null,"defense":50,"defense_cavalry":15,"defense_archer":40,"carry":15,"type":"infantry","image":"unit\/unit_sword.png","prod_building":"barracks","attackpoints":5,"defpoints":2,"build_time":750,"shortname":"Sword","reqs":[{"building_id":"smith","building_link":"\/guest.php?screen=smith","name":"Smithy","level":1}]},"axe":{"name":"Axeman","desc":"The Axeman is a strong offensive unit. They easily forget to protect themselves though.","wood":60,"stone":30,"iron":40,"pop":1,"speed":18,"attack":40,"attack_buildings":null,"defense":10,"defense_cavalry":5,"defense_archer":10,"carry":10,"type":"infantry","image":"unit\/unit_axe.png","prod_building":"barracks","attackpoints":1,"defpoints":4,"build_time":660,"shortname":"Axe","reqs":[{"building_id":"smith","building_link":"\/guest.php?screen=smith","name":"Smithy","level":2}],"tech_costs":{"wood":700,"stone":840,"iron":820}},"archer":{"name":"Archer","desc":"The archer is a very effective defensive unit. Their arrows destroy even the hardest armor.","wood":100,"stone":30,"iron":60,"pop":1,"speed":18,"attack":15,"attack_buildings":null,"defense":50,"defense_cavalry":40,"defense_archer":5,"carry":10,"type":"archer","image":"unit\/unit_archer.png","prod_building":"barracks","attackpoints":5,"defpoints":2,"build_time":900,"shortname":"Archer","reqs":[{"building_id":"barracks","building_link":"\/guest.php?screen=barracks","name":"Barracks","level":5},{"building_id":"smith","building_link":"\/guest.php?screen=smith","name":"Smithy","level":5}],"tech_costs":{"wood":640,"stone":560,"iron":740}},"spy":{"name":"Scout","desc":"The scout creeps into your enemies' villages to get valuable information.","wood":50,"stone":50,"iron":20,"pop":2,"speed":9,"attack":0,"attack_buildings":null,"defense":2,"defense_cavalry":1,"defense_archer":2,"carry":0,"type":"other","image":"unit\/unit_spy.png","prod_building":"stable","attackpoints":1,"defpoints":2,"build_time":450,"shortname":"Spy","reqs":[{"building_id":"stable","building_link":"\/guest.php?screen=stable","name":"Stable","level":1}],"tech_costs":{"wood":560,"stone":480,"iron":480}},"light":{"name":"Light cavalry","desc":"The light cavalry is a good offensive unit. One of its advantages is its speed.","wood":125,"stone":100,"iron":250,"pop":4,"speed":10,"attack":130,"attack_buildings":null,"defense":30,"defense_cavalry":40,"defense_archer":30,"carry":80,"type":"cavalry","image":"unit\/unit_light.png","prod_building":"stable","attackpoints":5,"defpoints":13,"build_time":900,"shortname":"LCav","reqs":[{"building_id":"stable","building_link":"\/guest.php?screen=stable","name":"Stable","level":3}],"tech_costs":{"wood":2200,"stone":2400,"iron":2000}},"marcher":{"name":"Mounted archer","desc":"The mounted archer is especially useful to disable your enemies archers on the walls.","wood":250,"stone":100,"iron":150,"pop":5,"speed":10,"attack":120,"attack_buildings":null,"defense":40,"defense_cavalry":30,"defense_archer":50,"carry":50,"type":"archer","image":"unit\/unit_marcher.png","prod_building":"stable","attackpoints":6,"defpoints":12,"build_time":1350,"shortname":"MArch","reqs":[{"building_id":"stable","building_link":"\/guest.php?screen=stable","name":"Stable","level":5}],"tech_costs":{"wood":3000,"stone":2400,"iron":2000}},"heavy":{"name":"Heavy cavalry","desc":"The heavy cavalry are your elite troops. The noble knights have hardened weapons and strong armor.","wood":200,"stone":150,"iron":600,"pop":6,"speed":11,"attack":150,"attack_buildings":null,"defense":200,"defense_cavalry":80,"defense_archer":180,"carry":50,"type":"cavalry","image":"unit\/unit_heavy.png","prod_building":"stable","attackpoints":23,"defpoints":15,"build_time":1800,"shortname":"HCav","reqs":[{"building_id":"stable","building_link":"\/guest.php?screen=stable","name":"Stable","level":10},{"building_id":"smith","building_link":"\/guest.php?screen=smith","name":"Smithy","level":15}],"tech_costs":{"wood":3000,"stone":2400,"iron":2000}},"ram":{"name":"Ram","desc":"Rams support your troops in your attacks as it damages your enemies' walls.","wood":300,"stone":200,"iron":200,"pop":5,"speed":30,"attack":2,"attack_buildings":null,"defense":20,"defense_cavalry":50,"defense_archer":20,"carry":0,"type":"infantry","image":"unit\/unit_ram.png","prod_building":"garage","attackpoints":4,"defpoints":8,"build_time":2400,"shortname":"Ram","reqs":[{"building_id":"garage","building_link":"\/guest.php?screen=garage","name":"Workshop","level":1}],"tech_costs":{"wood":1200,"stone":1600,"iron":800}},"catapult":{"name":"Catapult","desc":"Catapults are especially good in destroying your enemies' buildings.","wood":320,"stone":400,"iron":100,"pop":8,"speed":30,"attack":100,"attack_buildings":null,"defense":100,"defense_cavalry":50,"defense_archer":100,"carry":0,"type":"infantry","image":"unit\/unit_catapult.png","prod_building":"garage","build_time":3600,"attackpoints":12,"defpoints":10,"shortname":"Cata","reqs":[{"building_id":"garage","building_link":"\/guest.php?screen=garage","name":"Workshop","level":2},{"building_id":"smith","building_link":"\/guest.php?screen=smith","name":"Smithy","level":12}],"tech_costs":{"wood":1600,"stone":2000,"iron":1200}},"knight":{"name":"Paladin","desc":"The noble paladin protects you and your allies' villages from enemy attacks. Each player may only have one paladin.","wood":20,"stone":20,"iron":40,"pop":10,"speed":10,"attack":150,"attack_buildings":null,"defense":250,"defense_cavalry":400,"defense_archer":150,"carry":100,"type":"cavalry","image":"unit\/unit_knight.png","prod_building":"statue","attackpoints":40,"defpoints":20,"build_time":10800,"shortname":"Pala"},"snob":{"name":"Nobleman","desc":"A nobleman will reduce the loyalty of your enemies' villages. If its loyalty falls under 0 you conquer that village. The costs for each nobleman increase with every conquered village and every nobleman that is available or in production.","wood":40000,"stone":50000,"iron":50000,"pop":100,"speed":35,"attack":30,"attack_buildings":null,"defense":100,"defense_cavalry":50,"defense_archer":100,"carry":0,"type":"infantry","image":"unit\/unit_snob.png","prod_building":"snob","attackpoints":200,"defpoints":200,"build_time":9000,"shortname":"Noble","reqs":[{"building_id":"snob","building_link":"\/guest.php?screen=snob","name":"Academy","level":1},{"building_id":"main","building_link":"\/guest.php?screen=main","name":"Headquarters","level":20},{"building_id":"smith","building_link":"\/guest.php?screen=smith","name":"Smithy","level":20},{"building_id":"market","building_link":"\/guest.php?screen=market","name":"Market","level":10}]},"militia":{"name":"Militia","desc":"If you're expecting an attack on your village, you can use the farm to set up a militia that will defend your land. Militias may only be used for defensive purposes and can't leave the village.","wood":0,"stone":0,"iron":0,"pop":0,"speed":1,"attack":0,"attack_buildings":null,"defense":15,"defense_cavalry":45,"defense_archer":25,"carry":0,"type":"infantry","image":"unit\/unit_militia.png","prod_building":"farm","attackpoints":4,"defpoints":1,"build_time":1,"shortname":"Militia","reqs":[{"building_id":"farm","building_link":"\/guest.php?screen=farm","name":"Farm","level":1}]}};
+		UnitPopup.init();
+			});
+//]]>
+</script>
+
+
+<div id="inline_popup" class="hidden" style="width:700px;">
+	<div id="inline_popup_menu">
+		<span id="inline_popup_title"></span>
+		<a id="inline_popup_close" href="javascript:inlinePopupClose()">X</a>
+	</div>
+	<div id="inline_popup_main" style="height: auto;">
+		<div id="inline_popup_content"></div>
+	</div>
+</div>
+
+<div id="unit_popup_template" style="display: none">
+		<div class="inner-border main content-border" style="border: none; font-weight: normal">
+			<table style="float: left;width:450px">
+			<tr>
+				<td>
+					<p class="unit_desc"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<table style="border: 1px solid #DED3B9;" class="vis" width="100%">
+						<tr>
+							<th width="180">Costs per unit</th>
+							<th>Villagers needed</th>
+							<th>Speed</th>
+							<th>Carrying capacity</th>
+						</tr>
+						<tr class="center">
+							<td><nobr><span class="icon header wood"> </span><span class="unit_wood"></span></nobr> <nobr><span class="icon header stone"> </span><span class="unit_stone"></span></nobr> <nobr><span class="icon header iron" > </span><span class="unit_iron"></span></nobr></td>
+							<td><span class="icon header population"> </span><span class="unit_pop"></span></td>
+							<td id="unit_speed"></td>
+							<td class="unit_carry"></td>
+						</tr>
+					</table>
+					<br />
+
+					<table class="vis event_loot" style="display: none; width: 100%">
+						<tr>
+							<th colspan="2">Event attributes</th>
+						</tr>
+						<tr>
+							<td>Carrying capacity:</td>
+							<td><span class="unit_event_loot"></span> <span class="unit_event_res_name"></span></td>
+					</table>
+					<br />
+
+					<table class="vis has_levels_only" style="border: 1px solid #DED3B9;text-align:center" class="vis"  width="100%">
+						<tr><th colspan="3">Battle statistics</th></tr>
+						<tr><td align="left">Offensive strength</td><td width="20px"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/att.png?1bdd4" alt="Offensive strength" class="" /></td><td><span class="unit_attack"></span></td></tr>
+						<tr><td align="left">General Defense</td><td><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/def.png?12421" alt="General Defense" class="" /></td><td><span class="unit_defense"></span></td></tr>
+						<tr><td align="left">Cavalry Defense</td><td><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/def_cav.png?46b3d" alt="Cavalry Defense" class="" /></td><td><span class="unit_defense_cavalry"></span></td></tr>
+												<tr><td align="left">Archer Defense</td><td><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/def_archer.png?faccf" alt="Archer Defense" class="" /></td><td><span class="unit_defense_archer"></span></td></tr>
+											</table>
+					<br />
+
+					<div class="show_if_has_reqs">
+						<table class="vis" width="100%">
+							<tr><th id="reqs_count" colspan="1">Requirements to research the unit</th></tr>
+							<tr id="reqs"></tr>
+						</table>
+						<br />
+					</div>
+
+					<table class="unit_tech vis unit_tech_levels"  width="100%">
+						<tr style="text-align:center">
+							<th>Tech-level</th>
+							<th width="350">Research costs</th>
+							<th width="30" style="text-align:center"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/att.png?1bdd4" alt="Offensive strength" class="" /></th>
+							<th width="30" style="text-align:center"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/def.png?12421" alt="General Defense" class="" /></th>
+							<th width="30" style="text-align:center"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/def_cav.png?46b3d" alt="Cavalry Defense" class="" /></th>
+							<th width="30" style="text-align:center"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/def_archer.png?faccf" alt="Archer Defense" class="" /></th>						</tr>
+						<tr id="unit_tech_prototype" style="display: none;text-align:center">
+							<td class="tech_level"></td>
+							<td>
+								<span class="grey tech_researched">already researched</span>
+								<span class="tech_res_list">
+									<span class="icon header wood"> </span><span class="tech_wood"></span> <span class="icon header stone"> </span><span class="tech_stone"></span> <span class="icon header iron" > </span><span class="tech_iron"></span>
+								</span>
+							</td>
+							<td class="tech_att"></td>
+							<td class="tech_def"></td>
+							<td class="tech_def_cav"></td>
+														<td class="tech_def_archer"></td>
+													</tr>
+					</table>
+					<table class="vis unit_tech unit_tech_cost"  width="100%">
+						<tr><th>Research costs</th></tr>
+						<tr><td><span class="icon header wood"> </span><span class="tech_cost_wood"></span> <span class="icon header stone"> </span><span class="tech_cost_stone"></span> <span class="icon header iron" > </span><span class="tech_cost_iron"></span></td></tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<img style="margin-top: 60px; max-width: 200px; display: none" id="unit_image" src="graphic/map/empty.png" alt="" />
+		</div>
+	</div>
+<div class="container-block-full">
+			<div class="container-top-full"></div>
+				<div class="container">
+					<table width="100%">
+						<tr>
+							<td valign="top">
+								<table class="vis" style="margin:0 18px 0 12px;">
+																			<tr>
+											<td  style="width:65px;"><a href="http://us6.tribalwars.us/stat.php?mode=settings">World 6</a></td>
+										</tr>
+																			<tr>
+											<td  style="width:65px;"><a href="http://us8.tribalwars.us/stat.php?mode=settings">World 8</a></td>
+										</tr>
+																			<tr>
+											<td  style="width:65px;"><a href="http://us10.tribalwars.us/stat.php?mode=settings">World 10</a></td>
+										</tr>
+																			<tr>
+											<td  style="width:65px;"><a href="http://us11.tribalwars.us/stat.php?mode=settings">World 11</a></td>
+										</tr>
+																			<tr>
+											<td  style="width:65px;"><a href="http://us12.tribalwars.us/stat.php?mode=settings">World 12</a></td>
+										</tr>
+																			<tr>
+											<td class="selected" style="width:65px;"><a href="http://us13.tribalwars.us/stat.php?mode=settings">World 13</a></td>
+										</tr>
+																			<tr>
+											<td  style="width:65px;"><a href="http://us14.tribalwars.us/stat.php?mode=settings">World 14</a></td>
+										</tr>
+																			<tr>
+											<td  style="width:65px;"><a href="http://usp1.tribalwars.us/stat.php?mode=settings">Casual</a></td>
+										</tr>
+																	</table>
+							</td>
+							<td valign="top" width="80%">
+								<h2>World settings World 13</h2>
+								<p>
+									<a href="guest.php" target="_top">&raquo; Guest access</a>
+									<a href="stat.php">&raquo; Statistics</a>
+								</p>
+
+								<table width="98%" class="vis">
+								<tr>
+								<th colspan="2">Settings</th>
+								</tr>
+
+								<tr>
+								<td width="50%">Game speed</td>
+								<td width="50%">2</td>
+								</tr>
+
+								<tr>
+								<td>Unit speed</td>
+								<td>0.5</td>
+								</tr>
+
+
+								<tr>
+								<td>Ability to demolish buildings</td>
+								<td>
+								Active
+																</td>
+								</tr>
+
+								<tr>
+								<td>Morale</td>
+								<td>
+								Active (time-based)
+																</td>
+								</tr>
+
+								<tr>
+								<td>Farm rule</td>
+								<td>
+								Inactive
+																</td>
+								</tr>
+
+								<tr>
+								<td>Basic defense</td>
+								<td>20</td>
+								</tr>
+
+								<tr>
+								<td>Milliseconds</td>
+								<td>
+								Active
+																</td>
+								</tr>
+
+								<td>Fake limit</td>
+								<td>
+								Inactive
+																</td>
+								</tr>
+
+								<tr>
+								<td>Research system</td>
+								<td>
+								Simplified research
+																</td>
+								</tr>
+
+								<tr>
+								<td>Church</td>
+								<td>
+								inactive
+																</td>
+								</tr>
+
+								<tr>
+								<td>Achievements</td>
+								<td>
+								Active
+																</td>
+								</tr>
+
+								<tr>
+								<td>Growing barbarian villages</td>
+								<td>
+								Active (up to 3000 points)
+																</td>
+								</tr>
+
+								<tr>
+								<td>Bonus villages</td>
+								<td>
+																Enhanced bonus villages
+																								</td>
+								</tr>
+
+								<tr>
+								<td>Time frame for cancelling attacks</td>
+								<td>10 Minutes</td>
+								</tr>
+
+								<tr>
+								<td>Time frame for cancelling trades</td>
+								<td>5 Minutes</td>
+								</tr>
+
+								<tr>
+								<td>Night bonus</td>
+								<td>
+								inactive
+																</td>
+								</tr>
+
+								<tr>
+								<td>Protection for beginners</td>
+								<td>
+								3 Days
+																</td>
+								</tr>
+
+								<tr>
+								<td>max. ratio of attackers : defenders</td>
+								<td>
+								inactive
+																</td>
+								</tr>
+
+								
+								<tr>
+									<td>Flags</td>
+									<td>
+																		Enabled
+																		</td>
+								</tr>
+
+								</table>
+
+								<table width="98%" class="vis">
+								<tr>
+								<th colspan="2">Units</th>
+								</tr>
+
+								<tr>
+								<td width="50%">Archers</td>
+								<td width="50%">
+								Active
+																</td>
+								</tr>
+
+								<tr>
+								<td>Scout system</td>
+								<td>
+																The scout can display enemy units, buildings and resources.
+																</td>
+								</tr>
+
+								<tr>
+								<td>Paladin</td>
+								<td>
+								Active, items can be found
+									<br />The items are improved.																</td>
+								</tr>
+
+								<tr>
+									<td>Militia</td>
+									<td>
+																		Enabled
+																		</td>
+								</tr>
+
+								</table>
+
+								<table width="98%" class="vis">
+								<tr>
+								<th colspan="2">Nobleman</th>
+								</tr>
+
+								<tr>
+								<td width="50%">Increased prices for noblemen:</td>
+								<td width="50%">
+								 Gold coins
+																</td>
+								</tr>
+
+								
+								<tr>
+								<td>Max noblemen distance</td>
+								<td>
+								1000 Fields
+								</td>
+								</tr>
+
+								<tr>
+								<td>Loyalty decrease per nobleman attack</td>
+								<td>20-35</td>
+								</tr>
+
+								<tr>
+								<td>Loyalty increase per hour</td>
+								<td>2</td>
+								</tr>
+
+								</table>
+
+								<table width="98%" class="vis">
+								<tr>
+								<th colspan="2">Configuration</th>
+								</tr>
+
+								<tr>
+								<td>Tribe member limit</td>
+								<td>
+								39
+																</td>
+								</tr>
+
+								<tr>
+								<td width="50%">Defeated opponents rankings</td>
+								<td width="50%">Active, according to points
+								</td>
+								</tr>
+
+								<tr>
+								<td>Account sitting</td>
+								<td>Active
+								</td>
+								</tr>
+
+																<tr>
+								<td>Account sitting restriction for permanent account sitting</td>
+								<td>																											Restricted sitter access after an account has been sat 60 days within the last 120 days.
+								</td>
+								</tr>
+								
+								<tr>
+								<td>Free trade</td>
+								<td>								unrestricted 
+																</td>
+								</tr>
+
+								
+								<tr>
+								<td>Select a direction</td>
+								<td>Active
+								</td>
+								</tr>
+
+								<tr>
+								<td>Victory requirements</td>
+								<td>
+																	Person with the highest score at the end of the round
+
+
+																</td>
+								</tr>
+
+								<tr>
+								<td>Start date</td>
+								<td>2013-10-29</td>
+								</tr>
+
+								<tr>
+								<td>Version</td>
+								<td>19813 8.19</td>
+								</tr>
+
+								</table>
+
+								<br />
+								<h2>Unit overview</h2>
+								<br />
+
+								<table width="98%" class="vis">
+								<tr align="right"><th align="left">Unit</th><th><span class="icon header wood"> </span></th><th><span class="icon header stone"> </span></th><th><span class="icon header iron" > </span></th><th><span class="icon header population"> </span></th>
+								<th><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/att.png?1bdd4" alt="Offensive strength" class="" /></th>
+								<th><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/def.png?12421" alt="General Defense" class="" /></th>
+								<th><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/def_cav.png?46b3d" alt="Cavalry Defense" class="" /></th>
+																	<th><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/def_archer.png?faccf" alt="Archer Defense" class="" /></th>
+																<th><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/speed.png?68b95" alt="Speed" class="" /></th>
+								<th><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/booty.png?7bf33" alt="Haul" class="" /></th>
+								</tr>
+																<tr>
+									<td align="left"><a href="#" class="unit_link" onclick="return UnitPopup.open(event, 'spear')"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/unit_spear.png?48b3b" title="Spear fighter" alt="" class="" /> Spear fighter</a></td>
+									<td>50</td><td>30</td><td>10</td>
+									<td>1</td>
+									<td>10</td><td>15</td><td>45</td>
+																	<td>20</td>
+																	<td>18</td>
+									<td>25</td>
+								</tr>
+																<tr>
+									<td align="left"><a href="#" class="unit_link" onclick="return UnitPopup.open(event, 'sword')"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/unit_sword.png?b389d" title="Swordsman" alt="" class="" /> Swordsman</a></td>
+									<td>30</td><td>30</td><td>70</td>
+									<td>1</td>
+									<td>25</td><td>50</td><td>15</td>
+																	<td>40</td>
+																	<td>22</td>
+									<td>15</td>
+								</tr>
+																<tr>
+									<td align="left"><a href="#" class="unit_link" onclick="return UnitPopup.open(event, 'axe')"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/unit_axe.png?51d94" title="Axeman" alt="" class="" /> Axeman</a></td>
+									<td>60</td><td>30</td><td>40</td>
+									<td>1</td>
+									<td>40</td><td>10</td><td>5</td>
+																	<td>10</td>
+																	<td>18</td>
+									<td>10</td>
+								</tr>
+																<tr>
+									<td align="left"><a href="#" class="unit_link" onclick="return UnitPopup.open(event, 'archer')"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/unit_archer.png?db2c3" title="Archer" alt="" class="" /> Archer</a></td>
+									<td>100</td><td>30</td><td>60</td>
+									<td>1</td>
+									<td>15</td><td>50</td><td>40</td>
+																	<td>5</td>
+																	<td>18</td>
+									<td>10</td>
+								</tr>
+																<tr>
+									<td align="left"><a href="#" class="unit_link" onclick="return UnitPopup.open(event, 'spy')"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/unit_spy.png?eb866" title="Scout" alt="" class="" /> Scout</a></td>
+									<td>50</td><td>50</td><td>20</td>
+									<td>2</td>
+									<td>0</td><td>2</td><td>1</td>
+																	<td>2</td>
+																	<td>9</td>
+									<td>0</td>
+								</tr>
+																<tr>
+									<td align="left"><a href="#" class="unit_link" onclick="return UnitPopup.open(event, 'light')"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/unit_light.png?2d86d" title="Light cavalry" alt="" class="" /> Light cavalry</a></td>
+									<td>125</td><td>100</td><td>250</td>
+									<td>4</td>
+									<td>130</td><td>30</td><td>40</td>
+																	<td>30</td>
+																	<td>10</td>
+									<td>80</td>
+								</tr>
+																<tr>
+									<td align="left"><a href="#" class="unit_link" onclick="return UnitPopup.open(event, 'marcher')"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/unit_marcher.png?ad3be" title="Mounted archer" alt="" class="" /> Mounted archer</a></td>
+									<td>250</td><td>100</td><td>150</td>
+									<td>5</td>
+									<td>120</td><td>40</td><td>30</td>
+																	<td>50</td>
+																	<td>10</td>
+									<td>50</td>
+								</tr>
+																<tr>
+									<td align="left"><a href="#" class="unit_link" onclick="return UnitPopup.open(event, 'heavy')"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/unit_heavy.png?a83c9" title="Heavy cavalry" alt="" class="" /> Heavy cavalry</a></td>
+									<td>200</td><td>150</td><td>600</td>
+									<td>6</td>
+									<td>150</td><td>200</td><td>80</td>
+																	<td>180</td>
+																	<td>11</td>
+									<td>50</td>
+								</tr>
+																<tr>
+									<td align="left"><a href="#" class="unit_link" onclick="return UnitPopup.open(event, 'ram')"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/unit_ram.png?2003e" title="Ram" alt="" class="" /> Ram</a></td>
+									<td>300</td><td>200</td><td>200</td>
+									<td>5</td>
+									<td>2</td><td>20</td><td>50</td>
+																	<td>20</td>
+																	<td>30</td>
+									<td>0</td>
+								</tr>
+																<tr>
+									<td align="left"><a href="#" class="unit_link" onclick="return UnitPopup.open(event, 'catapult')"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/unit_catapult.png?5659c" title="Catapult" alt="" class="" /> Catapult</a></td>
+									<td>320</td><td>400</td><td>100</td>
+									<td>8</td>
+									<td>100</td><td>100</td><td>50</td>
+																	<td>100</td>
+																	<td>30</td>
+									<td>0</td>
+								</tr>
+																<tr>
+									<td align="left"><a href="#" class="unit_link" onclick="return UnitPopup.open(event, 'knight')"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/unit_knight.png?58dd0" title="Paladin" alt="" class="" /> Paladin</a></td>
+									<td>20</td><td>20</td><td>40</td>
+									<td>10</td>
+									<td>150</td><td>250</td><td>400</td>
+																	<td>150</td>
+																	<td>10</td>
+									<td>100</td>
+								</tr>
+																<tr>
+									<td align="left"><a href="#" class="unit_link" onclick="return UnitPopup.open(event, 'snob')"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/unit_snob.png?0019c" title="Nobleman" alt="" class="" /> Nobleman</a></td>
+									<td>40000</td><td>50000</td><td>50000</td>
+									<td>100</td>
+									<td>30</td><td>100</td><td>50</td>
+																	<td>100</td>
+																	<td>35</td>
+									<td>0</td>
+								</tr>
+																</table><br />
+
+								<table width="98%" class="vis">
+									<tr align="left">
+										<th align="right">Symbol</th><th>Meaning</th>
+										<th>Explanation</th></tr>
+									<tr>
+										<td><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/att.png?1bdd4" title="" alt="" class="" /></td><td> Offensive strength</td>
+										<td>The attack strength shows how strong the unit is during an attack.</td>
+									</tr>
+									<tr>
+										<td><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/def.png?12421" title="" alt="" class="" /></td><td> General Defense</td>
+										<td>the defensive strength shows how well a unit can defend itself against infantry units.</td>
+									</tr>
+									<tr>
+										<td><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/def_cav.png?46b3d" title="" alt="" class="" /></td><td> Cavalry Defense</td>
+										<td>The cavalry defense shows how well a unit can defend itself against cavalry units</td>
+									</tr>
+																	<tr>
+										<td><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/def_archer.png?faccf" title="" alt="" class="" /></td><td> Archer Defense</td>
+										<td>The archer defense gives the defensive strength of a units when defending against archers and mounted archers</td>
+									</tr>
+																	<tr>
+										<td><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/speed.png?68b95" title="" alt="" class="" /></td><td> Speed</td>
+										<td>The speed tells you how many minutes this unit needs to cross one field.</td>
+									</tr>
+									<tr>
+										<td><img src="http://cdn.tribalwars.us/8.19/19813/graphic/unit/booty.png?7bf33" title="" alt="" class="" /></td><td> Haul</td>
+										<td>The haul tells you how much this unit can carry. </td>
+									</tr>
+								</table>
+
+
+							</td>
+						</tr>
+					</table>
+				</div>
+			<div class="container-bottom-full"></div>
+		 </div>
+		</div><!-- content -->
+					<div class="closure">
+				&copy; 2003 - 2014
+				<a target="_blank" href="http://www.innogames.com/us">InnoGames GmbH</a> &middot;				<a href="http://legal.innogames.de/staemme/us/imprint" target="_blank">Imprint</a> &middot;
+				<a href="http://legal.innogames.de/staemme/us/privacy" target="_blank">Data privacy</a>
+				&middot; <a href="http://legal.innogames.de/staemme/us/agb" target="_blank">Terms and conditions</a>
+				&middot; <a href="http://us13.tribalwars.us/news.php?type=rss2.0"><img src="http://cdn.tribalwars.us/8.19/19813/graphic/index/icon_rss.png?ed0e8" alt="RSS" border="0" style="vertical-align:text-bottom;" class="" /></a><br />
+
+                
+                			</div>
+	</body>
+</html>
+
+
