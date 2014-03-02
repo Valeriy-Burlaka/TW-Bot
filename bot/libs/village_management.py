@@ -52,9 +52,9 @@ class VillageManager:
         of target villages (those that were attacked & have more recent info)
     """
 
-    def __init__(self, storage_type, storage_file_name):
+    def __init__(self, storage_type, storage_name):
 
-        self.map_storage = Storage(storage_type, storage_file_name)
+        self.map_storage = Storage(storage_type, storage_name)
         self.player_villages = {}
         self.target_villages = {}
         self.farming_villages = {}

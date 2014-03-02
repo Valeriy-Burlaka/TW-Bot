@@ -4,6 +4,8 @@ import shelve
 import logging
 from urllib.parse import urlencode
 
+from bot.libs.map_tools import Storage
+
 
 class AttackManager:
     """
@@ -18,8 +20,8 @@ class AttackManager:
 
     """
 
-    def __init__(self, observer_file):
-        self.attack_observer = AttackObserver(data_file=observer_file)
+    def __init__(self, storage_type, storage_name):
+        self.attack_observer = AttackObserver(storage_type, storage_name)
         self.attack_queue = AttackQueue()
         self.decision_maker = DecisionMaker()
 
@@ -289,24 +291,33 @@ class DecisionMaker:
 
 class AttackObserver:
     """
-    Notifies 'parent' manager(Attack) about 2 events:
-    1. Troops, that were sent, arrived in target village (need to update
-     reports)
-    2. Troops sent returned back (update troops map,
-    possibly can send new attack).
 
-    When stopped, saves registered arrivals/returns (that were not
-    flushed yet) in local file. When inited again, checks local file
-    for saved registrations: 1. If any arrivals/returns are in future,
-    they are placed back in queues. If any arrivals are in past, possibly
-    there are new reports.
     """
 
-    def __init__(self, data_file):
-        self.data_file = data_file
+    def __init__(self, storage_type, storage_name):
+        self.storage = Storage(storage_type=storage_type,
+                               storage_name=storage_name)
         self.arrival_queue = {}
         self.return_queue = {}
-        self._get_saved_attacks()
+
+    def restore_saved_attacks(self):
+        self.arrival_queue = self.storage.get_saved_arrivals()
+
+        logging.debug("Got the next registered arrivals: "
+                      "{}".format(self.arrival_queue))
+
+        registered_returns = self.storage.get_saved_returns()
+
+        logging.debug("Got the next registered returns "
+                      "from storage: {}".format(registered_returns))
+
+        now = time.mktime(time.gmtime())
+        for attacker_id, returns_t in registered_returns.items():
+            #
+            pending_returns = [t for t in returns_t if t > now]
+            self.return_queue[attacker_id] = pending_returns
+
+            logging.debug("Pending returns: ".format(registered_returns))
 
     def is_someone_arrived(self):
         time_gmt = time.mktime(time.gmtime())
@@ -339,31 +350,8 @@ class AttackObserver:
             self.return_queue[attacker_id] = [t_of_return]
 
     def save_registered_attacks(self):
-        f = shelve.open(self.data_file)
-        f['arrival_queue'] = self.arrival_queue
-        f['return_queue'] = self.return_queue
-        f.close()
-
-    def _get_saved_attacks(self):
-        f = shelve.open(self.data_file)
-        if 'arrival_queue' in f:
-            registered_arrivals = f['arrival_queue']
-
-            logging.debug("Got the next registered arrivals: "
-                          "{}".format(registered_arrivals))
-
-            self.arrival_queue = registered_arrivals
-        if 'return_queue' in f:
-            registered_returns = f['return_queue']
-
-            logging.debug("Got the next saved returns: "
-                          "{}".format(registered_returns))
-
-            now = time.mktime(time.gmtime())
-            for attacker_id, returns_t in registered_returns.items():
-                pending_returns = [t for t in returns_t if t > now]
-                self.return_queue[attacker_id] = pending_returns
-        f.close()
+        self.storage.save_attacks(arrivals=self.arrival_queue,
+                                  returns=self.return_queue)
 
 
 class AttackHelper:

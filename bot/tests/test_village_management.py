@@ -23,7 +23,7 @@ class TestVillageManager(unittest.TestCase):
         with patch('bot.libs.village_management.Storage') as patched_storage:
             patched_storage.get_saved_villages.return_value = {}
             self.village_manager = VillageManager(storage_type='local_file',
-                                                  storage_file_name='map_data')
+                                                  storage_name='map_data')
 
     def tearDown(self):
         settings.DEBUG = False

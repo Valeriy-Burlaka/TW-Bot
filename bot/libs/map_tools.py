@@ -188,13 +188,30 @@ class LocalStorage:
 
     def update_villages(self, villages):
         storage = shelve.open(self.storage_name)
-        if 'villages' in storage:
-            saved_villages = storage['villages']
-        else:
-            saved_villages = {}
-        for coords, village in villages.items():
-            saved_villages[coords] = village
+        saved_villages = storage.get('villages', {})
+        saved_villages.update(villages)
 
         storage['villages'] = saved_villages
         storage.close()
+
+    def save_attacks(self, arrivals=None, returns=None):
+        storage = shelve.open(self.storage_name)
+        if arrivals:
+            storage['arrivals'] = arrivals
+        if returns:
+            storage['returns'] = returns
+        storage.close()
+
+    def get_saved_arrivals(self):
+        storage = shelve.open(self.storage_name)
+        if 'arrivals' in storage:
+            return storage['arrivals']
+        storage.close()
+
+    def get_saved_returns(self):
+        storage = shelve.open(self.storage_name)
+        if 'returns' in storage:
+            return storage['returns']
+        storage.close()
+
 
