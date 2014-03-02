@@ -5,7 +5,7 @@ from unittest import mock
 
 from bot.libs.map_tools import MapStorage, MapParser, MapMath, LocalStorage
 from bot.tests.factories import TargetVillageFactory
-from bot.tests.helpers import MapStorageHelper
+from bot.tests.helpers import StorageHelper
 import settings
 
 
@@ -75,7 +75,7 @@ class TestMapMath(unittest.TestCase):
 class TestMapStorage(unittest.TestCase):
 
     def setUp(self):
-        self.helper = MapStorageHelper()
+        self.helper = StorageHelper()
         self.storage_folder = self.helper.create_test_storage()
         self.storage_name = os.path.join(self.storage_folder, 'test_storage')
 
@@ -111,7 +111,7 @@ class TestMapStorage(unittest.TestCase):
 class TestLocalStorage(unittest.TestCase):
 
     def setUp(self):
-        self.helper = MapStorageHelper()
+        self.helper = StorageHelper()
         self.storage_folder = self.helper.create_test_storage()
         self.storage_name = os.path.join(self.storage_folder, 'test_storage')
 
