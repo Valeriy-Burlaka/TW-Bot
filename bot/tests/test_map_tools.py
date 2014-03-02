@@ -65,7 +65,6 @@ class TestMapMath(unittest.TestCase):
         targets_by_distance = MapMath.get_targets_by_distance(source_coords,
                                                               target_coords)
         self.assertEqual(len(targets_by_distance), 4)
-        print(targets_by_distance)
         self.assertEqual(targets_by_distance[0][0], (105, 105))
         self.assertEqual(targets_by_distance[1][0], (94, 94))
         self.assertEqual(targets_by_distance[2][0], (100, 89))
