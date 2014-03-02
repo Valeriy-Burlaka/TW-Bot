@@ -3,7 +3,7 @@ import shelve
 import unittest
 from unittest import mock
 
-from bot.libs.map_tools import MapStorage, MapParser, MapMath, LocalStorage
+from bot.libs.map_tools import Storage, MapParser, MapMath, LocalStorage
 from bot.tests.factories import TargetVillageFactory
 from bot.tests.helpers import StorageHelper
 import settings
@@ -71,7 +71,7 @@ class TestMapMath(unittest.TestCase):
         self.assertEqual(targets_by_distance[3][0], (100, 115))
 
 
-class TestMapStorage(unittest.TestCase):
+class TestStorage(unittest.TestCase):
 
     def setUp(self):
         self.helper = StorageHelper()
@@ -82,16 +82,16 @@ class TestMapStorage(unittest.TestCase):
         self.helper.clean_test_storage()
 
     def test_init_with_local_processor(self):
-        map_storage = MapStorage(storage_type='local_file',
+        map_storage = Storage(storage_type='local_file',
                                  storage_name=self.storage_name)
         self.assertIsInstance(map_storage.storage_processor, LocalStorage)
 
     def test_init_with_non_existing_processor(self):
-        self.assertRaises(NotImplementedError, MapStorage, 'not_implemented', 'test')
+        self.assertRaises(NotImplementedError, Storage, 'not_implemented', 'test')
 
     @mock.patch('bot.libs.map_tools.LocalStorage', autospec=True)
     def test_retrieve_from_local_delegated_to_processor(self, mocked_storage):
-        map_storage = MapStorage(storage_type='local_file',
+        map_storage = Storage(storage_type='local_file',
                                  storage_name=self.storage_name)
         processor = map_storage.storage_processor
         map_storage.get_saved_villages()
@@ -99,7 +99,7 @@ class TestMapStorage(unittest.TestCase):
 
     @mock.patch('bot.libs.map_tools.LocalStorage', autospec=True)
     def test_save_to_local_delegated_to_processor(self, mocked_storage):
-        map_storage = MapStorage(storage_type='local_file',
+        map_storage = Storage(storage_type='local_file',
                                  storage_name=self.storage_name)
         processor = map_storage.storage_processor
         villages = {(0, 0): []}
@@ -171,7 +171,7 @@ class TestLocalStorage(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite(tests=(TestMapMath,
                                       TestMapParser,
-                                      TestMapStorage))
+                                      TestStorage))
     return suite
 
 if __name__ == '__main__':

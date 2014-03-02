@@ -6,6 +6,10 @@ import settings
 from bot.libs.attack_management import AttackHelper
 
 
+class TestAttackObserver(unittest.TestCase):
+    pass
+
+
 class TestAttackHelper(unittest.TestCase):
 
     def setUp(self):

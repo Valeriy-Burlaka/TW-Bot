@@ -142,7 +142,7 @@ class MapMath:
         return targets
 
 
-class MapStorage:
+class Storage:
     """
     Delegates save & update operations to one of storage-helpers
     """
@@ -154,12 +154,13 @@ class MapStorage:
             raise NotImplementedError("Specified storage type for map data"
                                       "is not implemented yet!")
 
-    def get_saved_villages(self):
-        saved_villages = self.storage_processor.get_saved_villages()
-        return saved_villages
-
-    def update_villages(self, villages):
-        self.storage_processor.update_villages(villages)
+    def __getattr__(self, name):
+        def wrapper(*args, **kwargs):
+            if not hasattr(self.storage_processor, name):
+                raise NotImplementedError
+            else:
+                return getattr(self.storage_processor, name)(*args, **kwargs)
+        return wrapper
 
 
 class LocalStorage:
