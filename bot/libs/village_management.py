@@ -6,7 +6,7 @@ import logging
 
 from bs4 import BeautifulSoup as Soup
 
-from bot.libs.map_tools import MapStorage, MapMath
+from bot.libs.map_tools import Storage, MapMath
 from bot.libs.attack_management import Unit
 
 
@@ -52,9 +52,9 @@ class VillageManager:
         of target villages (those that were attacked & have more recent info)
     """
 
-    def __init__(self, storage_type, storage_file_name):
+    def __init__(self, storage_type, storage_name):
 
-        self.map_storage = MapStorage(storage_type, storage_file_name)
+        self.map_storage = Storage(storage_type, storage_name)
         self.player_villages = {}
         self.target_villages = {}
         self.farming_villages = {}

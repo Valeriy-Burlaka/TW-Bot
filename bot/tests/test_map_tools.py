@@ -3,9 +3,9 @@ import shelve
 import unittest
 from unittest import mock
 
-from bot.libs.map_tools import MapStorage, MapParser, MapMath, LocalStorage
+from bot.libs.map_tools import Storage, MapParser, MapMath, LocalStorage
 from bot.tests.factories import TargetVillageFactory
-from bot.tests.helpers import MapStorageHelper
+from bot.tests.helpers import StorageHelper
 import settings
 
 
@@ -65,17 +65,16 @@ class TestMapMath(unittest.TestCase):
         targets_by_distance = MapMath.get_targets_by_distance(source_coords,
                                                               target_coords)
         self.assertEqual(len(targets_by_distance), 4)
-        print(targets_by_distance)
         self.assertEqual(targets_by_distance[0][0], (105, 105))
         self.assertEqual(targets_by_distance[1][0], (94, 94))
         self.assertEqual(targets_by_distance[2][0], (100, 89))
         self.assertEqual(targets_by_distance[3][0], (100, 115))
 
 
-class TestMapStorage(unittest.TestCase):
+class TestStorage(unittest.TestCase):
 
     def setUp(self):
-        self.helper = MapStorageHelper()
+        self.helper = StorageHelper()
         self.storage_folder = self.helper.create_test_storage()
         self.storage_name = os.path.join(self.storage_folder, 'test_storage')
 
@@ -83,16 +82,16 @@ class TestMapStorage(unittest.TestCase):
         self.helper.clean_test_storage()
 
     def test_init_with_local_processor(self):
-        map_storage = MapStorage(storage_type='local_file',
+        map_storage = Storage(storage_type='local_file',
                                  storage_name=self.storage_name)
         self.assertIsInstance(map_storage.storage_processor, LocalStorage)
 
     def test_init_with_non_existing_processor(self):
-        self.assertRaises(NotImplementedError, MapStorage, 'not_implemented', 'test')
+        self.assertRaises(NotImplementedError, Storage, 'not_implemented', 'test')
 
     @mock.patch('bot.libs.map_tools.LocalStorage', autospec=True)
     def test_retrieve_from_local_delegated_to_processor(self, mocked_storage):
-        map_storage = MapStorage(storage_type='local_file',
+        map_storage = Storage(storage_type='local_file',
                                  storage_name=self.storage_name)
         processor = map_storage.storage_processor
         map_storage.get_saved_villages()
@@ -100,7 +99,7 @@ class TestMapStorage(unittest.TestCase):
 
     @mock.patch('bot.libs.map_tools.LocalStorage', autospec=True)
     def test_save_to_local_delegated_to_processor(self, mocked_storage):
-        map_storage = MapStorage(storage_type='local_file',
+        map_storage = Storage(storage_type='local_file',
                                  storage_name=self.storage_name)
         processor = map_storage.storage_processor
         villages = {(0, 0): []}
@@ -111,7 +110,7 @@ class TestMapStorage(unittest.TestCase):
 class TestLocalStorage(unittest.TestCase):
 
     def setUp(self):
-        self.helper = MapStorageHelper()
+        self.helper = StorageHelper()
         self.storage_folder = self.helper.create_test_storage()
         self.storage_name = os.path.join(self.storage_folder, 'test_storage')
 
@@ -168,11 +167,24 @@ class TestLocalStorage(unittest.TestCase):
             self.assertEqual(village.defended, saved_village.defended)
         manual_storage.close()
 
+    def test_save_attacks(self):
+        storage = LocalStorage(self.storage_name)
+        save_data_arrivals = {(1, 1): 1000, (2, 2): 2000, (3, 3): 3000}
+        save_data_returns = {1: [1000, 2000, 3000], 2: [1000, 2000, 3000]}
+
+        storage.save_attacks(arrivals=save_data_arrivals,
+                             returns=save_data_returns)
+        manual_storage = shelve.open(self.storage_name)
+        self.assertIn('arrivals', manual_storage)
+        self.assertEqual(manual_storage['arrivals'], save_data_arrivals)
+        self.assertIn('returns', manual_storage)
+        self.assertEqual(manual_storage['returns'], save_data_returns)
+
 
 def suite():
     suite = unittest.TestSuite(tests=(TestMapMath,
                                       TestMapParser,
-                                      TestMapStorage))
+                                      TestStorage))
     return suite
 
 if __name__ == '__main__':

@@ -1,0 +1,1141 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<title>Village de Jaque Fanfan (617|352) - Guerre Tribale - Monde 24</title>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+	<link id="favicon" rel="shortcut icon"  href="/favicon.ico" />
+
+	<link rel="stylesheet" type="text/css" href="/merged/game.css?1393253193" />
+
+			<link rel="stylesheet" type="text/css" href="/css/game/map.css?1393253191" />
+
+		
+	<script type="text/javascript" src="/merged/game.js?1393253193"></script>
+
+			<script type="text/javascript" src="/js/game/ColorGroups.js?1393253185"></script>
+
+			<script type="text/javascript" src="/js/game/freemap.js?1393253189"></script>
+
+			<script type="text/javascript" src="/js/game/twmap.js?1393253183"></script>
+
+			<script type="text/javascript" src="/js/game/mapcanvas.js?1393253189"></script>
+
+			<script type="text/javascript" src="/js/game/boxtoggle.js?1393253188"></script>
+
+			<script type="text/javascript" src="/js/game/jstpl.js?1393253189"></script>
+
+			<script type="text/javascript" src="/js/game/worldmap.js?1393253186"></script>
+
+			<script type="text/javascript" src="/js/game/twmap_drag.js?1393253184"></script>
+
+			<script type="text/javascript" src="/js/game/QuestArrows.js?1393253187"></script>
+
+		
+	
+	<script type="text/javascript">
+        //<![CDATA[
+        var sds = false;
+		var image_base = "http://cdn.tribalwars.net/graphic/";
+		var mobile = false;
+		var mobile_on_normal = false;
+		var premium = false;
+		var server_utc_diff = 3600;
+
+		var game_data = {"player":{"name":"Jaque Fanfan","ally":"0","sitter":"0","sleep_start":"0","sitter_type":"normal","sleep_end":"0","sleep_last":"0","interstitial":"0","email_valid":"1","villages":"1","incomings":"0","supports":0,"knight_location":null,"knight_unit":null,"rank":10230,"points":"64","date_started":"1393749986","is_guest":"0","id":"1369799","quest_progress":"0","premium":false,"account_manager":false,"farm_manager":false,"points_formatted":"64","rank_formatted":"10<span class=\"grey\">.<\/span>230","fire_pixel":"0","new_forum_post":"0","new_igm":"0","new_report":"1","new_quest":"1"},"village":{"id":40968,"name":"Village de Jaque Fanfan","wood_prod":0.0125,"stone_prod":0.0125,"iron_prod":0.002083333333,"storage_max":"1000","pop_max":"240","wood_float":533.81921586394,"stone_float":575.81921586394,"iron_float":481.1365359773,"wood":534,"stone":576,"iron":481,"pop":"45","x":"617","y":"352","trader_away":"0","bonus_id":null,"bonus":null,"buildings":{"village":"40968","main":"2","farm":"1","storage":"1","place":"1","barracks":"0","church":"0","church_f":"0","smith":"0","wood":"1","stone":"1","iron":"0","market":"0","stable":"0","wall":"0","garage":"0","hide":"1","snob":"0","statue":"1"},"player_id":"1369799","res":[534,0.0125,576,0.0125,481,0.002083333333,"1000","45","240"],"coord":"617|352"},"nav":{"parent":2},"link_base":"\/game.php?village=40968&amp;screen=","link_base_pure":"\/game.php?village=40968&screen=","csrf":"a805","world":"fr24","market":"fr","RTL":false,"version":"19813 8.19","majorVersion":"8.19","screen":"map","mode":null,"device":"desktop"};
+		var csrf_token = 'a805';
+			
+		UI.AutoComplete.url = '/game.php?village=40968&ajaxaction=autocomplete&h=ee90&screen=api';
+		ScriptAPI.url = '/game.php?village=40968&ajax=save_script&screen=api';
+		ScriptAPI.version = parseFloat(game_data.majorVersion);
+
+		
+		var userCSS = false;
+		
+		var isIE7 = false;
+
+		var topmenuIsAlwaysVisible = false;
+					topmenuIsAlwaysVisible = true;
+		
+		
+				VillageContext._urls.overview = '/game.php?village=__village__&screen=overview';
+		VillageContext._urls.info = '/game.php?village=40968&id=__village__&screen=info_village';
+		VillageContext._urls.fav = '/game.php?village=40968&id=__village__&ajaxaction=add_target&h=468e&json=1&screen=info_village';
+		VillageContext._urls.unfav = '/game.php?village=40968&id=__village__&ajaxaction=del_target&h=468e&json=1&screen=info_village';
+		VillageContext._urls.claim = '/game.php?village=40968&id=__village__&ajaxaction=toggle_reserve_village&h=468e&json=1&screen=info_village';
+		VillageContext._urls.market = '/game.php?village=40968&mode=send&target=__village__&screen=market';
+		VillageContext._urls.place = '/game.php?village=40968&target=__village__&screen=place';
+		VillageContext._urls.recruit = '/game.php?village=__village__&screen=train';
+		VillageContext._urls.map = '/game.php?village=40968&id=__village__&screen=map';
+		VillageContext._urls.unclaim = VillageContext._urls.claim;
+				
+
+		
+		$(document).ready( function() {
+			UI.ToolTip( $( '.group_tooltip' ), { delay: 1000 } );
+			VillageContext.init();
+
+		});
+
+		
+		//]]>
+	</script>
+	<!--[if IE 8]>
+		<style type="text/css">
+			/*
+				Workaround for IE8 textarea scroll bug, see
+
+				http://grantovich.net/posts/2009/06/that-weird-ie8-textarea-bug/
+
+				You also need to set an absolute height for the element. since this depends
+				on the location of the textarea, use an element style.
+			*/
+			textarea.ie8scrollfix { width: 300px !important; min-width: 98%; max-width: 98%;}
+					</style>
+	<![endif]-->
+	<!--[if IE 7]>
+		<style type="text/css">td.maincell { width: auto !important; } td.maincell > table { width: 850px !important; }</style>
+		<script type="text/javascript">isIE7 = true;</script>
+	<![endif]-->
+	<style type="text/css">
+
+		/* force posts in the forum to obey to maximum width set in the settings */
+		#forum_box .text {
+							width: 800px;
+						word-wrap: break-word;
+		}
+	</style>
+</head><body id="ds_body" class=" ">
+
+	
+	<div class="top_bar">
+		<div class="bg_left"> </div>
+		<div class="bg_right"> </div>
+	</div>
+	<div class="top_shadow"> </div>
+	<div class="top_background"> </div>
+    <div class="questlog_placeholder">&nbsp;</div>
+
+	<table id="main_layout" cellspacing="0">
+		<tr style="height: 48px;">
+			<td class="topbar left fixed"></td>
+			<td class="topbar center fixed">
+				<div id="topContainer">
+					<table id="topTable" style="text-align: center;" cellspacing="0">
+						<tr>
+							<td style="text-align: center;">
+								<table class="menu nowrap" style="white-space: nowrap; ">
+									<tr id="menu_row">
+										<td class="menu-side"></td>
+										<td class="menu-item"><a href="/game.php?village=40968&amp;screen=overview_villages" >Aperçu</a></td>
+										<td class="menu-item"><a href="/game.php?village=40968&amp;screen=map">Carte</a></td>
+										<td class="menu-item"><a href="/game.php?village=40968&amp;screen=report"><span id="new_report" class="icon header new_report" title="Nouveau rapport"></span> Rapports</a><table cellspacing="0" class="menu_column"><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=all&amp;screen=report">Tout</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=attack&amp;screen=report">Attaques</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=defense&amp;screen=report">Défenses</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=support&amp;screen=report">Soutiens</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=trade&amp;screen=report">Échange</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=other&amp;screen=report">Divers</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=forwarded&amp;screen=report">Transmis</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=public&amp;screen=report">Public</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=filter&amp;screen=report">Filtre</a></td></tr><tr><td class="bottom"><div class="corner"></div><div class="decoration"></div></td></tr></table></td>
+										<td class="menu-item"><a href="/game.php?village=40968&amp;screen=mail"><span id="new_mail" class="icon header new_mail" style="display: none" title="Nouveau message"></span> Messages</a><table cellspacing="0" class="menu_column"><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=in&amp;screen=mail">Messages</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=mass_out&amp;screen=mail">Mail circulaire</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=new&amp;screen=mail">Écrire un message</a></td></tr><tr><td class="bottom"><div class="corner"></div><div class="decoration"></div></td></tr></table></td>
+																					<td>
+																									<a class="manager_icon" style="background-image:url('http://cdn.guerretribale.fr/8.19/19813/graphic/icons/farm_assistent.png?e5a99')" href="/game.php?village=40968&amp;screen=am_farm" title="Assistant de pillage">&nbsp;</a>
+																																					<a class="manager_icon" style="background-image:url('http://cdn.guerretribale.fr/8.19/19813/graphic/icons/account_manager.png?ae0c3')" href="/game.php?village=40968&amp;screen=accountmanager" title="Gestionnaire de compte">&nbsp;</a>
+																							</td>
+																				<td class="menu-item lpad"> </td>
+																				<td class="menu-item" id="topdisplay">
+											<div class="bg">
+												<a href="/game.php?village=40968&amp;screen=ranking">Classement</a>
+												<div class="rank">(<span id="rank_rank">10<span class="grey">.</span>230</span>.|<span id="rank_points">64</span> P)</div>
+												<table cellspacing="0" class="menu_column"><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=ally&amp;screen=ranking">Tribus</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=player&amp;screen=ranking">Joueurs</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=con_ally&amp;screen=ranking">Continent Tribus</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=con_player&amp;screen=ranking">Continent Joueurs</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=kill_ally&amp;screen=ranking">Adversaires battus (tribu)</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=kill_player&amp;screen=ranking">Adversaires battus</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=awards&amp;screen=ranking">Accomplissements</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=wars&amp;screen=ranking">Guerres</a></td></tr><tr><td class="bottom"><div class="corner"></div><div class="decoration"></div></td></tr></table>
+											</div>
+										</td>
+																				<td class="menu-item rpad"> </td>
+										<td class="menu-item"><a href="/game.php?village=40968&amp;screen=ally">Tribu</a></td>
+										<td class="menu-item">
+											<a href="/game.php?village=40968&amp;screen=info_player">
+												Profil <span id="new_items" class="badge"></span>
+											</a>
+											<table cellspacing="0" class="menu_column"><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;screen=info_player">Jaque Fanfan</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;screen=inventory">Inventaire</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=awards&amp;screen=info_player">Accomplissements</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;screen=buddies">Amis</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=block&amp;screen=info_player">Liste Noire</a></td></tr><tr><td class="bottom"><div class="corner"></div><div class="decoration"></div></td></tr></table>
+										</td>
+										<td class="menu-item"><a href="/game.php?village=40968&amp;screen=premium"><span class="coinbag coinbag-header"></span>&nbsp;Premium</a><table cellspacing="0" class="menu_column"><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=use&amp;screen=premium">Inscriptions</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=premium&amp;screen=premium">Achat</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=transfer&amp;screen=premium">Transférer</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=log&amp;screen=premium">Journal des Points</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=feature_log&amp;screen=premium">Journal des Fonctionnalités</a></td></tr><tr><td class="bottom"><div class="corner"></div><div class="decoration"></div></td></tr></table></td>
+										<td class="menu-item"><a href="/game.php?village=40968&amp;screen=settings">Réglages</a><table cellspacing="0" class="menu_column"><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=settings&amp;screen=settings">Réglages</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=email&amp;screen=settings">Adresse e-mail</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=change_passwd&amp;screen=settings">Modifier le mot de passe</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=move&amp;screen=settings">Recommencer</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=delete&amp;screen=settings">Effacer le compte</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=notify&amp;screen=settings">Notifications</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=share&amp;screen=settings">Partage de connexion Internet</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=vacation&amp;screen=settings">Sitting</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=logins&amp;screen=settings">Connexions</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=poll&amp;screen=settings">Sondages</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=ref&amp;source=settings_menu&amp;screen=settings">Inviter des joueurs</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;action=set_mobile&amp;h=12ab&amp;mobile=1&amp;screen=settings">Vers la version mobile</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=push&amp;screen=settings">iOS &amp; Android</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=voucher&amp;screen=settings">Code promo</a></td></tr><tr><td class="menu-column-item"><a href="/game.php?village=40968&amp;mode=ticket&amp;screen=settings" target="_blank">Demande de support</a></td></tr><tr><td class="bottom"><div class="corner"></div><div class="decoration"></div></td></tr></table></td>
+										<td class="menu-side"><img src="http://cdn.guerretribale.fr/8.19/19813/graphic/loading.gif?4c84a" id="loading_content" style="display: none" alt="" class="" /></td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</td>
+			<td class="topbar right fixed"> </td>
+
+		</tr>
+		<tr class="shadedBG">
+
+			<td class="bg_left" id="SkyScraperAdCellLeft">
+				<div id="SkyScraperAdLeft"></div>				<div class="bg_left"> </div>
+			</td>
+
+			<td class="maincell" style="width: 850px;">
+							<div style="position:relative;">
+					<div id="questlog" class="questlog">
+																		<div 
+								id="quest_4" 
+								data-id="4"
+								data-progress="0" 
+								data-goals="3"
+								data-url="/game.php?village=40968&amp;ajax=quest_show&amp;quest=4&amp;screen=api"
+								class="quest   " 
+								title="Infrastructure militaire"
+								style="background-image:url( 'http://cdn.guerretribale.fr/8.19/19813/graphic/buildings/barracks.png?86f55' );">
+								<div class="quest_progress"></div>
+								<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/quests/check.png?29f73" border="0" style="position: absolute; left: 12px; top: 12px; display: none" alt="" class="" />
+																<div class="quest_new fr">Nouveau </div>
+															</div>
+													<div 
+								id="quest_5" 
+								data-id="5"
+								data-progress="0" 
+								data-goals="7"
+								data-url="/game.php?village=40968&amp;ajax=quest_show&amp;quest=5&amp;screen=api"
+								class="quest opened  " 
+								title="Assurer la production"
+								style="background-image:url( 'http://cdn.guerretribale.fr/8.19/19813/graphic/buildings/storage.png?9951d' );">
+								<div class="quest_progress"></div>
+								<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/quests/check.png?29f73" border="0" style="position: absolute; left: 12px; top: 12px; display: none" alt="" class="" />
+															</div>
+													<div 
+								id="quest_28" 
+								data-id="28"
+								data-progress="0" 
+								data-goals="1"
+								data-url="/game.php?village=40968&amp;ajax=quest_show&amp;quest=28&amp;screen=api"
+								class="quest opened  " 
+								title="Le plus puissant des guerriers"
+								style="background-image:url( 'http://cdn.guerretribale.fr/8.19/19813/graphic/unit/unit_knight.png?58dd0' );">
+								<div class="quest_progress"></div>
+								<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/quests/check.png?29f73" border="0" style="position: absolute; left: 12px; top: 12px; display: none" alt="" class="" />
+															</div>
+												<script>
+						$(function() {
+							Quests.init();
+						});
+						</script>					</div>
+				</div>
+			
+			
+			<br class="newStyleOnly" />
+	        
+			<hr class="oldStyleOnly" />
+
+			<table id="header_info" align="center" width="100%" cellspacing="0">
+				<colgroup>
+					<col width="1%" />
+					<col width="96%" />
+					<col width="1%" />
+					<col width="1%" />
+					<col width="1%" />
+				</colgroup>
+				<tr>
+					<td class="topAlign">
+						<table class="header-border">
+	                        <tr>
+	                            <td>
+									<table class="box menu nowrap">
+	                                    <tr id="menu_row2">
+																																																							<td style="white-space:nowrap;" id="menu_row2_village" class="firstcell box-item icon-box nowrap">
+												<a class="nowrap" href="/game.php?village=40968&amp;screen=overview"><span class="icon header village"></span>Village de Jaque Fanfan</a>
+											</td>
+																						<td class="box-item" style="padding-right: 6px"><b class="nowrap">(617|352) K36 </b></td>
+												                                    </tr>
+	                                </table>
+	                            </td>
+	                        </tr>
+							<tr class="newStyleOnly">
+								<td class="shadow">
+									<div class="leftshadow"> </div>
+									<div class="rightshadow"> </div>
+								</td>
+							</tr>
+	                    </table>
+                	</td>
+
+				<td align="right" class="topAlign"> </td><!-- flexible gap -->
+
+				<td align="right" class="topAlign">
+								</td>
+
+
+                <td align="right" class="topAlign">
+					<table align="right" class="header-border menu_block_right">
+						<tr>
+							<td>
+								<table class="box smallPadding" cellspacing="0" style="empty-cells:show;">
+									<tr style="height: 20px;">
+										<td class="box-item icon-box firstcell">
+											<a href="/game.php?village=40968&amp;screen=wood" title="Bois - 45 par heure"><span class="icon header wood"> </span></a>
+										</td>
+                                        <td class="box-item" style="position: relative">
+                                        	<span id="wood" title="Bois - 45 par heure" class="res">534</span>
+                                        </td>
+                                        <td class="box-item icon-box">
+                                        	<a href="/game.php?village=40968&amp;screen=stone" title="Argile - 45 par heure"><span class="icon header stone"> </span></a>
+                                        </td>
+                                        <td class="box-item">
+                                        	<span id="stone" title="Argile - 45 par heure" class="res">576</span>
+                                        </td>
+                                        <td class="box-item icon-box">
+                                        	<a href="/game.php?village=40968&amp;screen=iron" title="Fer - 7 par heure"><span class="icon header iron" > </span></a>
+                                        </td>
+										<td class="box-item">
+											<span id="iron" title="Fer - 7 par heure" class="res">481</span>
+										</td>
+                                        <td class="box-item icon-box">
+                                        	<a href="/game.php?village=40968&amp;screen=storage" title="Capacité de stockage"><span class="icon header ressources"> </span></a>
+                                        </td>
+                                        <td class="box-item">
+                                        	<span id="storage" title="Capacité de stockage">1000</span>
+                                        </td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+						<tr class="newStyleOnly">
+							<td class="shadow">
+								<div class="leftshadow"> </div>
+								<div class="rightshadow"> </div>
+							</td>
+						</tr>
+					</table>
+				</td>
+				<td align="right" class="topAlign">
+					<table class="header-border menu_block_right">
+						<tr>
+							<td>
+								<table class="box smallPadding" cellspacing="0">
+									<tr>
+										<td class="box-item icon-box firstcell"><a href="/game.php?village=40968&amp;screen=farm" title="Ferme"><span class="icon header population"> </span></a></td>
+                                        <td class="box-item" align="center" style="margin:0;padding:0;" title="Ferme">
+                                        	<span id="pop_current_label">45</span>/<span id="pop_max_label">240</span>
+                                        	<span style="display:none">
+                                        		<span id="pop_current">45</span>/<span id="pop_max">240</span>
+                                        	</span>
+                                        </td>
+                                    </tr>
+								</table>
+							</td>
+						</tr>
+						<tr class="newStyleOnly">
+							<td class="shadow">
+								<div class="leftshadow"> </div>
+								<div class="rightshadow"> </div>
+							</td>
+						</tr>
+					</table>
+				</td>
+
+								<td align="right" class="topAlign">
+					<table class="header-border menu_block_right" style="border-collapse: collapse;">
+						<tr>
+							<td>
+								<table class="box" cellspacing="0">
+									<tr>
+																				<td class="box-item firstcell"><a title="Drapeaux" href="/game.php?village=40968&amp;screen=flags"><span class="icon header flags"></span></a></td>
+																														<td class="box-item icon-box"><a title="Paladin" href="/game.php?village=40968&amp;screen=statue"><span class="icon header knight"></span></a></td>
+																			</tr>
+								</table>
+							</td>
+						</tr>
+						<tr class="newStyleOnly">
+							<td class="shadow">
+								<div class="leftshadow"> </div>
+								<div class="rightshadow"> </div>
+							</td>
+						</tr>
+					</table>
+				
+				<td class="topAlign  " id="header_commands">
+					<table class="header-border menu_block_right">
+						<tr>
+							<td>
+								<table class="box smallPadding no-gap" cellspacing="0">
+									<tr>
+
+										<td id="incomings_cell" style="text-align: center; padding: 0 4px" class="box-item firstcell nowrap">
+																						<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/unit/att.png?1bdd4" title="Attaques entrantes" style="vertical-align: -2px" alt="" class="" />
+											<span id="incomings_amount">0</span>
+																					</td>
+
+										<td id="supports_cell" style="text-align: center; padding: 0 4px" class="box-item separate nowrap">
+											<a href="">
+												<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/command/support.png?90fdb" title="Soutien entrant" style="vertical-align: -2px" alt="" class="" />
+												<span id="supports_amount"></span>
+											</a>
+										</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+						<tr class="newStyleOnly">
+							<td class="shadow">
+								<div class="leftshadow"> </div>
+								<div class="rightshadow"> </div>
+							</td>
+						</tr>
+					</table>
+				</td>
+
+			</tr>
+		</table>
+
+		
+		
+		
+		
+		<div id="script_warning" class="info_box" style="display: none;" >
+			Les scripts activés peuvent être incompatibles avec la version actuelle du jeu.<br />
+			Si les problèmes persistent, merci de désactiver ou d'actualiser les scripts.<br />
+			Si les problèmes persistent, merci de contacter l'auteur du script. <ul id="script_list"></ul>
+		</div>
+
+
+	    
+	    
+		<!-- *********************** CONTENT BELOW ************************** -->
+		<table align="center" id="contentContainer" width="100%">
+	        <tr>
+	            <td>
+					<table class="content-border" width="100%" cellspacing="0">
+	                    <tr>
+	                        <td id="inner-border">
+								<table class="main" align="left">
+	                                <tr>
+										<td id="content_value">
+										
+										
+	                               		<h2>Continent <span id="continent_id">36</span></h2>
+
+<script type="text/javascript">
+//<![CDATA[
+
+	/** General purpose map script variables **/
+
+	TWMap.premium = false;
+	TWMap.mobile = false;
+	TWMap.morale = true;
+	TWMap.night = false;
+	TWMap.light = false;
+	//Needed to display day borders if user activated classic graphics
+	TWMap.classic_gfx = false;
+
+	TWMap.scrollBound = [0, 0, 999, 999];
+	TWMap.tileSize = [53, 38];
+
+	TWMap.screenKey = 'a805';
+	TWMap.topoKey = 2371373545;
+	TWMap.con.CON_COUNT = 10;
+	TWMap.con.SEC_COUNT = 20;
+	TWMap.con.SUB_COUNT = 5;
+
+	TWMap.image_base = 'http://cdn.guerretribale.fr/8.19/19813/graphic/';
+	TWMap.graphics = 'http://cdn.guerretribale.fr/8.19/19813/graphic//map/v2/';
+
+			TWMap.currentVillage = 40968;
+		TWMap.cachePopupContents = true;
+
+
+	/** Context menu **/
+
+	TWMap.urls.ctx = {};
+	TWMap.urls.ctx.mp_overview = '/game.php?village=__village__&screen=overview';
+	TWMap.urls.ctx.mp_info = '/game.php?village=40968&id=__village__&screen=info_village';
+	TWMap.urls.ctx.mp_fav = '/game.php?village=40968&id=__village__&ajaxaction=add_target&h=468e&json=1&screen=info_village';
+	TWMap.urls.ctx.mp_unfav = '/game.php?village=40968&id=__village__&ajaxaction=del_target&h=468e&json=1&screen=info_village';
+	TWMap.urls.ctx.mp_lock = '/game.php?village=40968&id=__village__&ajaxaction=toggle_reserve_village&h=468e&json=1&screen=info_village';
+	TWMap.urls.ctx.mp_res = '/game.php?village=40968&mode=send&target=__village__&screen=market';
+	TWMap.urls.ctx.mp_att = '/game.php?village=40968&target=__village__&screen=place';
+	TWMap.urls.ctx.mp_recruit = '/game.php?village=__village__&screen=train';
+	TWMap.urls.ctx.mp_profile = '/game.php?village=40968&id=__owner__&screen=info_player';
+	TWMap.urls.ctx.mp_msg = '/game.php?village=40968&mode=new&player=__owner__&screen=mail';
+	TWMap.urls.ctx.mp_unlock = TWMap.urls.ctx.mp_lock;
+	TWMap.urls.ctx.mp_invite = '/game.php?village=40968&mode=ref&source=map&screen=settings';
+	TWMap.urls.ctx.mp_invite_hide = '/game.php?village=40968&ajaxaction=map_hide_invitation&h=12ab&json=1&screen=settings';
+
+	
+		TWMap.ghost = {"x":618,"y":349};
+	
+	TWMap.context.enabled = true;
+	
+	TWMap.centerList.enabled = false;
+
+	/** Other URLs **/
+
+	TWMap.urls.villageInfo = '/game.php?village=40968&id=__village__&screen=info_village';
+	TWMap.urls.villagePopup = '/game.php?village=__village__&ajax=map_info&source=40968&screen=overview';
+	TWMap.urls.sizeSave = '/game.php?village=40968&ajaxaction=set_map_size&h=12ab&screen=settings';
+	TWMap.urls.changeShowBelief = '/game.php?village=40968&ajaxaction=change_topo_show_belief&h=12ab&screen=settings';
+	TWMap.urls.changeShowPolitical = '/game.php?village=40968&ajaxaction=change_topo_show_political&h=12ab&screen=settings';
+	TWMap.urls.changeUseContext = '/game.php?village=40968&ajaxaction=change_use_contextmenu&h=12ab&screen=settings';
+	TWMap.urls.savePopup = '';
+	TWMap.urls.centerCoords = '/game.php?village=40968&mode=centerlist&screen=map'
+	TWMap.urls.centerSave = '/game.php?village=40968&mode=centerlist&ajaxaction=save_center&h=a805&screen=map';
+
+	/** Attacked villages **/
+	
+	/** Village colors **/
+
+			TWMap.colors['this'] = [255, 255, 255];
+			TWMap.colors['player'] = [240, 200, 0];
+			TWMap.colors['friend'] = [69, 255, 146];
+			TWMap.colors['ally'] = [0, 0, 244];
+			TWMap.colors['partner'] = [0, 160, 244];
+			TWMap.colors['nap'] = [128, 0, 128];
+			TWMap.colors['enemy'] = [244, 0, 0];
+			TWMap.colors['other'] = [130, 60, 10];
+			TWMap.colors['sleep'] = [0, 0, 0];
+			TWMap.colors['grey'] = [150, 150, 150];
+	
+	TWMap.secrets = {
+		};
+
+	/** Some sector fun **/
+	TWMap.sectorPrefech = [{"x":600,"y":340,"tiles":[[3,1,0,3,0,2,44,34,2,2,33,0,3,2,2,1,3,1,2,32],[3,3,1,2,0,0,2,1,1,0,44,34,3,3,3,0,1,33,3,2],[34,3,3,0,1,0,0,3,0,32,0,0,2,1,0,0,40,46,34,2],[1,1,3,0,0,1,0,3,2,1,0,3,0,0,2,1,1,2,2,40],[2,3,3,2,1,2,1,40,34,1,2,3,1,3,3,2,0,3,3,3],[3,2,1,3,3,2,0,1,0,41,42,34,0,2,3,33,2,1,1,0],[3,3,2,1,3,1,3,2,40,38,2,1,3,3,0,36,0,0,0,1],[1,0,0,0,1,3,2,3,1,2,0,0,3,0,1,1,33,0,3,3],[0,32,0,0,0,2,1,2,1,0,2,3,1,2,1,3,36,0,2,1],[2,1,1,48,32,0,0,3,0,2,0,2,3,1,0,32,3,1,1,3],[40,34,48,2,0,2,32,0,33,2,3,2,0,0,1,3,2,2,1,3],[1,3,2,0,3,2,3,41,39,0,1,41,42,34,3,1,0,2,1,48],[2,2,41,34,0,1,1,45,38,1,3,36,0,1,3,48,1,3,3,1],[2,40,39,2,0,3,40,39,1,2,1,1,2,2,2,1,3,3,0,3],[32,2,44,35,0,1,0,36,0,3,0,2,2,3,3,32,1,1,1,2],[2,3,2,44,34,0,33,2,2,0,3,0,3,2,1,1,40,43,35,1],[34,3,0,3,0,40,38,1,2,0,1,3,3,1,33,1,1,45,46,34],[0,0,1,1,2,3,1,3,0,1,3,0,2,1,44,35,1,36,0,0],[41,42,34,2,2,3,1,33,3,2,3,1,3,2,3,36,2,2,0,0],[37,1,0,3,3,1,0,36,1,1,3,3,40,34,0,2,1,2,33,2]],"data":{"x":600,"y":340,"villages":[{"1":["36897",7,"RIOT!","388","1366895","100"],"5":["35294",7,"Village de vedje","304","296140","100"],"15":["33429",5,"phils-de-gogol 001","233","1364314","100"],"16":["33298",16,"Village bonus","114","0","100",["100% de production de fer en plus","bonus\/iron.png"]],"17":["31875",4,0,"90","0","100"],"18":["34002",7,"DARK","661","1026199","100"]},{"1":["38633",5,"Village de dreamwream","26","1368170","100"],"3":["36111",5,"Village de Invit\u00e9366329","38","1366329","100"],"5":["38266",5,"Village de Halloenix","38","1360780","100"],"6":["36056",5,"Village de Invit\u00e9366284","26","1366284","100"],"7":["37599",5,"AZ-36","166","1346354","100"],"12":["34721",5,"Village de le coon.","69","1365321","100"],"19":["33880",16,"Village bonus","137","0","100",["Acc\u00e9l\u00e8re de 50% le recrutement dans l'atelier","bonus\/garage.png"]]},{"2":["39955",5,"Fairy tail","40","1369123","100"],"3":["36842",5,"Village de Arakm3ro","26","1366850","100"],"6":["38873",16,"Village bonus","53","0","100",["10% de population en plus","bonus\/farm.png"]],"8":["40828",5,"~Chticapi~0001","106","1324547","100"],"10":["34063",16,"Village bonus","134","0","100",["Acc\u00e9l\u00e8re de 50% le recrutement dans l'atelier","bonus\/garage.png"]],"11":["35633",5,"Village de brix59","26","1115628","100"],"13":["33937",5,"Village de Invit\u00e9364701","56","1364701","100"],"14":["35042",5,"Vyto","45","1365560","100"]},{"0":["38432",5,"Juju","65","1368006","100"],"2":["40566",16,"Village bonus","32","0","100",["10% de population en plus","bonus\/farm.png"]],"4":["36019",5,"Village de Invit\u00e9366251","26","1366251","100"],"6":["37389",5,"Village de Invit\u00e9367271","28","1367271","100"],"8":["35104",5,"Village de rousseau954","26","1154931","100"],"10":["37014",5,"ice-tea","241","1293628","100"],"11":["33922",4,0,"43","0","100"],"12":["36393",5,"Village de vic100","26","22339","100"],"15":["33185",5,"Village de Invit\u00e9364124","40","1364124","100"],"16":["35021",5,"Village de Invit\u00e9365535","26","1365535","100"],"17":["31652",5,"tudors","39","1319024","100"]},{"3":["40386",5,"Village de AvengerFaake","38","1369408","100"],"6":["36601",5,"Village de hudvfi\u00e7","52","1366682","100"],"10":["35121",4,0,"88","0","100"]},{"0":["39015",5,"Village de R\u00e9plicateur1er","56","1225451","100"],"2":["40599",5,"Village de Darktag","26","1369577","100"],"3":["39772",5,"Tracetaroute","42","1369009","100"],"5":["40346",5,"poneyland","149","951089","100"],"7":["36854",7,"Krak Town","352","1366861","100"],"8":["37353",5,"Village de zarckos","26","1367245","100"],"19":["34620",5,"Village de shadowsdu44","26","1334272","100"]},{"0":["40173",5,"Village de FauconMillenium","33","1369259","100"],"1":["40087",5,"Village de jp24th","38","1369208","100"],"3":["39033",5,"Village de paktarala","88","1368461","100"],"6":["37200",5,"Village de Invit\u00e9367134","26","1367134","100"],"14":["35589",5,"Village de Imoox95","26","1365958","100"],"16":["32991",5,"Village de poubele","98","1363984","100"],"17":["35338",5,"Village de charly10","38","1365772","100"],"18":["32577",5,"001","47","1363694","100"]},{"0":["39418",5,"TheLegenda","87","1368740","100"],"1":["40142",5,"The End.","168","204534","100"],"3":["40575",5,"Village de esprit","26","1369560","100"],"4":["37750",5,"Konoah","181","1266628","100"],"5":["39875",5,"Village de darksting59","68","1369074","100"],"14":["34844",5,"Cetelem and Cetelem 46","99","1365406","100"],"18":["34503",4,0,"102","0","100"],"19":["33082",5,"Village de marser","114","1349479","100"]},{"4":["39429",5,"Village de ujukkyu","32","1368752","100"],"6":["37731",5,"Village de malimo","26","1367539","100"],"7":["38649",5,"Village de arnaud281099","28","1368182","100"],"9":["38198",5,"merde","62","1367852","100"],"11":["35444",5,"Village de stoshi09","44","1365857","100"],"12":["35564",5,"Village de Invit\u00e9365942","30","1365942","100"],"14":["35950",16,"Village bonus","86","0","100",["50% plus de capacit\u00e9 de stockage et de marchands","bonus\/storage.png"]],"19":["33577",5,"Super AS","146","1364428","100"]},{"0":["39794",16,"Village bonus","31","0","100",["Acc\u00e9l\u00e8re de 33% le recrutement dans la caserne","bonus\/barracks.png"]],"5":["37210",5,"Village de Sohal","69","1239270","100"],"6":["37430",5,"Village de unika","26","1353243","100"],"8":["39664",5,"Village de Baptiyaps","38","1368931","100"],"14":["34304",5,"lelele","42","1364984","100"],"16":["36358",5,"Village de Antoinehnr","54","1366511","100"],"17":["33329",5,"Rainbow","52","717861","100"]},{"3":["38788",5,"Village de Invit\u00e9368282","28","1368282","100"],"9":["38767",5,"Village de titi88","28","1368267","100"],"10":["35956",5,"Village de thiescourt","102","1366203","100"],"12":["38298",5,"Village de Judykaell","50","1367904","100"],"13":["36971",16,"Village bonus","77","0","100",["Acc\u00e9l\u00e8re de 50% le recrutement dans l'atelier","bonus\/garage.png"]],"15":["34760",5,"Village de Invit\u00e9365352","28","1365352","100"],"16":["37518",5,"montagnard","68","1367365","100"],"18":["35898",5,"Village de destruc","38","1366160","100"]},{"6":["39786",5,"Village de MIMI141","38","1369018","100"],"15":["35214",5,"Bouvil","58","1365676","100"],"16":["34594",5,"Village de Kaya15","26","1365235","100"]},{"4":["39583",5,"Loulouville","174","1368873","100"],"6":["39737",5,"~le truand de la terreur~","159","1129012","100"],"9":["38319",5,"Dar-devil 1","124","1052220","100"],"12":["37486",5,"Village de hmaxence","40","1367344","100"],"13":["35991",7,"Winterfell","439","569371","100"],"17":["35977",5,"Village de Amesophie","42","1366216","100"],"19":["34460",5,"Village de Rayderr","32","1365119","100"]},{"3":["40085",5,"Village de Invit\u00e9369206","58","1369206","100"],"10":["40026",16,"Village bonus","45","0","100",["50% plus de capacit\u00e9 de stockage et de marchands","bonus\/storage.png"]],"11":["37943",4,0,"62","0","100"],"12":["36188",5,"Village de Aavak","33","1122521","100"],"13":["36831",5,"Village de broken15","68","1366835","100"],"15":["35799",5,"Village de aru-ll","32","1366093","100"],"16":["38104",5,"Beehive","280","1367799","100"],"17":["34873",5,"Village de romainpapa","26","1365428","100"]},{"9":["37711",5,"Gilley","169","143017","100"],"11":["39059",5,"Village de bhrama","120","720324","100"],"12":["37395",4,0,"75","0","100"],"13":["37001",5,"*Black-Rhode*","196","448735","100"],"17":["34534",7,"ZouziX city","441","1365178","100"],"18":["36218",5,"Village de Invit\u00e9366420","26","1366420","100"],"19":["34269",5,"Village de dombal70","26","1364960","100"]},{"7":["38053",5,"The city lord of darkness","275","1365725","100"],"9":["37271",5,"Village de THOR9370","165","1083876","100"],"10":["40242",5,"Village de Iweko","26","1265642","100"],"12":["37278",5,"Village de nico6","26","1367196","100"],"13":["39333",5,"mank1","53","1368677","100"],"14":["35788",5,"Village de popol","38","1366086","100"]},{"2":["40022",5,"Masyaf","49","1127163","100"],"7":["38537",16,"Village bonus","52","0","100",["100% de production d'argile en plus","bonus\/stone.png"]],"8":["40849",5,"Village de oO GROS Oo","51","1286152","100"],"9":["38041",5,"Village de harry5519","188","1367758","100"],"10":["37900",5,"Le truc pour gagner des pass deq","76","1367655","100"],"11":["38090",5,"Tarraco","38","1367788","100"],"13":["37616",5,"001 Poils","262","7086","100"],"16":["35794",7,"MONTREAL","448","2048","100"]},{"11":["40591",5,"XxDestroiDxX","35","1369569","100"],"12":["40968",5,"Village de Jaque Fanfan","64","1369799","100"],"13":["38510",5,"Village de noah45","26","1031350","100"],"16":["36266",5,"Stabat","96","1366449","100"]},{"8":["39620",5,"Village de anonymous weed","26","1368880","100"],"10":["39708",5,"Village de maxime","71","1368968","100"],"13":["38121",5,"Village de Invit\u00e9367806","28","1367806","100"],"19":["37721",5,"Village de THYgroux62","56","1367530","100"]},{"11":["39502",5,"Village de qqlos","34","1368807","100"],"14":["37719",5,"pinpiland","225","1367528","100"],"15":["38874",5,"Village de Invit\u00e9368359","26","1368359","100"],"17":["36366",5,"Village de tatan26","26","1290070","100"],"19":["37693",5,"Village de belieber","26","1367511","100"]}],"players":{"1675":["angelo006","38","3401",0],"2048":["nhl2009","448","3880",0],"3396":["Temp\u00eate","26","0","demain \u00e0 12:41"],"5251":["bidous","312","4573",0],"7086":["achille-jonathan","262","0","aujourd'hui \u00e0 14:19"],"7597":["Ruan","33","0",0],"22339":["vic100","26","0",0],"22679":["boy n tha hood","121","0","le 04.03. \u00e0 19:11"],"46316":["narniannarnian","48","0",0],"71130":["axel52","157","0","demain \u00e0 16:31"],"143017":["yoguiz","169","4920","aujourd'hui \u00e0 16:02"],"204534":["Th0mas189","168","278","le 05.03. \u00e0 12:28"],"208112":["isangard","124","0","le 04.03. \u00e0 21:10"],"229793":["killian10","137","0",0],"253804":["MPEB","26","0",0],"296140":["vedje","304","0",0],"338178":["Junichi","419","0",0],"367593":["awaleh11","73","0","le 06.03. \u00e0 07:14"],"398788":["THE BLACK MASTER","82","0","le 04.03. \u00e0 05:25"],"401947":["zizir","564","3880",0],"448735":["torado-tortanke","196","0",0],"462801":["blackmarc","338","4612",0],"511997":["guydu62","75","0",0],"569371":["ol91","439","1218",0],"580000":["X31gigi","190","1218","demain \u00e0 07:04"],"638341":["maxih1","48","0","le 06.03. \u00e0 03:23"],"659279":["Vitoox","496","3880",0],"717861":["cochonou","52","0",0],"720324":["bhrama","120","0","le 04.03. \u00e0 06:13"],"825767":["nolhan63","314","4161",0],"904112":["ABRAXAR","513","4604",0],"951089":["BELLEENZ","149","4573","le 05.03. \u00e0 15:52"],"971738":["kha\u00eerapho\u00e9nix","443","4612",0],"987838":["LePtisushi","392","3880",0],"988313":["-MaGiik-","821","3880",0],"1020325":["tiitiine88","466","3880","demain \u00e0 19:50"],"1026199":["harper","661","3880",0],"1031350":["noah45","26","0","demain \u00e0 15:17"],"1033104":["Snaaps","1.076","3947",0],"1037256":["yannis57680","28","0","le 04.03. \u00e0 17:26"],"1052220":["Dar-devil","124","0","demain \u00e0 10:46"],"1061006":["maxamort","139","0","le 05.03. \u00e0 19:59"],"1083876":["THOR9370","165","4920",0],"1087365":["itachi59","222","4645","le 04.03. \u00e0 06:28"],"1093770":["Dimitri333","26","0","aujourd'hui \u00e0 13:24"],"1097679":["Lord kuro85","26","0",0],"1098606":["Roi Grifondor","26","0","demain \u00e0 23:04"],"1108917":["SpaceMarine2205","26","0",0],"1115628":["brix59","26","0",0],"1122521":["Aavak","33","0",0],"1125205":["freddy68","302","0","aujourd'hui \u00e0 17:42"],"1127163":["altair","49","0","le 05.03. \u00e0 10:56"],"1129012":["titoine1","159","4573","le 04.03. \u00e0 21:15"],"1135450":["eHoH","690","3880",0],"1137334":["yaya63","26","0",0],"1138289":["angelo01","121","0",0],"1143595":["kevtessa","201","0",0],"1145450":["Overlord06061991","26","0","le 05.03. \u00e0 10:17"],"1154931":["rousseau954","26","0",0],"1154943":["andrenoworezki","26","0",0],"1169374":["les minguettes","500","4612",0],"1170652":["MamarGTrib","228","0","aujourd'hui \u00e0 19:23"],"1196737":["mathberis","26","0","le 04.03. \u00e0 18:42"],"1225451":["R\u00e9plicateur1er","56","0","le 04.03. \u00e0 01:09"],"1239270":["Sohal","69","0",0],"1241014":["redlynx","26","0",0],"1249354":["NY sml","56","0","aujourd'hui \u00e0 19:13"],"1265642":["Iweko","26","0","le 05.03. \u00e0 14:13"],"1266043":["torsen","26","0","le 05.03. \u00e0 07:08"],"1266628":["zigotoland","181","4573","aujourd'hui \u00e0 16:49"],"1268357":["flo.69","26","0","aujourd'hui \u00e0 18:48"],"1279281":["romain70400","45","0",0],"1283596":["corentindu55","26","0",0],"1286152":["oO GROS Oo","51","4871","le 06.03. \u00e0 03:21"],"1289766":["liongarou","949","2244",0],"1290070":["tatan26","26","0",0],"1293628":["Warrior69","241","4753",0],"1311245":["Roi Sulleox","38","0",0],"1319024":["diesel1","39","0",0],"1319850":["spacedead14","357","3880",0],"1324547":["Chticapi","106","4612","le 06.03. \u00e0 02:09"],"1327981":["ZenQ","26","0","aujourd'hui \u00e0 18:24"],"1328866":["florian62700","66","0","le 05.03. \u00e0 12:39"],"1329557":["tandenborstel12","26","0",0],"1330122":["robzrafa","136","0",0],"1333262":["Barbarix","255","4612",0],"1334272":["shadowsdu44","26","0",0],"1341791":["EndOfYourLife","26","344",0],"1344049":["slave","101","0","le 05.03. \u00e0 15:03"],"1345896":["liliux","53","0",0],"1346354":["cutaga","166","0","aujourd'hui \u00e0 13:55"],"1346369":["Neevz","26","0",0],"1347379":["MiKui","207","4645","demain \u00e0 07:35"],"1348184":["Ben ArmA","329","0",0],"1349479":["marser","114","0",0],"1351325":["benoch","590","3880",0],"1353243":["unika","26","0","aujourd'hui \u00e0 10:41"],"1356198":["-JP67-","26","0","le 04.03. \u00e0 16:49"],"1358853":["samsam","700","2387",0],"1359151":["rosy1895","106","0",0],"1359256":["Invit\u00e9359256","28","0",0],"1359580":["Lord Tobias","26","0",0],"1359867":["lienhartm","38","0",0],"1360606":["joleolily","421","3880",0],"1360654":["Falmu","441","3880",0],"1360736":["Invit\u00e9360736","26","0",0],"1360780":["Halloenix","38","3828","demain \u00e0 08:50"],"1360821":["KalkBrener","156","0",0],"1360918":["vvauoert","45","0",0],"1361179":["handjo","435","4003",0],"1361304":["Momsdead","26","0",0],"1361384":["Invit\u00e9361384","28","0",0],"1361434":["Invit\u00e9361434","38","0",0],"1361452":["Vavatfairefoutre","26","0",0],"1361460":["Invit\u00e9361460","26","0",0],"1361514":["grasdeporc","42","0",0],"1361552":["billiau","26","0",0],"1361578":["audey","95","0",0],"1361596":["Esm\u00e9ralda0304","38","0",0],"1361681":["dedeban91","50","0",0],"1361691":["nicolas874","28","0",0],"1361695":["pulsarnova","683","3880",0],"1361716":["gladiateur","424","4003",0],"1361863":["ratfour","160","0",0],"1361872":["Maitre-KonarD","502","3898",0],"1361899":["Invit\u00e9361899","32","0",0],"1361916":["spractator13","26","0",0],"1361919":["alexalex59440","68","0",0],"1361967":["zito27100","33","0",0],"1362005":["Invit\u00e9362005","28","0",0],"1362068":["Fufu","52","0",0],"1362091":["Invit\u00e9362091","52","0",0],"1362121":["adgala22","96","0",0],"1362159":["babass","26","0",0],"1362169":["babycoeur18","26","0",0],"1362174":["iFaleNx","607","3880",0],"1362187":["bosse-du-77","58","3948",0],"1362384":["dadadada","26","0",0],"1362448":["Invit\u00e9362448","26","0",0],"1362498":["tholliez","26","0",0],"1362545":["Invit\u00e9362545","26","0",0],"1362548":["lamine.007","75","0",0],"1362563":["Magik Rik","570","4003",0],"1362601":["Invit\u00e9362601","85","0",0],"1362673":["Pepito49","46","0",0],"1362676":["flo45470","681","3880",0],"1362708":["erwannmpi","42","0",0],"1362812":["Alaziel","172","0",0],"1362868":["zaki","42","0",0],"1362884":["victor66","38","0",0],"1362917":["maumoura","1.360","3880",0],"1362982":["a-les-couiles","33","4065",0],"1363104":["CRAZYRuSh1xX","38","0",0],"1363109":["ilpazzo1899","57","0",0],"1363143":["cissou31","26","0",0],"1363181":["courtogit53","93","0",0],"1363198":["Linkie","91","0",0],"1363223":["Invit\u00e9363223","33","0",0],"1363338":["HaineDy","114","0",0],"1363351":["armando","42","0",0],"1363440":["Invit\u00e9363440","26","0",0],"1363449":["zuker67","71","0",0],"1363515":["ferao10vm","26","0",0],"1363517":["Invit\u00e9363517","40","0",0],"1363534":["ibou77","30","0",0],"1363592":["Eddie-gn","26","0",0],"1363596":["oPr3d4o","70","0",0],"1363637":["Invit\u00e9363637","51","0",0],"1363645":["*BorN To KiLL*","180","0",0],"1363694":["epichornetje","47","0",0],"1363790":["momo123","339","3880",0],"1363800":["Anton","538","4018",0],"1363812":["mariketa","208","4210",0],"1363837":["Invit\u00e9363837","29","0",0],"1363852":["ben0140","151","4543",0],"1363872":["Percorval","386","3880",0],"1363924":["uLawon","114","4228",0],"1363937":["oranec","26","0",0],"1363951":["vouvouch","26","0",0],"1363984":["poubellle","98","0",0],"1363989":["rastagouere","81","0",0],"1364058":["Invit\u00e9364058","28","0",0],"1364098":["gionni","42","0",0],"1364124":["Invit\u00e9364124","40","0",0],"1364153":["Abakar Mht Issa","26","0",0],"1364155":["remy","66","0",0],"1364290":["Ariane","26","0",0],"1364297":["Kinokks","56","0",0],"1364314":["phils-de-gogol","233","4161",0],"1364324":["florian2","509","4003",0],"1364358":["Despinosa","26","0",0],"1364384":["Invit\u00e9364384","26","0",0],"1364414":["Romualde","52","0",0],"1364428":["Dogun","146","0",0],"1364449":["Invit\u00e9364449","49","0",0],"1364530":["Invit\u00e9364530","71","0",0],"1364560":["Invit\u00e9364560","118","0",0],"1364563":["schwarden","26","0",0],"1364578":["pacha71","240","4410",0],"1364701":["Invit\u00e9364701","56","0",0],"1364802":["paolo975b","26","0",0],"1364828":["jonuko","491","4003",0],"1364869":["Invit\u00e9364869","76","0",0],"1364952":["momo7410","41","0",0],"1364960":["dombal70","26","0",0],"1364984":["llllllllll","42","0",0],"1365056":["MrBoekske","296","4161",0],"1365063":["Mr TiTi","317","4161",0],"1365074":["Invit\u00e9365074","26","0",0],"1365119":["Rayderr","32","0",0],"1365178":["ZouziX","441","3880",0],"1365181":["Attaca","387","4161",0],"1365235":["Kaya15","26","0",0],"1365257":["celest98","360","3880",0],"1365321":["le coon","69","0",0],"1365352":["Invit\u00e9365352","28","0",0],"1365406":["cetelem","99","0",0],"1365428":["romainpapa","26","0",0],"1365431":["NICOLAS -6","63","0",0],"1365432":["Jazyy","38","0",0],"1365499":["stevi45","62","4410",0],"1365535":["Invit\u00e9365535","26","0",0],"1365541":["Gueule","52","0",0],"1365560":["vyto","45","0",0],"1365632":["victor4","26","0",0],"1365670":["StaaRz","71","0",0],"1365676":["Invit\u00e9365676","58","0",0],"1365682":["Valkyrie26","38","0",0],"1365725":["Zaracos","275","0","aujourd'hui \u00e0 21:36"],"1365772":["charly10","38","0",0],"1365779":["NiNiNE","103","0",0],"1365857":["stoshi09","44","0",0],"1365942":["Invit\u00e9365942","30","0",0],"1365958":["Imoox95","26","0",0],"1366083":["Invit\u00e9366083","26","0",0],"1366086":["yopougon","38","0",0],"1366093":["aru-ll","32","0",0],"1366153":["DevilNight","95","4575",0],"1366160":["destruc","38","0",0],"1366203":["tosma","102","4585",0],"1366216":["Amesophie","42","4583",0],"1366251":["Invit\u00e9366251","26","0",0],"1366284":["Invit\u00e9366284","26","0",0],"1366302":["itch","28","0",0],"1366329":["Invit\u00e9366329","38","0",0],"1366353":["lin1876","90","0",0],"1366354":["ANONYMUS77130","30","0",0],"1366362":["alix010","38","0",0],"1366363":["romalek","38","0",0],"1366415":["John Player","520","4645",0],"1366418":["morganedm","74","0",0],"1366420":["Invit\u00e9366420","26","0",0],"1366449":["Stabat","96","0",0],"1366461":["Memoh68","103","3401",0],"1366475":["legarssurverygame","75","0",0],"1366511":["Antoinehnr","54","0",0],"1366567":["maximus pepino","40","0",0],"1366601":["kitiku","109","4650",0],"1366617":["Invit\u00e9366617","26","0",0],"1366656":["Huseyin6720","96","0",0],"1366682":["hudvfi\u00e7","52","0",0],"1366762":["fraidou","26","0",0],"1366791":["Invit\u00e9366791","26","0",0],"1366799":["abraxas19","26","0",0],"1366816":["ninjanany","96","0",0],"1366823":["Dori","26","0",0],"1366835":["broken15","68","0",0],"1366850":["Arakm3ro","26","0",0],"1366856":["Invit\u00e9366856","26","0",0],"1366861":["Krak74","352","0",0],"1366870":["Invit\u00e9366870","26","0",0],"1366874":["moustapha910","38","0","demain \u00e0 12:43"],"1366895":["paramore02","388","0",0],"1367025":["paul one","38","0",0],"1367075":["Razer","26","0",0],"1367111":["didiboro","64","0",0],"1367117":["buzzmcnab","41","0",0],"1367131":["scamkiv","32","0",0],"1367134":["Invit\u00e9367134","26","0",0],"1367174":["Tyriion","72","0",0],"1367196":["nico6","26","0",0],"1367245":["zarckos","26","0",0],"1367271":["Invit\u00e9367271","28","0",0],"1367275":["margau-x","38","0",0],"1367307":["robot","26","0","aujourd'hui \u00e0 10:55"],"1367310":["Boxarin","47","0","aujourd'hui \u00e0 11:00"],"1367326":["titi2207","38","0","aujourd'hui \u00e0 11:17"],"1367344":["hmaxence","40","0","aujourd'hui \u00e0 11:51"],"1367365":["lisa3158","68","0","aujourd'hui \u00e0 12:34"],"1367380":["Primaverra","38","0","aujourd'hui \u00e0 12:58"],"1367511":["belieber","26","0","aujourd'hui \u00e0 15:38"],"1367528":["stef808","225","4797","aujourd'hui \u00e0 16:07"],"1367530":["THYgroux62","56","0","aujourd'hui \u00e0 16:08"],"1367539":["malimo","26","0","aujourd'hui \u00e0 16:16"],"1367594":["gaoure cisse","64","0","aujourd'hui \u00e0 17:39"],"1367630":["251107","26","0","aujourd'hui \u00e0 18:19"],"1367655":["moilol1","76","0","aujourd'hui \u00e0 18:58"],"1367669":["neytsumi","291","4645","aujourd'hui \u00e0 19:11"],"1367693":["diablerouge15","203","0","aujourd'hui \u00e0 19:48"],"1367705":["Arrox","26","0","aujourd'hui \u00e0 19:58"],"1367758":["harry5519","188","0","aujourd'hui \u00e0 21:26"],"1367788":["Aguilo","38","0","aujourd'hui \u00e0 22:11"],"1367790":["steph2014","237","3880","aujourd'hui \u00e0 22:12"],"1367799":["beekeeper","280","3880","aujourd'hui \u00e0 22:21"],"1367806":["Invit\u00e9367806","28","0","aujourd'hui \u00e0 22:48"],"1367810":["PigneDesOurs","106","0","aujourd'hui \u00e0 23:09"],"1367813":["Super Adri 1","26","0","aujourd'hui \u00e0 23:12"],"1367852":["julien62730","62","0","demain \u00e0 01:19"],"1367881":["Invit\u00e9367881","28","0","demain \u00e0 07:59"],"1367904":["Judykaell","50","0","demain \u00e0 09:53"],"1367936":["Invit\u00e9367936","28","0","demain \u00e0 11:08"],"1367983":["Markusco","230","0","demain \u00e0 12:32"],"1367994":["fafa45","34","0","demain \u00e0 12:47"],"1368006":["Invit\u00e9368006","65","0","demain \u00e0 13:18"],"1368072":["Raindream1712","113","4885","demain \u00e0 15:05"],"1368164":["chrismer","46","0","demain \u00e0 17:20"],"1368170":["dreamwream","26","0","demain \u00e0 17:23"],"1368182":["arnaud281099","28","0","demain \u00e0 17:41"],"1368183":["Invit\u00e9368183","38","0","demain \u00e0 17:42"],"1368216":["Invit\u00e9368216","45","0","demain \u00e0 18:23"],"1368267":["titi88","28","0","demain \u00e0 19:15"],"1368282":["Invit\u00e9368282","28","0","demain \u00e0 19:31"],"1368338":["polo1983","33","0","demain \u00e0 20:56"],"1368359":["Invit\u00e9368359","26","0","demain \u00e0 21:32"],"1368375":["Invit\u00e9368375","26","0","demain \u00e0 21:57"],"1368461":["paktarala","88","0","le 04.03. \u00e0 02:44"],"1368463":["soso59","26","0","le 04.03. \u00e0 02:49"],"1368677":["padair","53","0","le 04.03. \u00e0 14:34"],"1368716":["Invit\u00e9368716","26","0","le 04.03. \u00e0 15:20"],"1368719":["Invit\u00e9368719","30","0","le 04.03. \u00e0 15:25"],"1368725":["kevin70","26","0","le 04.03. \u00e0 15:34"],"1368740":["TheLegend83","87","0","le 04.03. \u00e0 16:06"],"1368752":["ujukkyu","32","0","le 04.03. \u00e0 16:17"],"1368776":["marco59630","26","0","le 04.03. \u00e0 16:44"],"1368797":["Invit\u00e9368797","26","0","le 04.03. \u00e0 17:05"],"1368807":["qqlos","34","0","le 04.03. \u00e0 17:17"],"1368820":["jjioklpmpokjgfd","32","0","le 04.03. \u00e0 17:36"],"1368873":["louar","174","4573","le 04.03. \u00e0 18:40"],"1368880":["anonymous weed","26","0","le 04.03. \u00e0 19:05"],"1368893":["itsclairette","99","0","le 04.03. \u00e0 18:56"],"1368895":["JohnSnow99","94","0","le 04.03. \u00e0 18:57"],"1368931":["Baptiyaps","38","0","le 04.03. \u00e0 19:44"],"1368964":["masahiro644","26","0","le 04.03. \u00e0 20:41"],"1368968":["maxime95","71","0","le 04.03. \u00e0 20:51"],"1369009":["lowko","42","0","le 04.03. \u00e0 22:21"],"1369018":["MIMI141","38","0","le 04.03. \u00e0 22:37"],"1369074":["darksting59","68","0","le 05.03. \u00e0 02:44"],"1369088":["obite","50","0","le 05.03. \u00e0 05:01"],"1369119":["clemv12","38","0","le 05.03. \u00e0 09:30"],"1369123":["lucascadeur29","40","0","le 05.03. \u00e0 09:36"],"1369146":["Roul-34","66","0","le 05.03. \u00e0 10:26"],"1369206":["Invit\u00e9369206","58","0","le 05.03. \u00e0 11:41"],"1369208":["jp24th","38","0","le 05.03. \u00e0 11:43"],"1369259":["FauconMillenium","33","0","le 05.03. \u00e0 13:01"],"1369370":["Alcator","46","0","le 05.03. \u00e0 15:38"],"1369408":["AvengerFaake","38","0","le 05.03. \u00e0 16:32"],"1369451":["Mr.Creeper78","71","0","le 05.03. \u00e0 17:18"],"1369492":["aissatoub","26","0","le 05.03. \u00e0 18:04"],"1369524":["Invit\u00e9369524","26","0","le 05.03. \u00e0 18:40"],"1369560":["esprit","26","0","le 05.03. \u00e0 19:20"],"1369569":["ursilaxs","35","0","le 05.03. \u00e0 19:37"],"1369577":["Darktag","26","0","le 05.03. \u00e0 19:47"],"1369641":["lolipop56","38","0","le 05.03. \u00e0 21:30"],"1369704":["Invit\u00e9369704","40","0","le 06.03. \u00e0 00:02"],"1369799":["Jaque Fanfan","64","0","le 06.03. \u00e0 09:46"]},"allies":{"278":["les d\u00e9jant\u00e9s","131.795","les D"],"344":["Makaveli","60.489","MKV"],"1218":["Les Insoumis","34.599","LI"],"2244":["La tribu des Disney","37.566","Disney"],"2387":["Lesanges","9.894","OMERTA"],"3401":["la renaissance","11.085","LaR"],"3828":["ThePheonix","183","TheP"],"3880":["Team War","14.837","=TW="],"3898":["#LegenD Of The TEAM#","502","#LDOT#"],"3947":["Les Eorlingas","17.694","Eorl"],"3948":["alpha1","58","coster"],"4003":["Clan MacAingeal","8.073","MAC-MR"],"4018":["Nooooob Power !!","2.379","No_oP"],"4065":["Qwertyuiop","33","Qp"],"4161":["R\u00e9demption","5.382","RED"],"4210":["les noodles","580","nood"],"4228":["Baff","114","Baff"],"4410":["leagle of legend","510","L.O.L"],"4543":["Rasta","151","RASTA"],"4573":["League of Crack","6.315","LoC"],"4575":["Enfer","95","Enfer"],"4583":["Amesophie","42","soso"],"4585":["CESAR","102","CSR"],"4604":["Liberty","513","-LBT-"],"4612":["The Spartiate","6.315","Sparti"],"4645":["1% AMC","3.369","1%"],"4650":["~RO~","109","~RO~"],"4753":["ofilv","241","feqfd"],"4797":["pinbask","446","pb"],"4871":["Bi\u00e8re Moule Frite","233.872","BMF"],"4885":["La tribu de Dana","113","LTD"],"4920":["Avengers9370","334","AGS"]}}},{"x":620,"y":340,"tiles":[[36,3,2,30,31,2,1,2,2,2,1,3,1,3,1,3,0,2,36,3],[2,0,0,29,28,0,0,40,34,3,3,0,0,0,2,3,0,3,2,1],[42,35,1,0,3,0,0,2,0,32,48,2,3,0,30,31,1,1,32,2],[0,37,2,40,34,0,2,0,2,1,2,40,34,3,29,28,1,33,2,3],[3,44,34,2,2,40,34,1,0,0,2,0,3,3,0,1,3,45,42,35],[35,3,2,32,3,2,0,2,2,2,2,1,1,2,2,3,3,36,0,44],[39,1,3,1,1,2,3,3,0,3,0,0,1,32,3,3,3,2,0,1],[45,42,34,3,3,1,1,33,3,1,32,0,0,2,2,32,2,1,32,2],[37,0,1,3,0,3,3,36,0,1,0,48,40,34,2,2,1,3,1,0],[36,48,0,3,3,2,2,3,2,1,2,3,0,3,0,32,3,3,1,3],[1,3,1,0,0,40,42,34,2,1,3,0,3,3,1,3,3,41,42,34],[2,3,1,0,1,2,0,1,1,1,2,2,1,2,2,2,2,37,1,3],[32,0,0,3,1,3,0,1,2,1,3,1,2,2,1,1,40,38,3,2],[2,1,40,34,1,1,0,0,2,32,0,3,0,2,33,2,0,2,33,0],[0,2,2,2,3,1,3,1,0,0,3,2,0,3,36,1,0,0,37,2],[0,1,40,34,0,3,0,40,34,1,0,1,0,3,3,1,3,40,38,0],[0,32,2,3,2,1,1,0,3,1,3,0,2,2,33,48,0,0,1,3],[0,3,32,1,33,1,30,31,3,40,34,3,1,3,37,1,0,0,3,3],[2,3,3,0,44,34,29,28,1,0,1,32,1,0,36,2,0,3,3,1],[30,31,0,1,0,1,2,41,34,2,2,2,3,3,30,31,40,34,0,2]],"data":{"x":620,"y":340,"villages":{"0":{"6":["39628",5,"boy n tha hood","121","22679","100"],"8":["40498",5,"Village de aissatoub","26","1369492","100"],"9":["39607",5,"Arkham","99","1368893","100"],"12":["38503",5,"Pomp\u00e9i","113","1368072","100"],"13":["38412",5,"Village de moustapha910","38","1366874","100"],"14":["39396",5,"Village de kevin70","26","1368725","100"]},"1":{"5":["40424",16,"Village bonus","38","0","100",["10% de population en plus","bonus\/farm.png"]],"11":["40443",5,"Village de Mr.Creeper78","71","1369451","100"],"14":["37441",5,"Village de robot","26","1367307","100"],"15":["36763",5,"Village de Invit\u00e9366791","26","1366791","100"],"17":["39035",5,"Village de soso59","26","1368463","100"],"18":["38249",5,"Village de Invit\u00e9367881","28","1367881","100"],"19":["36155",5,"Village de alix010","38","1366362","100"]},"2":{"12":["38235",5,"X31gigi-1","190","580000","100"],"16":["37052",5,"Village de paul one","38","1367025","100"],"19":["38407",5,"Markuscoville","230","1367983","100"]},"3":{"13":["40288",5,"Sarregumines","101","1344049","100"],"18":["38859",4,0,"57","0","100"],"19":["38415",5,"Village de fafa45","34","1367994","100"]},"4":{"9":["40514",16,"Village bonus","33","0","100",["100% de production d'argile en plus","bonus\/stone.png"]],"12":["40325",5,"Village de Alcator","46","1369370","100"],"15":["39513",5,"Village de yannis57680","28","1037256","100"],"16":["38202",4,0,"66","0","100"]},"5":{"7":["40780",5,"Village de Invit\u00e9369704","40","1369704","100"],"12":["39732",5,"Village de isangard","124","208112","100"],"16":["39516",5,"Village de jjioklpmpokjgfd","32","1368820","100"],"18":["39381",5,"Village de Invit\u00e9368716","26","1368716","100"]},"6":{"14":["39051",5,"the box","82","398788","100"],"16":["38092",5,"steph2014","237","1367790","100"],"18":["38332",5,"Village de Invit\u00e9367936","28","1367936","100"]},"7":{"14":["39945",5,"Village de clemv12","38","1369119","100"],"16":["39585",5,"Village de mathberis","26","1196737","100"]},"8":{"19":["38696",5,"Village de tierceulieux","45","1368216","100"]},"9":{"19":["39988",5,"Village de Overlord06061991","26","1145450","100"]},"11":{"19":["38793",5,"Village de ghosta88","26","1061127","100"]}},"players":{"2048":["nhl2009","448","3880",0],"3396":["Temp\u00eate","26","0","demain \u00e0 12:41"],"7086":["achille-jonathan","262","0","aujourd'hui \u00e0 14:19"],"7597":["Ruan","33","0",0],"22679":["boy n tha hood","121","0","le 04.03. \u00e0 19:11"],"29121":["jeremail","38","0","le 04.03. \u00e0 05:09"],"143017":["yoguiz","169","4920","aujourd'hui \u00e0 16:02"],"208112":["isangard","124","0","le 04.03. \u00e0 21:10"],"229793":["killian10","137","0",0],"338178":["Junichi","419","0",0],"398788":["THE BLACK MASTER","82","0","le 04.03. \u00e0 05:25"],"448735":["torado-tortanke","196","0",0],"496756":["drusyc","127","4101","le 05.03. \u00e0 15:01"],"518632":["dam38","211","0","demain \u00e0 13:22"],"569371":["ol91","439","1218",0],"580000":["X31gigi","190","1218","demain \u00e0 07:04"],"720324":["bhrama","120","0","le 04.03. \u00e0 06:13"],"825767":["nolhan63","314","4161",0],"904112":["ABRAXAR","508","4604",0],"969445":["micka-63","330","3880","demain \u00e0 03:57"],"1020325":["tiitiine88","466","3880","demain \u00e0 19:50"],"1031350":["noah45","26","0","demain \u00e0 15:17"],"1033104":["Snaaps","1.076","3947",0],"1037256":["yannis57680","28","0","le 04.03. \u00e0 17:26"],"1052220":["Dar-devil","124","0","demain \u00e0 10:46"],"1061127":["ghosta88","26","0","demain \u00e0 19:36"],"1083876":["THOR9370","165","4920",0],"1093770":["Dimitri333","26","0","aujourd'hui \u00e0 13:24"],"1108917":["SpaceMarine2205","26","0",0],"1120244":["Warrior King","26","0","le 05.03. \u00e0 17:37"],"1122521":["Aavak","33","0",0],"1125205":["freddy68","302","0","aujourd'hui \u00e0 17:42"],"1127163":["altair","49","0","le 05.03. \u00e0 10:56"],"1129012":["titoine1","159","4573","le 04.03. \u00e0 21:15"],"1135450":["eHoH","675","3880",0],"1137334":["yaya63","26","0",0],"1145450":["Overlord06061991","26","0","le 05.03. \u00e0 10:17"],"1154943":["andrenoworezki","26","0",0],"1168302":["ILoveHaters","132","0","le 04.03. \u00e0 11:55"],"1172003":["loura","26","0","le 05.03. \u00e0 19:21"],"1173515":["ArTiiC-xSiLence","107","0","le 06.03. \u00e0 04:30"],"1187361":["cloud","136","4789","demain \u00e0 16:22"],"1196737":["mathberis","26","0","le 04.03. \u00e0 18:42"],"1203380":["Pologne","200","58","le 04.03. \u00e0 22:32"],"1204506":["Durther","26","0","le 04.03. \u00e0 21:39"],"1241014":["redlynx","26","0",0],"1265642":["Iweko","26","0","le 05.03. \u00e0 14:13"],"1268357":["flo.69","26","0","aujourd'hui \u00e0 18:48"],"1286152":["oO GROS Oo","46","4871","le 06.03. \u00e0 03:21"],"1290070":["tatan26","26","0",0],"1304945":["munchkin0311","296","4868","demain \u00e0 11:48"],"1330122":["robzrafa","136","0",0],"1344049":["slave","101","0","le 05.03. \u00e0 15:03"],"1345896":["liliux","53","0",0],"1348184":["Ben ArmA","329","0",0],"1362005":["Invit\u00e9362005","28","0",0],"1362868":["zaki","42","0",0],"1362884":["victor66","38","0",0],"1363338":["HaineDy","114","0",0],"1363351":["armando","42","0",0],"1363515":["ferao10vm","26","0",0],"1363812":["mariketa","208","4210",0],"1363937":["oranec","26","0",0],"1363951":["vouvouch","26","0",0],"1364098":["gionni","42","0",0],"1364153":["Abakar Mht Issa","26","0",0],"1364290":["Ariane","26","0",0],"1364297":["Kinokks","56","0",0],"1364358":["Despinosa","26","0",0],"1364414":["Romualde","52","0",0],"1364449":["Invit\u00e9364449","49","0",0],"1364530":["Invit\u00e9364530","71","0",0],"1364560":["Invit\u00e9364560","118","0",0],"1364578":["pacha71","240","4410",0],"1364869":["Invit\u00e9364869","76","0",0],"1364960":["dombal70","26","0",0],"1365056":["MrBoekske","296","4161",0],"1365063":["Mr TiTi","317","4161",0],"1365074":["Invit\u00e9365074","26","0",0],"1365119":["Rayderr","32","0",0],"1365178":["ZouziX","441","3880",0],"1365235":["Kaya15","26","0",0],"1365257":["celest98","360","3880",0],"1365352":["Invit\u00e9365352","28","0",0],"1365428":["romainpapa","26","0",0],"1365431":["NICOLAS -6","63","0",0],"1365432":["Jazyy","38","0",0],"1365499":["stevi45","62","4410",0],"1365632":["victor4","26","0",0],"1365670":["StaaRz","71","0",0],"1365676":["Invit\u00e9365676","58","0",0],"1365682":["Valkyrie26","38","0",0],"1365725":["Zaracos","275","0","aujourd'hui \u00e0 21:36"],"1365779":["NiNiNE","103","0",0],"1366083":["Invit\u00e9366083","26","0",0],"1366085":["Invit\u00e9366085","38","0",0],"1366086":["yopougon","38","0",0],"1366093":["aru-ll","32","0",0],"1366160":["destruc","38","0",0],"1366203":["tosma","102","4585",0],"1366216":["Amesophie","42","4583",0],"1366242":["maximeauric","39","0",0],"1366302":["itch","28","0",0],"1366353":["lin1876","90","0",0],"1366354":["ANONYMUS77130","30","0",0],"1366362":["alix010","38","0",0],"1366363":["romalek","38","0",0],"1366418":["morganedm","74","0",0],"1366420":["Invit\u00e9366420","26","0",0],"1366449":["Stabat","96","0",0],"1366461":["Memoh68","103","3401",0],"1366548":["Xxlorenzo94","26","0",0],"1366601":["kitiku","109","4650",0],"1366791":["Invit\u00e9366791","26","0",0],"1366799":["abraxas19","26","0",0],"1366816":["ninjanany","96","0",0],"1366823":["Dori","26","0",0],"1366835":["broken15","68","0",0],"1366870":["Invit\u00e9366870","26","0",0],"1366874":["moustapha910","38","0","demain \u00e0 12:43"],"1367025":["paul one","38","0",0],"1367060":["toscani9","84","4789",0],"1367117":["buzzmcnab","41","0",0],"1367131":["scamkiv","32","0",0],"1367196":["nico6","26","0",0],"1367307":["robot","26","0","aujourd'hui \u00e0 10:55"],"1367326":["titi2207","38","0","aujourd'hui \u00e0 11:17"],"1367344":["hmaxence","40","0","aujourd'hui \u00e0 11:51"],"1367365":["lisa3158","68","0","aujourd'hui \u00e0 12:34"],"1367481":["Yrax","91","0","aujourd'hui \u00e0 15:05"],"1367511":["belieber","26","0","aujourd'hui \u00e0 15:38"],"1367528":["stef808","225","4797","aujourd'hui \u00e0 16:07"],"1367530":["THYgroux62","56","0","aujourd'hui \u00e0 16:08"],"1367589":["Invit\u00e9367589","26","0","aujourd'hui \u00e0 17:31"],"1367655":["moilol1","76","0","aujourd'hui \u00e0 18:58"],"1367705":["Arrox","26","0","aujourd'hui \u00e0 19:58"],"1367758":["harry5519","188","0","aujourd'hui \u00e0 21:26"],"1367788":["Aguilo","38","0","aujourd'hui \u00e0 22:11"],"1367790":["steph2014","237","3880","aujourd'hui \u00e0 22:12"],"1367799":["beekeeper","280","3880","aujourd'hui \u00e0 22:21"],"1367806":["Invit\u00e9367806","28","0","aujourd'hui \u00e0 22:48"],"1367813":["Super Adri 1","26","0","aujourd'hui \u00e0 23:12"],"1367881":["Invit\u00e9367881","28","0","demain \u00e0 07:59"],"1367904":["Judykaell","50","0","demain \u00e0 09:53"],"1367936":["Invit\u00e9367936","28","0","demain \u00e0 11:08"],"1367957":["ybhparis","106","0","demain \u00e0 11:44"],"1367983":["Markusco","230","0","demain \u00e0 12:32"],"1367994":["fafa45","34","0","demain \u00e0 12:47"],"1368072":["Raindream1712","113","4885","demain \u00e0 15:05"],"1368107":["lollion141","98","0","demain \u00e0 15:57"],"1368179":["Toto3tr3m","67","4898","demain \u00e0 17:36"],"1368216":["Invit\u00e9368216","45","0","demain \u00e0 18:23"],"1368237":["Invit\u00e9368237","26","0","demain \u00e0 18:44"],"1368267":["titi88","28","0","demain \u00e0 19:15"],"1368274":["Invit\u00e9368274","26","0","demain \u00e0 19:18"],"1368282":["Invit\u00e9368282","28","0","demain \u00e0 19:31"],"1368359":["Invit\u00e9368359","26","0","demain \u00e0 21:32"],"1368375":["Invit\u00e9368375","26","0","demain \u00e0 21:57"],"1368463":["soso59","26","0","le 04.03. \u00e0 02:49"],"1368677":["padair","53","0","le 04.03. \u00e0 14:34"],"1368716":["Invit\u00e9368716","26","0","le 04.03. \u00e0 15:20"],"1368725":["kevin70","26","0","le 04.03. \u00e0 15:34"],"1368747":["samuel10","26","0","le 04.03. \u00e0 16:10"],"1368754":["Reyde","141","3880","le 04.03. \u00e0 16:19"],"1368807":["qqlos","34","0","le 04.03. \u00e0 17:17"],"1368820":["jjioklpmpokjgfd","32","0","le 04.03. \u00e0 17:36"],"1368873":["louar","174","4573","le 04.03. \u00e0 18:40"],"1368880":["anonymous weed","26","0","le 04.03. \u00e0 19:05"],"1368893":["itsclairette","99","0","le 04.03. \u00e0 18:56"],"1368961":["Invit\u00e9368961","26","0","le 04.03. \u00e0 20:25"],"1368968":["maxime95","71","0","le 04.03. \u00e0 20:51"],"1368996":["morgan11802","50","0","le 04.03. \u00e0 21:58"],"1369018":["MIMI141","38","0","le 04.03. \u00e0 22:37"],"1369037":["Rokia","26","0","le 04.03. \u00e0 23:49"],"1369090":["matheo0003","42","0","le 05.03. \u00e0 05:03"],"1369119":["clemv12","38","0","le 05.03. \u00e0 09:30"],"1369206":["Invit\u00e9369206","58","0","le 05.03. \u00e0 11:41"],"1369311":["Jefferwinner","26","0","le 05.03. \u00e0 14:10"],"1369319":["akiro5","154","4488","le 05.03. \u00e0 14:20"],"1369330":["HorsEpic","98","0","le 05.03. \u00e0 14:40"],"1369370":["Alcator","46","0","le 05.03. \u00e0 15:38"],"1369389":["deadkiller67","26","0","le 05.03. \u00e0 16:00"],"1369426":["zakaraga","56","0","le 05.03. \u00e0 16:45"],"1369439":["Kerian-N","72","0","le 05.03. \u00e0 17:04"],"1369451":["Mr.Creeper78","71","0","le 05.03. \u00e0 17:18"],"1369492":["aissatoub","26","0","le 05.03. \u00e0 18:04"],"1369554":["Invit\u00e9369554","40","0","le 05.03. \u00e0 19:13"],"1369569":["ursilaxs","35","0","le 05.03. \u00e0 19:37"],"1369620":["lavue","30","0","le 05.03. \u00e0 20:52"],"1369641":["lolipop56","38","0","le 05.03. \u00e0 21:30"],"1369650":["Yann 53","72","0","le 05.03. \u00e0 21:49"],"1369667":["kingerick","38","0","le 05.03. \u00e0 22:49"],"1369704":["Invit\u00e9369704","40","0","le 06.03. \u00e0 00:02"],"1369777":["Invit\u00e9369777","26","0","le 06.03. \u00e0 09:06"]},"allies":{"58":["THE SPARTIATES PRIMATES","40.707","TSP"],"1218":["Les Insoumis","34.594","LI"],"3401":["la renaissance","11.085","LaR"],"3880":["Team War","14.816","=TW="],"3947":["Les Eorlingas","17.662","Eorl"],"4101":["BrosBeforeHoes","1.984","-BBH-"],"4161":["R\u00e9demption","5.363","RED"],"4210":["les noodles","580","nood"],"4410":["leagle of legend","510","L.O.L"],"4488":["Insomniak","1.475","isK"],"4573":["League of Crack","6.311","LoC"],"4583":["Amesophie","42","soso"],"4585":["CESAR","102","CSR"],"4604":["Liberty","508","-LBT-"],"4650":["~RO~","109","~RO~"],"4789":["CROW ZERO","220","CORBO"],"4797":["pinbask","446","pb"],"4868":["Les potos","296","{LP}"],"4871":["Bi\u00e8re Moule Frite","233.377","BMF"],"4885":["La tribu de Dana","113","LTD"],"4898":["Black-Devil","67","tonio"],"4920":["Avengers9370","334","AGS"]}}}];
+
+
+//]]>
+</script>
+
+
+<table cellspacing="0" cellpadding="0">
+    <tr>
+	<td  id="map_big" class="map_big visible" valign="top">
+			<div id="worldmap" class="popup_style" style="">
+	<form name="worldmap" action="" method="post">
+		<!--  WORLDMAP HEAD -->
+		<div id="worldmap_header">
+			<div class="close popup_menu">
+				<a href="javascript:void(0);" onclick="Worldmap.toggle(); return false;">fermer</a>
+			</div>
+
+			
+			<input type="hidden" name="min_x" value="300" />
+			<input type="hidden" name="min_y" value="300" />
+		</div>
+
+		<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/throbber.gif?3286b" id="worldmap-throbber" alt="Loading..." style="display:none" class="" />
+
+		<div id="worldmap_body">
+			<div id="worldmap_image">
+				<input type="image" src="/graphic/transparent.png" />
+			</div>
+
+					</div>
+
+		<div id="worldmap_footer">
+			<table style="text-align:left;display:inline;">
+				<tr>
+					<th>Villages</th>
+					<th>Barbares</th>
+					<th>%</th>
+					<th>Ta tribu</th>
+					<th>%</th>
+					<th>Le tien</th>
+					<th>%</th>
+				</tr>
+				<tr>
+					<td>37388</td>
+					<td>19620</td>
+					<td>52.48</td>
+					<td></td>
+					<td>0</td>
+					<td>1</td>
+					<td>0</td>
+				</tr>
+			</table>
+		</div>
+	</form>
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+	$(document).ready(function() {
+		Worldmap.init(0);
+	});
+//]]>
+</script>		<div class="containerBorder narrow" id="map_whole">
+	<table cellspacing="0" cellpadding="0" class="map_container" style="border-spacing: 0">
+		<tr>
+			<td></td>
+			<td align="center" onclick="TWMap.scrollBlock(0, -1); return false;" class="map_navigation">
+				<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/map/map_n.png?1536a" alt="map/map_n.png" style="z-index:1; position:relative;" class="" />
+			</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td align="center" onclick="TWMap.scrollBlock(-1, 0); return false;" class="map_navigation">
+				<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/map/map_w.png?d2d62" alt="map/map_w.png" style="z-index:1; position:relative;" class="" />
+			</td>
+
+			<td style="padding: 0">
+				<div id="map_wrap" style="position:relative;">
+				 	<div id="map_coord_y_wrap" style="height:325px;">
+						<div id="map_coord_y" style="position:absolute; left:0px; top:0px; height:38000px; overflow: visible;"></div>					</div>
+					<div id="map_coord_x_wrap" style="width:477px; ">
+						<div id="map_coord_x" style="position:absolute; left:0px; top:0px; width:53000px; overflow: visible;"></div>					</div>
+					<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/fullscreen.png?cbd22" id="fullscreen" onclick="TWMap.goFullscreen()" alt="" class="" />
+					<a class="mp" id="mp_res" title="Envoyer des ressources" href="/game.php?screen=map"></a>
+					<a class="mp" id="mp_att" title="Envoyer des troupes" href="/game.php?screen=map"></a>
+					<a class="mp" id="mp_lock" title="Réserver le village" href="/game.php?screen=map"></a>
+					<a class="mp" id="mp_unlock" title="Supprimer la réservation" href="/game.php?screen=map"></a>
+					<a class="mp" id="mp_fav" title="Ajouter aux favoris" href="/game.php?screen=map"></a>
+					<a class="mp" id="mp_unfav" title="Supprimer des favoris" href="/game.php?screen=map"></a>
+					<a class="mp" id="mp_msg" title="Écrire un message" href="/game.php?screen=map"></a>
+					<a class="mp" id="mp_profile" title="Afficher le profil du joueur" href="/game.php?screen=map"></a>
+					<a class="mp" id="mp_overview" title="Aperçu du village" href="/game.php?screen=map"></a>
+					<a class="mp" id="mp_recruit" title="Recrutement" href="/game.php?screen=map"></a>
+					<a class="mp" id="mp_tab" title="Afficher dans un nouvel onglet" href="/game.php?screen=map"></a>
+					<a class="mp" id="mp_info" title="Informations du village" href="/game.php?screen=map"></a>
+										<a class="mp" id="mp_invite" title="Inviter joueur" href="/game.php?screen=map"></a>
+					<a class="mp" id="mp_invite_hide" title="Cacher l'invitation" href="/game.php?screen=map"></a>
+
+										<a id="map" href="#" style="width:477px; height:342px;overflow:hidden;position:relative;background-image:url('http://cdn.guerretribale.fr/8.19/19813/graphic/map/v2/gras4.png?ec0d2');">
+						<div id="map_blend" style="position:absolute; top:0px; left:0px; width:100%; height:100%; background-color:black; z-index: 20; opacity:0;  "></div>
+					</a>
+									</div>
+			</td>
+
+			<td align="center" onclick="TWMap.scrollBlock(1, 0); return false;" class="map_navigation">
+				<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/map/map_e.png?48510" alt="map/map_e.png" style="z-index:1; position:relative;" class="" />
+			</td>
+		</tr>
+
+
+		<tr>
+			<td></td>
+
+			<td align="center" onclick="TWMap.scrollBlock(0, 1); return false;" class="map_navigation">
+				<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/map/map_s.png?d721d" alt="map/map_s.png" style="z-index:1; position:relative;" class="" />
+			</td>
+
+			<td></td>
+		</tr>
+	</table>
+	</div>
+				<br/>
+		<div class="containerBorder" style="float: left; margin-bottom: 15px;">
+<table style="border:solid 1px #8c5f0d; background-color: #f4e4bc; margin-left: 0px; border-collapse:separate; text-align:left;">
+	<tr class="nowrap">
+		<td class="small" valign="top">Standard : </td>
+		<td>
+			<div class="map_legend">
+				<div style="background-color:rgb(255,255,255)"></div> <span>Sélectionné</span>
+			</div>
+			<div class="map_legend">
+				<div style="background-color:rgb(240,200,0)"></div> <span>Tes villages</span>
+			</div>
+            <div class="map_legend">
+                <div style="background-color:rgb(69,255,146)"></div> <span>Amis</span>
+            </div>
+			<div class="map_legend" style="clear: both">
+				<div style="background-color:rgb(0,0,244)"></div> <span>Ta tribu</span>
+			</div>
+			<div class="map_legend" >
+				<div style="background-color:rgb(150,150,150)"></div> <span>Barbare</span>
+			</div>
+			<div class="map_legend">
+				<div style="background-color:rgb(130,60,10)"></div> <span>Autre</span>
+			</div>
+		</td>
+	</tr>
+			</table>
+</div>
+<br />
+
+
+		<script type="text/javascript">
+		//<![CDATA[
+		
+				
+						
+		
+        
+		
+				//]]>
+		</script>
+			</td>
+
+	<td id="map_topo" class="map_topo" valign="top">
+		<div class="containerBorder" id="minimap_whole">
+		<table cellspacing="0" cellpadding="0" class="map_container minimap_container" style="border-spacing: 0">
+			<tr>
+				<td align="center">
+					<img alt="Nord Ouest" class="dir_arrow" onclick="TWMap.scrollBlock(-1, -1); return false;" style="z-index: 1; position: relative;" src="/graphic/map/map_nw.png?1" />
+				</td>
+				<td align="center">
+					<img alt="Nord" class="dir_arrow" onclick="TWMap.scrollBlock(0, -1); return false;" style="z-index: 1; position: relative;" src="/graphic/map/map_n.png?1" />
+				</td>
+				<td align="center">
+					<img alt="Nord Est" class="dir_arrow" onclick="TWMap.scrollBlock(1, -1); return false;" style="z-index: 1; position: relative;" src="/graphic/map/map_ne.png?1" />
+				</td>
+			</tr>
+			<tr>
+				<td align="center">
+					<img alt="Ouest" class="dir_arrow" onclick="TWMap.scrollBlock(-1, 0); return false;" style="z-index: 1; position: relative;" src="/graphic/map/map_w.png?1" />
+				</td>
+				<td style="padding: 0" id="minimap_cont">
+					<div id="minimap" style="overflow:hidden; position:relative; padding:0px;width:250px; height:250px">
+						<div id="minimap_viewport" style="border:1px solid white; position: absolute; z-index:10;"></div>
+					</div>
+				</td>
+				<td align="center">
+					<img alt="Est" class="dir_arrow" onclick="TWMap.scrollBlock(1, 0); return false;" style="z-index: 1; position: relative;" src="/graphic/map/map_e.png?1" />
+				</td>
+			</tr>
+			<tr>
+				<td align="center">
+					<img alt="Sud Ouest" class="dir_arrow" onclick="TWMap.scrollBlock(-1, 1); return false;" style="z-index: 1; position: relative;" src="/graphic/map/map_sw.png?1" />
+				</td>
+				<td align="center">
+					<img alt="Sud" class="dir_arrow" onclick="TWMap.scrollBlock(0, 1); return false;" style="z-index: 1; position: relative;" src="/graphic/map/map_s.png?1" />
+				</td>
+				<td align="center">
+					<img alt="Sud Est" class="dir_arrow" onclick="TWMap.scrollBlock(1, 1); return false;" style="z-index: 1; position: relative;" src="/graphic/map/map_se.png?1" />
+				</td>
+			</tr>
+		</table>
+		</div>
+		<div id="map_config">
+					<div style="margin-top:10px;margin-bottom:10px;">
+							<a href="javascript:void(0);" onclick="Worldmap.toggle()">&raquo; Afficher la carte du monde</a><br/>
+			
+			</div>
+		
+
+			<table class="vis" style="border-spacing:0px;border-collapse:collapse;" width="100%">
+		<tr>
+			<th colspan="3">Afficher les options</th>
+		</tr>
+
+		
+		
+		
+				<tr>
+			<td>
+				<input type="checkbox" name="usecontext" onclick="TWMap.context.toggleUse();" id="classiclink" checked="checked" />
+			</td>
+			<td>
+				<label for="classiclink">
+					Activer le menu contextuel
+				</label>
+			</td>
+			<td></td>
+		</tr>
+		
+					<tr>
+	<td>
+		<input type="checkbox" id="show_popup" />
+	</td>
+	<td>
+		<label for="show_popup">Afficher les pop-ups</label>
+	</td>
+	<td width="18">
+			</td>
+</tr>
+		
+		</table>
+		</div>
+		<br />
+		<form action="" method="post">
+		    <table class="vis"  width="100%" style="border-spacing:0px;border-collapse:collapse;">
+			<tr>
+			    <th colspan="3">Centrer sur la carte</th>
+			</tr>
+			<tr>
+			    <td class="nowrap">
+			    x:&nbsp;<input type="text" name="x" id="inputx" class="centercoord" value="617" size="5" onkeyup="xProcess('inputx', 'inputy')" />
+			    y:&nbsp;<input type="text" name="y" id="inputy" class="centercoord" value="352" size="5" />
+			    </td>
+			    <td>
+				<input class="btn" type="submit" onclick="return TWMap.focusSubmit();" value="OK" />
+			    </td>
+				<td width="18">
+				</td>
+			</tr>
+		    </table>
+		</form>
+		
+
+
+	</td>
+    </tr>
+</table>
+
+<!-- Translations -->
+	<input type="hidden" id="newbieProt" value="La cible est encore sous la protection des débutants. Il te sera possible d'attaquer à partir %s."/>
+	<input type="hidden" id="barbarianVillage" value="Village barbare"/>
+	<input type="hidden" id="pointFormat" value="%s (%s points)"/>
+	<input type="hidden" id="villageFormat" value="%name% (%x%|%y%) C%con% "/>
+	<input type="hidden" id="villageNotes" value="Carnet de notes"/>
+	<input type="hidden" id="villageFavoriteAdded" value="Le village a été ajouté aux favoris."/>
+	<input type="hidden" id="villageFavoriteRemoved" value="Le village a été supprimé des favoris."/>
+	<input type="hidden" id="barbarianVillage" value="Village barbare"/>
+	<input type="hidden" id="changesSaved" value="Tes modifications ont été sauvegardées."/>
+	<input type="hidden" id="confirmCenterDelete" value="Es-tu sûr de vouloir supprimer '%name%' ?"/>
+	<input type="hidden" id="troopsSent" value="Les unités ont été envoyées."/>
+
+	<script type="text/javascript">
+//<![CDATA[
+
+$(document).ready(function() {
+	
+	
+	TWMap.autoPixelSize = $(window).width() - 100;
+	TWMap.autoSize = Math.ceil(TWMap.autoPixelSize / TWMap.tileSize[0]);
+
+			TWMap.size = [9, 9];
+	
+	TWMap.popup.extraInfo = false;
+	
+	TWMap.church.displayed = false;
+
+	TWMap.init();
+	TWMap.focus(617, 352, false);
+	
+	TWMap.context.init();
+
+	
+	
+	// Allow resize of map when iPhone/Android phone is flipped.
+
+	if(mobile) {
+		var resizeTimer = null;
+		var flippingSupported = "onorientationchange" in window,
+			flipEvent = flippingSupported ? "orientationchange" : "resize";
+
+		window.addEventListener(flipEvent, function() {
+			var autoSelected = (parseInt($('#map_chooser_select').val()) == 0);
+			if(autoSelected) {
+				if (resizeTimer === null) {
+					resizeTimer = setTimeout(function() {
+						TWMap.resize(0, false);
+						resizeTimer = null;
+					}, 500);
+				}
+			}
+		}, false);
+	}
+	
+});
+//]]>
+</script>
+
+<script type="text/html" id="tpl_popup">
+
+	<table id="info_content" class="vis" style="background-color: #e5d7b2; width:auto">
+<% if (special == 'ghost') { %>
+	<tr>
+		<th colspan="2">Lieu d'invitation</th>
+	</tr>
+	<tr>
+		<td colspan="2">Invite un ami à rejoindre dans ton voisinage !</td>
+	</tr>
+<% } else { %>
+<% if (bonus) { %>
+	<tr id="info_bonus_image_row" >
+		<td id="info_bonus_image" rowspan="14"><img src="<%= bonus.img %>" /></td>
+	</tr>
+<% } /* end bonus */ %>
+
+	<tr>
+		<th colspan="2"><%== '%name% (%x%|%y%) C%continent% ' %></th>
+	</tr>
+
+
+<% if (bonus) { %>
+	<tr id="info_bonus_text_row">
+		<td colspan="2"><strong id="info_bonus_text"><%= bonus.text %></strong></td>
+	</tr>
+<% } /* end bonus */ %>
+<% if (points) { %>
+	<tr id="info_points_row">
+		<td width="100px">Points :</td>
+		<td id="info_points"><%= points %></td>
+	</tr>
+<% } /* end points */ %>
+<% if (owner) { %>
+	<tr id="info_owner_row">
+		<td>Propriétaire :</td>
+		<td><%== '%name% (%points% Points) ', owner %></td>
+	</tr>
+<% } else if (points == 0) { %>
+	<tr id="info_left_row">
+		<td colspan="2">Emplacement de l'événement.</td>
+	</tr>
+<% } else { %>
+	<tr id="info_left_row">
+		<td colspan="2">abandonné</td>
+	</tr>
+<% } /* end owner */ %>
+
+<% if (ally) { %>
+	<tr id="info_ally_row">
+		<td>Tribu :</td>
+		<td><%== '%name% (%points% Points) ', ally %></td>
+	</tr>
+<% } /* end ally */ %>
+<% if (extra && extra.reservation && $('#map_popup_reservation').is(":checked")) { %>
+	<tr><td>Réservé par :</td><td id="info_reserved_by"><%= extra.reservation.name %> [<%= extra.reservation.ally%>]</td></tr>
+	<tr><td>La réservation expire dans :</td><td id="info_reserved_till"><%= extra.reservation.expires_at %></td></tr>
+<% } %>
+<% if (extra && extra.attack && $('#map_popup_attack').is(":checked")) { %>
+	<tr>
+		<td>Dernière attaque :</td>
+		<td id="info_last_attack">
+			<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/<%= TWMap.popup.attackDots[extra.attack.dot]%>" title="" alt="" class="" />
+			<% if (extra.attack.dot != 4) { %>
+				<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/<%= TWMap.popup.attackMaxLoot[extra.attack.max_loot]%>" title="" alt="" class="" />
+			<% } %>
+
+			<%= extra.attack.time %>
+		</td>
+	</tr>
+<% } %>
+<% if (extra && extra.attack_intel && $('#map_popup_attack_intel').is(":checked")) { %>
+	<tr>
+		<td>Dernières nouvelles :</td>
+		<td id="info_last_attack_intel">
+			<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/<%= TWMap.popup.attackDots[extra.attack_intel.dot]%>" title="" alt="" class="" />
+			<% if (extra.attack_intel.dot != 4) { %>
+				<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/<%= TWMap.popup.attackMaxLoot[extra.attack_intel.max_loot]%>" title="" alt="" class="" />
+			<% } %>
+
+			<%= extra.attack_intel.time %>
+			<% if (extra.attack_intel.start_player) { %>
+				<%== 'de %start_player%', extra.attack_intel %>
+			<% } %>
+		</td>
+	</tr>
+<% } %>
+<% if (extra && extra.morale && $('#map_popup_moral').is(":checked") && TWMap.morale) { %>
+	<tr id="info_moral_row">
+		<td>Moral :</td>
+		<td id="info_moral"><%= Math.round(100 * extra.morale) %>%</td>
+	</tr>
+<% } %>
+<% if (extra && extra.groups && extra.groups.length) { %>
+	<tr id="info_village_groups_row">
+		<td>Groupes :</td>
+		<td id="info_village_groups"><%= extra.groups.join(', ') %></td>
+	</tr>
+<% } %>
+<% if (extra && extra.flag && $('#map_popup_flag').is(":checked")) { %>
+	<tr id="info_flag">
+		<td>Drapeau :</td>
+		<td id="info_village_flag"><img src="<%= extra.flag.image_path %>"></img> <%= extra.flag.short_desc %></td>
+	</tr>
+<% } %>
+<% if (owner && owner.newbie_time) { %>
+	<tr id="info_newbie_protect_row">
+		<td colspan="2"><%== 'La cible est encore sous la protection des débutants. Il te sera possible d\'attaquer à partir %newbie_time%.', owner %></td>
+	</tr>
+<% } /* end newbie */ %>
+<% if (extra && extra.resources && $('#map_popup_res').is(":checked")) { %>
+	<tr>
+		<td colspan="2">
+			<table cellpadding="3" class="nowrap">
+				<tr>
+					<% if (extra.resources.wood) { %>
+						<td><img src="http://cdn.guerretribale.fr/8.19/19813/graphic/holz.png?a3702" title="" alt="" class="" /> <%= extra.resources.wood %></td>
+					<% } %>
+					<% if (extra.resources.stone) { %>
+						<td><img src="http://cdn.guerretribale.fr/8.19/19813/graphic/lehm.png?6c9bd" title="" alt="" class="" /> <%= extra.resources.stone %></td>
+					<% } %>
+					<% if (extra.resources.iron) { %>
+						<td><img src="http://cdn.guerretribale.fr/8.19/19813/graphic/eisen.png?0e9e5" title="" alt="" class="" /> <%= extra.resources.iron %></td>
+					<% } %>
+					<% if (extra.resources.max) { %>
+						<td><img src="http://cdn.guerretribale.fr/8.19/19813/graphic/res.png?0fdfc" title="" alt="" class="" /> <%= extra.resources.max %></td>
+					<% } %>
+				</tr>
+			</table>
+		</td>
+	</tr>
+<% } %>
+<%
+  var showPopulation = extra && extra.population && $('#map_popup_pop').is(":checked");
+  var showTrader = extra && extra.trader && $('#map_popup_trader').is(":checked");
+%>
+
+<% if (showPopulation || showTrader) { %>
+	<tr>
+		<% if (showPopulation && showTrader) { %>
+		<td>
+		<% } else { %>
+		<td colspan="2">
+		<% } %>
+
+		<% if (showPopulation) { %>
+			<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/face.png?203fc" title="" alt="" class="" /> <%= extra.population.current %>/<%= extra.population.max %>
+		<% } %>
+
+		<% if (showPopulation && showTrader) { %> </td><td> <% } %>
+
+		<% if (showTrader) { %>
+			<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/overview/trader.png?4df99" title="" alt="" class="" /> <%= extra.trader.current %>/<%= extra.trader.total %>
+		<% } %>
+		</td>
+	</tr>
+<% } %>
+<%
+  var bg_colors = ['F8F4E8', 'DED3B9'];
+  if (units.length > 0) {
+%>
+	<tr>
+		<td colspan="2">
+			<table style="border:1px solid #DED3B9" width="100%" cellpadding="0" cellspacing="0">
+				<tr class="center">
+					<% for (var i = 0; i < units.length; i++) { %>
+					<td style="padding:2px;background-color:#<%= bg_colors[i%2] %>">
+						<img src="http://cdn.guerretribale.fr/8.19/19813/graphic/<%= units[i].image %>" title="" alt="" class="" />
+					</td>
+					<% } %>
+				</tr>
+				<% if (units_display.count) { %>
+				<tr class="center">
+					<% for (var i = 0; i < units.length; i++) { %>
+					<td style="padding:2px;background-color:#<%= bg_colors[i%2] %>">
+						<%= units[i].count %>
+					</td>
+					<% } %>
+				</tr>
+				<% } /* end unit count */ %>
+				<% if (units_display.time) { %>
+				<tr class="center">
+					<% for (var i = 0; i < units.length; i++) { %>
+					<td style="padding:2px;background-color:#<%= bg_colors[i%2] %>">
+						<%= units[i].time %>
+					</td>
+					<% } %>
+				</tr>
+				<% } /* end unit times */ %>
+
+			</table>
+		</td>
+	</tr>
+<%
+  } /* end units */
+%>
+<% if (extra && extra.notes && $('#map_popup_notes').is(':checked')) { %>
+	<tr>
+		<td colspan="2"><hr /><u>Carnet de notes :</u><%= extra.notes %></td>
+	</tr>
+<% } /* end notes */ %>
+<% if (extra === false) { %>
+	<tr>
+		<td colspan="2"><table><tr><td><img src="http://cdn.guerretribale.fr/8.19/19813/graphic/throbber.gif?3286b" title="" alt="" class="" /></td><td>Chargement des informations...</td></tr></table></td>
+	</tr>
+<% } %>
+
+<% } %>
+
+</table>
+</script>
+<div id="map_popup" class="nowrap" style="position:absolute; top:0px; left:0px; min-width:150px; display:none; z-index:20; direction:ltr;">
+</div>
+
+
+
+	                               		</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+
+		<p class="server_info">
+			Page générée en 94 ms <b>|</b> Heure du serveur : <span id="serverTime">9:55:24</span> <span id="serverDate">02/03/2014</span>
+					</p>
+
+	</td>
+	<td class="bg_right" id="SkyScraperAdCell">
+		<div class="bg_right"> </div>
+		<div id="SkyScraperAd"></div>	</td>
+</tr>
+
+						<tr>
+				<td class="bg_leftborder"> </td>
+				<td></td>
+				<td class="bg_rightborder"> </td>
+			</tr>
+			<tr class="newStyleOnly">
+				<td class="bg_bottomleft">&nbsp;</td>
+				<td class="bg_bottomcenter">&nbsp;</td>
+				<td class="bg_bottomright">&nbsp;</td>
+			</tr>
+							<tr><td colspan="3" align="center"><div id="AdBottom"></div></td></tr>
+						</table><!-- .main_layout -->
+					
+<script type="text/javascript">
+//<![CDATA[
+	$(document).ready(function() { 
+		startTimer(); 
+
+	});
+
+    //]]>
+</script>
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-1897727-21']);
+  _gaq.push(['_trackPageview']);
+  _gaq.push(['_gat._anonymizeIp']);
+
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ga);
+  })();
+
+</script>
+
+		
+				<div id="world_selection_clicktrap" class="evt-world-selection-toggle">
+		</div>
+		<div id="world_selection_popup">
+			<div class="servers-list-top"></div>
+			<div id="servers-list-block">
+			
+			</div>
+			<div class="servers-list-bottom"></div>
+		</div>
+		
+		<div id="footer">
+			<div id="linkContainer">
+								<a href="#" class="world_button_active evt-world-selection-toggle">Monde 24</a>
+								<a href="http://forum.guerretribale.fr/index.php" class="footer-link" target="_blank">Forum</a>
+				&nbsp;-&nbsp;
+				<a href="http://help.guerretribale.fr" class="footer-link" target="_blank">Aide</a>
+												&nbsp;-&nbsp;
+				<a href="/game.php?village=40968&amp;mode=ticket&amp;screen=settings" class="footer-link" target="_blank">Support </a>
+													&nbsp;-&nbsp;
+					<a href="/game.php?village=40968&amp;mode=ref&amp;source=bottom_menu&amp;screen=settings" class="footer-link">Inviter des joueurs</a>
+				                				&nbsp;-&nbsp;
+				<a href="/game.php?village=40968&amp;screen=memo" class="footer-link">Carnet de notes</a>
+                				&nbsp;-&nbsp;
+				<a href="/game.php?village=40968&amp;action=logout&amp;h=6581&amp;screen=" target="_top" class="footer-link">Déconnexion</a>
+			</div>
+		</div>
+		
+
+	<script type="text/javascript">
+	<!--
+	$(document).ready(function() {
+		WorldSwitch.init();
+		WorldSwitch.worldsURL = '/game.php?village=40968&ajax=world_switch&screen=api';
+	});
+	// -->
+	</script>
+
+</body>
+</html>
+

@@ -18,13 +18,12 @@ class TestVillageManager(unittest.TestCase):
 
     def setUp(self):
         settings.DEBUG = True
-        # Patch MapStorage class to avoid garbage-creation
+        # Patch Storage class to avoid garbage-creation
         # (shelve file)
-        with patch('bot.libs.village_management.MapStorage',
-                        autospec=True) as patched_storage:
+        with patch('bot.libs.village_management.Storage') as patched_storage:
             patched_storage.get_saved_villages.return_value = {}
             self.village_manager = VillageManager(storage_type='local_file',
-                                                  storage_file_name='map_data')
+                                                  storage_name='map_data')
 
     def tearDown(self):
         settings.DEBUG = False

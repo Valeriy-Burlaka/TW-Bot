@@ -6,7 +6,7 @@ import settings
 from bot.libs.request_management import RequestManager
 
 
-class MapStorageHelper:
+class StorageHelper:
 
     def __init__(self):
         self.storage_path = None
