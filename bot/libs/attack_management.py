@@ -3,7 +3,7 @@ import re
 import logging
 from urllib.parse import urlencode
 
-from bot.libs.map_tools import Storage
+from bot.libs.common_tools import Storage
 
 
 __all__ = ['AttackManager', 'DecisionMaker', 'AttackObserver', 'AttackHelper',

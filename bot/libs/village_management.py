@@ -6,7 +6,8 @@ import logging
 
 from bs4 import BeautifulSoup as Soup
 
-from bot.libs.map_tools import Storage, MapMath
+from bot.libs.map_tools import MapMath
+from bot.libs.common_tools import Storage
 from bot.libs.attack_management import Unit
 
 
