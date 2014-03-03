@@ -12,15 +12,10 @@ __all__ = ['AttackManager', 'DecisionMaker', 'AttackObserver', 'AttackHelper',
 
 class AttackManager:
     """
-
-    Uses AttackQueue class to get sequence of possible attack targets.
-    Uses DecisionMaker to get attack target & amount of troops needed
-    to send an attack.
-    Uses RequestManager to send attack.
-    Uses AttackObserver class to keep track of attacks that were sent
-    (i.e. time points when new reports should be read and when some troops
-    were returned back to Player's villages
-
+    Responsible for providing access to retrieve & update
+    operations on attack targets.
+    Collaborates with AttackObserver, AttackQueue &
+    DecisionMaker classes.
     """
 
     def __init__(self, storage_type, storage_name):
@@ -29,8 +24,9 @@ class AttackManager:
         self.decision_maker = DecisionMaker()
 
     def build_attack_queue(self, target_villages, farm_frequency):
-        targets_pending_arrival = self.attack_observer.arrival_queue
-        self.attack_queue.build_queue(targets_pending_arrival, target_villages,
+        self.attack_observer.restore_saved_attacks()
+        pending_arrival = self.attack_observer.get_targets_pending_arrival()
+        self.attack_queue.build_queue(pending_arrival, target_villages,
                                       farm_frequency)
 
     def update_attack_targets(self, new_reports):
@@ -67,7 +63,7 @@ class AttackManager:
 
     def _get_arrival_return_t(self, t_of_attack, t_on_road):
         t_of_attack = self._convert_t_to_seconds(t_of_attack)
-        t_of_arrival =t_of_attack + t_on_road
+        t_of_arrival = t_of_attack + t_on_road
         t_of_return = t_of_attack + t_on_road * 2
         return t_of_arrival, t_of_return
 
@@ -84,9 +80,12 @@ class AttackManager:
 
 class AttackQueue:
     """
-    Keeps queue of villages basing on distance to them
-    and on remaining/estimated amount of resources to loot.
-    Updates villages with new AttackReports.
+    Provides a .queue of attack targets that helps to keep track of
+    attack targets amongst all player villages.
+    Provides methods to work with .queue:
+    1) get available attack targets from queue
+    2) remove attack target from queue
+    3) update attack targets in queue with new AttackReports
     """
 
     def __init__(self):
@@ -111,15 +110,14 @@ class AttackQueue:
             if coords not in pending_arrival and coords not in self.visited_villages:
                 if not village.last_visited:
                     queue[coords] = village
-                elif village.last_visited:
-                    if self._is_ready_for_farm(village):
-                        queue[coords] = village
-                    else:
-                        # has record about last visit, but there no loot or it
-                        # has not finished to rest. We can enter to this condition
-                        # if Village is untrusted, but it is still a visited
-                        # Village, and it will not be placed to .attack_queue.
-                        self.visited_villages[coords] = village
+                elif village.last_visited and self._is_ready_for_farm(village):
+                    queue[coords] = village
+                else:
+                    # has record about last visit, but there no loot or it
+                    # has not finished to rest. We can enter to this condition
+                    # if Village is untrusted, but it is still a visited
+                    # Village, and it will not be placed to .attack_queue.
+                    self.visited_villages[coords] = village
 
         self.queue = queue
 
@@ -138,20 +136,25 @@ class AttackQueue:
         Updates self.villages with a new reports.
         Puts updated villages in self.visited_villages.
         Checks if some of visited villages can be placed in
-        attack queue again (flush_visited_villages)
+        attack queue again.
         """
         for attack_report in new_reports:
             coords = attack_report.coords
             if coords in self.villages:
                 village = self.villages[coords]
+                # avoid update by old reports (if there was batch update)
                 if not village.last_visited or \
-                                village.last_visited < attack_report.t_of_attack:
-                    logging.info("Villa before update: "
-                                 "{}".format(self.villages[coords]))
+                        village.last_visited < attack_report.t_of_attack:
+
+                    logging.debug("Villa before update: "
+                                  "{}".format(self.villages[coords]))
+
                     village.update_stats(attack_report)
                     self.villages[coords] = village
+
                     logging.info("Villa after update: "
-                                      "{}".format(self.villages[coords]))
+                                 "{}".format(self.villages[coords]))
+
                     if attack_report.defended:
                         self.untrusted_villages[coords] = village
                     # Avoid adding duplicate villages to visited
@@ -166,6 +169,7 @@ class AttackQueue:
             if village.finished_rest(self.rest) or \
                     village.has_valuable_loot(self.rest):
                 return True
+        return False
 
     def _flush_visited_villages(self):
         """
@@ -179,6 +183,7 @@ class AttackQueue:
                          "{}".format(ready_for_farm))
             logging.info("Queue length before flushing: "
                          "{}".format(len(self.queue)))
+
             for coords, village in ready_for_farm.items():
                 self.queue[coords] = village
                 self.visited_villages.pop(coords)
@@ -303,6 +308,9 @@ class AttackObserver:
         requests saved arrivals & returns from self.storage.
         places all saved arrivals in self.arrival_queue &
         all pending returns in sel.return_queue
+    get_targets_pending_arrival:
+        returns list of coordinates (x, y) which wait for
+        arrival of previously sent attack.
     is_someone_arrived:
         returns number of arrived attacks & removes these
         attacks from self.arrival_queue
@@ -342,11 +350,15 @@ class AttackObserver:
 
             logging.debug("Pending returns: ".format(registered_returns))
 
+    def get_targets_pending_arrival(self):
+        time_gmt = time.mktime(time.gmtime())
+        not_arrived = [coords for coords, t in self.arrival_queue.items() if
+                       t > time_gmt]
+        return not_arrived
+
     def is_someone_arrived(self):
         time_gmt = time.mktime(time.gmtime())
-        arrived = {coords: t for
-                   coords, t in
-                   self.arrival_queue.items() if
+        arrived = {coords: t for  coords, t in self.arrival_queue.items() if
                    t <= time_gmt}
         if arrived:
             for coords in arrived.keys():

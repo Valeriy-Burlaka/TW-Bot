@@ -8,6 +8,79 @@ from bot.libs.attack_management import *
 from bot.tests.factories import TargetVillageFactory
 
 
+class TestAttackQueue(unittest.TestCase):
+
+    def test_build_queue(self):
+        queue = AttackQueue()
+        self.assertEqual(queue.queue, {})
+        village_list = TargetVillageFactory.build_batch(5)
+        target_villages = {village.coords: village for village in village_list}
+
+        pending_arrival = [village.coords for village in village_list]
+        queue.build_queue(pending_arrival=pending_arrival,
+                          target_villages=target_villages,
+                          farm_frequency=3)
+        self.assertEqual(queue.queue, {})
+
+        pending_arrival = []
+        queue.visited_villages = target_villages
+        queue.build_queue(pending_arrival=pending_arrival,
+                          target_villages=target_villages,
+                          farm_frequency=3)
+        self.assertEqual(queue.queue, {})
+
+        queue.visited_villages = {}
+        in_pending_arrival = village_list[0]
+        pending_arrival = [in_pending_arrival.coords]
+        in_visited = village_list[1]
+        queue.visited_villages = {in_visited.coords: in_visited}
+        fresh = village_list[2]
+        self.assertIsNone(fresh.last_visited)
+        not_fresh_but_ready = village_list[3]
+        not_fresh_but_ready.last_visited = 1000
+        not_fresh_but_ready.has_valuable_loot = Mock(return_value=True)
+        not_fresh_but_ready.finished_rest = Mock(return_value=True)
+        not_fresh_and_not_ready = village_list[4]
+        not_fresh_and_not_ready.last_visited = 1000
+        not_fresh_and_not_ready.has_valuable_loot = Mock(return_value=False)
+        not_fresh_and_not_ready.finished_rest = Mock(return_value=False)
+        target_villages = {in_pending_arrival.coords: in_pending_arrival,
+                           in_visited.coords: in_visited,
+                           fresh.coords: fresh,
+                           not_fresh_but_ready.coords: not_fresh_but_ready,
+                           not_fresh_and_not_ready.coords: not_fresh_and_not_ready}
+
+        queue.build_queue(pending_arrival=pending_arrival,
+                          target_villages=target_villages,
+                          farm_frequency=3)
+        self.assertEqual(len(queue.queue), 2)
+        self.assertEqual(len(queue.visited_villages), 2)
+        self.assertIn(fresh.coords, queue.queue)
+        self.assertEqual(queue.queue[fresh.coords], fresh)
+        self.assertIn(not_fresh_but_ready.coords, queue.queue)
+        self.assertIn(not_fresh_and_not_ready.coords, queue.visited_villages)
+
+    def test_is_ready_for_farm(self):
+        queue = AttackQueue()
+        villa = TargetVillageFactory()
+
+        villa_coords = villa.coords
+        queue.untrusted_villages[villa_coords] = villa
+        self.assertFalse(queue._is_ready_for_farm(villa))
+
+        queue.untrusted_villages.pop(villa_coords)
+        villa.finished_rest = Mock(return_value=False)
+        villa.has_valuable_loot = Mock(return_value=False)
+        self.assertFalse(queue._is_ready_for_farm(villa))
+
+        villa.finished_rest.return_value = True
+        self.assertTrue(queue._is_ready_for_farm(villa))
+
+        villa.finished_rest.return_value = False
+        villa.has_valuable_loot.return_value = True
+        self.assertTrue(queue._is_ready_for_farm(villa))
+
+
 class TestDecisionMaker(unittest.TestCase):
 
     def test_get_next_attack_target(self):
@@ -135,6 +208,15 @@ class TestAttackObserver(unittest.TestCase):
         self.assertEqual(self.ao.arrival_queue, save_data_arrivals)
         expected_returns = {1: [now + 10, now + 20], 2: [now + 10]}
         self.assertEqual(self.ao.return_queue, expected_returns)
+
+    def test_get_targets_pending_arrival(self):
+        now = time.mktime(time.gmtime())
+        self.ao.arrival_queue = {(1, 1): now + 10, (2, 2): now + 20,
+                                 (3, 3): now - 10, (4, 4): now + 40,
+                                 (5, 5): now - 50, (6, 6): now - 60}
+        expected_pending_arrival = [(1, 1), (2, 2), (4, 4)]
+        pending_arrival = self.ao.get_targets_pending_arrival()
+        self.assertCountEqual(expected_pending_arrival, pending_arrival)
 
     def test_is_someone_arrived(self):
         now = time.mktime(time.gmtime())
