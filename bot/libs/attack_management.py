@@ -1,6 +1,5 @@
 import time
 import re
-import shelve
 import logging
 from urllib.parse import urlencode
 
@@ -8,7 +7,7 @@ from bot.libs.map_tools import Storage
 
 
 __all__ = ['AttackManager', 'DecisionMaker', 'AttackObserver', 'AttackHelper',
-           'AttackQueue']
+           'AttackQueue', 'Unit']
 
 
 class AttackManager:
@@ -68,8 +67,8 @@ class AttackManager:
 
     def _get_arrival_return_t(self, t_of_attack, t_on_road):
         t_of_attack = self._convert_t_to_seconds(t_of_attack)
-        t_of_arrival, t_of_return = t_of_attack + t_on_road, \
-                                    t_of_attack + t_on_road * 2
+        t_of_arrival =t_of_attack + t_on_road
+        t_of_return = t_of_attack + t_on_road * 2
         return t_of_arrival, t_of_return
 
     @staticmethod
@@ -179,7 +178,7 @@ class AttackQueue:
             logging.info("Going to flush the next villages: "
                          "{}".format(ready_for_farm))
             logging.info("Queue length before flushing: "
-                              "{}".format(len(self.queue)))
+                         "{}".format(len(self.queue)))
             for coords, village in ready_for_farm.items():
                 self.queue[coords] = village
                 self.visited_villages.pop(coords)
@@ -207,7 +206,7 @@ class DecisionMaker:
         troops, if so - returns dict {"troops_amount": int, "t_on_road": int,
         "coords": (int, int)}, otherwise - None.
         """
-        t_limit *= 3600  # to hours
+        t_limit *= 3600  # to seconds
         for target in available_targets:
             attack_target = target[0]
             dst_from_attacker = target[1]
@@ -223,8 +222,8 @@ class DecisionMaker:
     def _is_attack_possible(self, attack_target, distance, t_limit,
                             troops_count, insert_spy_in_attack):
         """
-        Evaluates if there enough troops to loot all
-        village resources at the time of arrival with current troops.
+        Evaluates if there are enough troops to loot all village
+        resources at the time of arrival with given troops count.
         Returns units needed for attack and time needed to arrive.
         """
         troops_map = self._get_troops_map(troops_count)

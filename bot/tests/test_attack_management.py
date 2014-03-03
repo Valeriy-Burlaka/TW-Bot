@@ -1,10 +1,111 @@
 import unittest
 import os
 import time
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import settings
 from bot.libs.attack_management import *
+from bot.tests.factories import TargetVillageFactory
+
+
+class TestDecisionMaker(unittest.TestCase):
+
+    def test_get_next_attack_target(self):
+        maker = DecisionMaker()
+        # [{troops}, t_on_road]
+        check_return_value = [{'unit_1': 10, 'spy': 1}, 10800]
+        maker._is_attack_possible = Mock(return_value=check_return_value)
+        villages = TargetVillageFactory.build_batch(2)
+        # [(target, distance), ..]
+        targets = [(villages[0], 10), villages[1], 20]
+        troops = {'axe': 200, 'light': 300, 'spy': 20}
+        t_limit = 3
+        insert_spy = False
+
+        next_target = maker.get_next_attack_target(available_targets=targets,
+                                                   attacker_troops=troops,
+                                                   t_limit=t_limit,
+                                                   insert_spy=insert_spy)
+        self.assertEqual(next_target,
+                         [{'unit_1': 10, 'spy': 1}, 10800, villages[0].coords])
+
+    def test_is_attack_possible(self):
+        maker = DecisionMaker()
+        maker._get_troops_map = Mock()
+        maker._estimate_troops_needed = Mock()
+        maker._get_time_on_the_road = Mock()
+        attack_target = Mock()
+        attack_target.estimate_capacity = Mock(return_value=None)
+        units = [(Unit(name='a', attack=1, speed=20, haul=1), 10),
+                 (Unit(name='b', attack=1, speed=10, haul=10), 10),
+                 (Unit(name='c', attack=1, speed=10, haul=50), 100)]
+        t_limit = 3 * 3600  # 3 hours
+        troops_count = {}
+        # 1 case: we have no units that could attack given target
+        # (we have no unit which .speed * time_limit_to_leave >= distance)
+        maker._get_troops_map.return_value = units
+        maker._get_time_on_the_road.return_value = 100500
+        check = maker._is_attack_possible(attack_target=attack_target,
+                                          distance=50, t_limit=t_limit,
+                                          troops_count=troops_count,
+                                          insert_spy_in_attack=True)
+        self.assertIsNone(check)
+        self.assertCountEqual(maker._get_time_on_the_road.mock_calls,
+                              [call(50, 20), call(50, 10), call(50, 10)])
+        self.assertEqual(maker._estimate_troops_needed.mock_calls, [])
+        # case 2: we have some units that may attack with a given
+        # t_limit/radius, but attack_target.estimated_capacity is
+        # to large, so we still cannot attack this target.
+        maker._get_time_on_the_road.reset_mock()
+        t_on_the_road = 2 * 3600
+        maker._get_time_on_the_road.return_value = t_on_the_road
+        maker._estimate_troops_needed.return_value = 200
+        check = maker._is_attack_possible(attack_target=attack_target,
+                                          distance=10, t_limit=t_limit,
+                                          troops_count=troops_count,
+                                          insert_spy_in_attack=True)
+        self.assertIsNone(check)
+        self.assertCountEqual(maker._get_time_on_the_road.mock_calls,
+                              [call(10, 20), call(10, 10), call(10, 10)])
+        self.assertEqual(len(maker._estimate_troops_needed.mock_calls), 3)
+        # case 3: we have units that may attack. spy is not in 'units'
+        # and cannot be inserted in attack group
+        maker._get_time_on_the_road.reset_mock()
+        maker._estimate_troops_needed.reset_mock()
+        maker._estimate_troops_needed.return_value = 50
+        check = maker._is_attack_possible(attack_target=attack_target,
+                                          distance=5, t_limit=t_limit,
+                                          troops_count=troops_count,
+                                          insert_spy_in_attack=True)
+        self.assertIsNotNone(check)
+        self.assertCountEqual(maker._get_time_on_the_road.mock_calls,
+                              [call(5, 20), call(5, 10), call(5, 10)])
+        self.assertEqual(len(maker._estimate_troops_needed.mock_calls), 3)
+        self.assertEqual(check, [{'c': 50}, t_on_the_road])
+        # add scout
+        troops_count = {'spy': 10}
+        check = maker._is_attack_possible(attack_target=attack_target,
+                                          distance=5, t_limit=t_limit,
+                                          troops_count=troops_count,
+                                          insert_spy_in_attack=True)
+        self.assertIsNotNone(check)
+        self.assertEqual(check, [{'c': 50, 'spy': 1}, t_on_the_road])
+
+        check = maker._is_attack_possible(attack_target=attack_target,
+                                          distance=5, t_limit=t_limit,
+                                          troops_count=troops_count,
+                                          insert_spy_in_attack=False)
+        self.assertIsNotNone(check)
+        self.assertEqual(check, [{'c': 50}, t_on_the_road])
+
+    def test_get_troops_map(self):
+        maker = DecisionMaker()
+        troops_count = {'spy': 20, 'axe': 200, 'light': 200, 'marcher': 100}
+        troops_map = maker._get_troops_map(troops_count)
+        self.assertEqual(len(troops_map), 3)
+        self.assertIsInstance(troops_map, list)
+        slowest_unit = troops_map[0][0]
+        self.assertEqual(slowest_unit.name, 'axe')
 
 
 class TestAttackObserver(unittest.TestCase):
