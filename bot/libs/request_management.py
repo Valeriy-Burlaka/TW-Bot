@@ -27,7 +27,10 @@ class NewRequestManager:
                 raise NotImplementedError("This method is not implemented yet!")
             else:
                 request_data = getattr(self.data_provider, name)(**kwargs)
-                print(request_data)
+                if name == 'post_attack':
+                    print(time.gmtime())
+                else:
+                    print(request_data)
         return call_wrapper
 
 
@@ -37,17 +40,17 @@ class RequestDataProvider:
         self.host = host
         self.global_id = global_id
 
-    def get_map_overview(self, **kwargs):
+    def get_map_overview(self, x, y, village_id):
         url = 'http://{host}/game.php?village={id}&x={x}&y={y}&' \
               'screen=map'.format(host=self.host,
-                                  id=kwargs['village_id'],
-                                  x=kwargs['x'],
-                                  y=kwargs['y'])
+                                  id=village_id,
+                                  x=x,
+                                  y=y)
         headers = self._get_default_headers(referer=url)
         data = {'url': url, 'headers': headers}
         return data
 
-    def get_overviews_screen(self, **kwargs):
+    def get_overviews_screen(self):
         url = 'http://{host}/game.php?village={id}&' \
               'screen=overview_villages&mode=combined'.format(host=self.host,
                                                               id=self.global_id)
@@ -58,52 +61,175 @@ class RequestDataProvider:
         data = {'url': url, 'headers': headers}
         return data
 
-    def get_village_overview(self, **kwargs):
+    def get_village_overview(self, village_id):
         url = 'http://{host}/game.php?village={id}&' \
-              'screen=overview'.format(host=self.host, id=kwargs['village_id'])
+              'screen=overview'.format(host=self.host, id=village_id)
         referer = 'http://{host}/game.php?village={id}&' \
                   'screen=overview_villages'.format(host=self.host,
-                                                    id=kwargs['village_id'])
+                                                    id=village_id)
         headers = self._get_default_headers(referer=referer)
         data = {'url': url, 'headers': headers}
         return data
 
-    def get_train_screen(self, **kwargs):
+    def get_train_screen(self, village_id):
         url = 'http://{host}/game.php?village={id}&' \
-              'screen=train'.format(host=self.host, id=kwargs['village_id'])
+              'screen=train'.format(host=self.host, id=village_id)
         referer = 'http://{host}/game.php?village={id}&' \
-                  'screen=overview'.format(host=self.host, id=kwargs['village_id'])
+                  'screen=overview'.format(host=self.host, id=village_id)
         headers = self._get_default_headers(referer=referer)
         data = {'url': url, 'headers': headers}
         return data
 
-    def get_rally_overview(self, **kwargs):
+    def get_rally_overview(self, village_id):
         url = 'http://{host}/game.php?village={id}&' \
-              'screen=place'.format(host=self.host, id=kwargs['village_id'])
+              'screen=place'.format(host=self.host, id=village_id)
         referer = 'http://{host}/game.php?village={id}&' \
-                  'screen=overview'.format(host=self.host, id=kwargs['village_id'])
+                  'screen=overview'.format(host=self.host, id=village_id)
         headers = self._get_default_headers(referer=referer)
         data = {'url': url, 'headers': headers}
         return data
 
-    def get_reports_page(self, **kwargs):
+    def get_reports_page(self, from_page):
         url = 'http://{host}/game.php?village={id}&mode=all&' \
               'from={page}&screen=report'.format(host=self.host,
                                                  id=self.global_id,
-                                                 page=kwargs["from_page"])
+                                                 page=from_page)
         headers = self._get_default_headers(referer=url)
         data = {'url': url, 'headers': headers}
         return data
 
-    def get_report(self, **kwargs):
-        url = 'http://{host}{url}'.format(host=self.host, url=kwargs['url'])
+    def get_report(self, url):
+        url = 'http://{host}{url}'.format(host=self.host, url=url)
         referer = "http://{host}/game.php?village={id}&" \
                   "screen=report".format(host=self.host, id=self.global_id)
         headers = self._get_default_headers(referer=referer)
         data = {'url': url, 'headers': headers}
         return data
 
-    def _get_default_headers(self, referer=None):
+    def post_confirmation(self, village_id, post_data):
+        url = 'http://{host}/game.php?village={id}&' \
+              'try=confirm&screen=place'.format(host=self.host, id=village_id)
+        referer = 'http://{host}/game.php?village={id}&' \
+                  'screen=place'.format(host=self.host, id=village_id)
+        content_length = len(post_data)
+        headers = self._get_default_headers(referer=referer,
+                                            content_length=content_length)
+        data = {'url': url, 'headers': headers, 'data': post_data}
+        return data
+
+    def post_attack(self, village_id, csrf, post_data):
+        url = 'http://{host}/game.php?village={id}&' \
+              'action=command&h={csrf}&screen=place'.format(host=self.host,
+                                                            id=village_id,
+                                                            csrf=csrf)
+        referer = 'http://{host}/game.php?village={id}&' \
+                  'try=confirm&screen=place'.format(host=self.host,
+                                                         id=village_id)
+        content_length = len(post_data)
+        headers = self._get_default_headers(referer=referer,
+                                            content_length=content_length)
+        data = {'url': url, 'headers': headers, 'data': post_data}
+        return data
+
+    def post_captcha_answer(self, text):
+        """
+        Tries to restore Game's loyalty to user:
+        submits CAPTCHA text entered by User to Game server
+        """
+        url = "http://{host}/game.php".format(host=self.host)
+        post_data = {'bot_check_code': text}
+        headers = self._get_default_headers()
+        headers["origin"] = "http://{host}".format(host=self.host)
+        headers["x-requested-with"] = "XMLHttpRequest"
+        headers["content-type"] = "application/x-www-form-urlencoded; charset=UTF-8"
+
+        data = {'url': url, 'headers': headers, 'data': post_data}
+        return data
+
+    def get_tribal_forum_page(self):
+        url = "http://{host}/game.php?village={id}&" \
+              "screen=forum".format(host=self.host, id=self.global_id)
+        referer = "http://{host}/game.php?village={id}&" \
+                  "screen=overview".format(host=self.host,
+                                                id=self.global_id)
+        headers = self._get_default_headers(referer=referer)
+        data = {'url': url, 'headers': headers}
+        return data
+
+    def get_forum_screen(self, **kwargs):
+        url = "http://{host}/game.php?village={v_id}&" \
+              "screenmode=view_forum&forum_id={f_id}&" \
+              "screen=forum".format(host=self.host,
+                                    v_id=self.global_id,
+                                    f_id=kwargs['forum_id'])
+        referer = "http://{host}/game.php?village={v_id}&" \
+                  "screen=forum".format(host=self.host, v_id=self.global_id)
+        headers = self._get_default_headers(referer=referer)
+        data = {'url': url, 'headers': headers}
+        return data
+
+    def get_last_thread_page(self, **kwargs):
+        url = "http://{host}/game.php?village={v_id}&" \
+              "screenmode=view_thread&forum_id={f_id}&" \
+              "thread_id={t_id}&page=last&screen=forum".format(host=self.host,
+                                                               v_id=self.global_id,
+                                                               f_id=kwargs['forum_id'],
+                                                               t_id=kwargs['thread_id'])
+        referer = "http://{host}/game.php?village={v_id}&" \
+                  "screenmode=view_forum&forum_id={f_id}&" \
+                  "screen=forum".format(host=self.host,
+                                        v_id=self.global_id,
+                                        f_id=kwargs['thread_id'])
+        headers = self._get_default_headers(referer=referer)
+        data = {'url': url, 'headers': headers}
+        return data
+
+    def get_answer_page(self, **kwargs):
+        url = "http://{host}/game.php?village={v_id}&" \
+              "screenmode=view_thread&thread_id={t_id}&" \
+              "answer=true&page=last&forum_id={f_id}&" \
+              "screen=forum".format(host=self.host,
+                                    v_id=self.global_id,
+                                    f_id=kwargs['forum_id'],
+                                    t_id=kwargs['thread_id'])
+        referer = "http://{host}/game.php?village={v_id}&" \
+                  "screenmode=view_thread&forum_id={f_id}&" \
+                  "thread_id={t_id}&page=last&" \
+                  "screen=forum".format(host=self.host,
+                                        v_id=self.global_id,
+                                        f_id=kwargs['forum_id'],
+                                        t_id=kwargs['thread_id'])
+
+        headers = self._get_default_headers(referer=referer)
+        data = {'url': url, 'headers': headers}
+        return data
+
+    def post_message_to_forum(self, forum_id, thread_id, data, csrf, **kwargs):
+        # php URLs get longer and longer..
+        url_begin = "http://{host}/game.php?village={v_id}&" \
+                    "screenmode=view_thread&action=new_post&" \
+                    "h={csrf}".format(host=self.host,
+                                      v_id=self.global_id,
+                                      csrf=kwargs['csrf'])
+        url_end = "&thread_id={t_id}&answer=true&page=last&" \
+                  "forum_id={f_id}&screen=forum".format(f_id=kwargs['forum_id'],
+                                                        t_id=kwargs['thread_id'])
+        url = url_begin + url_end
+        referer = "http://{host}/game.php?village={v_id}&" \
+                  "screenmode=view_thread&thread_id={t_id}&" \
+                  "answer=true&page=last&forum_id={f_id}&" \
+                  "screen=forum".format(host=self.host,
+                                        v_id=self.global_id,
+                                        f_id=kwargs['forum_id'],
+                                        t_id=kwargs['thread_id'])
+        post_data = kwargs['data']
+        content_length = len(post_data)
+        headers = self._get_default_headers(referer=referer, content_length=content_length)
+
+        data = {'url': url, 'headers': headers, 'data': post_data}
+        return data
+
+    def _get_default_headers(self, referer=None, content_length=None):
         """
         Returns headers that are common for each request
         """
@@ -117,6 +243,8 @@ class RequestDataProvider:
                            'accept-encoding': 'gzip,deflate,sdch'}
         if referer is not None:
             default_headers['referer'] = referer
+        if content_length is not None:
+            default_headers['content-length'] = content_length
 
         return default_headers
 
@@ -152,116 +280,11 @@ class RequestManager:
 
 
 
-    def post_confirmation(self, village_id, data):
-        url = 'http://{host}/game.php?village={id}&' \
-              'try=confirm&screen=place'.format(host=self.host, id=kwargs['village_id'])
-        self.referer = 'http://{host}/game.php?village={id}&' \
-                       'screen=place'.format(host=self.host, id=kwargs['village_id'])
-        headers = self.get_default_headers()
-        self.replace_global_id(headers, village_id)
-        headers['Content-Length'] = len(data)
-        req = Request(url, headers=headers, data=data)
-        return self.safe_opener(req)
 
-    def post_attack(self, village_id, data, csrf):
-        url = 'http://{host}/game.php?village={id}&' \
-              'action=command&h={csrf}&screen=place'.format(host=self.host,
-                                                            id=kwargs['village_id'],
-                                                            csrf=csrf)
-        self.referer = 'http://{host}/game.php?village={id}&' \
-                       'try=confirm&screen=place'.format(host=self.host,
-                                                         id=kwargs['village_id'])
-        headers = self.get_default_headers()
-        self.replace_global_id(headers, village_id)
-        headers['Content-Length'] = len(data)
-        req = Request(url, headers=headers, data=data)
-        response = urlopen(req)
-        # after POSTing an attack, Game automatically redirects to rally point
-        self.get_rally_overview(village_id)
-        return response.getheader('Date')
 
-    def get_tribal_forum_page(self):
-        url = "http://{host}/game.php?village={id}&" \
-              "screen=forum".format(host=self.host, id=self.main_id)
-        self.referer = "http://{host}/game.php?village={id}&" \
-                       "screen=overview".format(host=self.host,
-                                                id=self.main_id)
-        headers = self.get_default_headers()
-        req = Request(url, headers=headers)
-        return self.safe_opener(req)
 
-    def get_forum_screen(self, forum_id):
-        url = "http://{host}/game.php?village={v_id}&" \
-              "screenmode=view_forum&forum_id={f_id}&" \
-              "screen=forum".format(host=self.host,
-                                    v_id=self.main_id,
-                                    f_id=forum_id)
-        self.referer = "http://{host}/game.php?village={v_id}&" \
-                       "screen=forum".format(host=self.host, v_id=self.main_id)
-        headers = self.get_default_headers()
-        req = Request(url, headers=headers)
-        return self.safe_opener(req)
 
-    def get_last_thread_page(self, forum_id, thread_id):
-        url = "http://{host}/game.php?village={v_id}&" \
-              "screenmode=view_thread&forum_id={f_id}&" \
-              "thread_id={t_id}&page=last&screen=forum".format(host=self.host,
-                                                               v_id=self.main_id,
-                                                               f_id=forum_id,
-                                                               t_id=thread_id)
-        self.referer = "http://{host}/game.php?village={v_id}&" \
-                       "screenmode=view_forum&forum_id={f_id}&" \
-                       "screen=forum".format(host=self.host,
-                                             v_id=self.main_id,
-                                             f_id=forum_id)
-        headers = self.get_default_headers()
-        req = Request(url, headers=headers)
-        return self.safe_opener(req)
 
-    def get_answer_page(self, forum_id, thread_id):
-        url = "http://{host}/game.php?village={v_id}&" \
-              "screenmode=view_thread&thread_id={t_id}&" \
-              "answer=true&page=last&forum_id={f_id}&" \
-              "screen=forum".format(host=self.host,
-                                    v_id=self.main_id,
-                                    f_id=forum_id,
-                                    t_id=thread_id)
-        self.referer = "http://{host}/game.php?village={v_id}&" \
-                       "screenmode=view_thread&forum_id={f_id}&" \
-                       "thread_id={t_id}&page=last&" \
-                       "screen=forum".format(host=self.host,
-                                             v_id=self.main_id,
-                                             f_id=forum_id,
-                                             t_id=thread_id)
-
-        headers = self.get_default_headers()
-        req = Request(url, headers=headers)
-        return self.safe_opener(req)
-
-    def post_message_to_forum(self, forum_id, thread_id, csrf, message_data):
-        # php URLs get longer and longer..
-        url_begin = "http://{host}/game.php?village={v_id}&" \
-                    "screenmode=view_thread&action=new_post&" \
-                    "h={csrf}".format(host=self.host,
-                                      v_id=self.main_id,
-                                      csrf=csrf)
-        url_end = "&thread_id={t_id}&answer=true&page=last&" \
-                  "forum_id={f_id}&screen=forum".format(t_id=thread_id,
-                                                        f_id=forum_id)
-        url = url_begin + url_end
-        self.referer = "http://{host}/game.php?village={v_id}&" \
-                       "screenmode=view_thread&thread_id={t_id}&" \
-                       "answer=true&page=last&forum_id={f_id}&" \
-                       "screen=forum".format(host=self.host,
-                                             v_id=self.main_id,
-                                             f_id=forum_id,
-                                             t_id=thread_id)
-
-        headers = self.get_default_headers()
-        headers['Content-Length'] = len(message_data)
-        req = Request(url, headers=headers, data=message_data)
-        response = urlopen(req)
-        return response.getheader('Date')
 
     def safe_opener(self, request):
         """
@@ -380,24 +403,7 @@ class RequestManager:
 
         return captcha_text
 
-    def submit_captcha(self, text):
-        """
-        Tries to restore Game's loyalty to user:
-        submits CAPTCHA text entered by User to Game server
-        """
-        data = urlencode({'bot_check_code': text})
-        data = data.encode()
-        headers = self.get_default_headers()
-        headers["Content-Length"] = len(data)
-        headers["Origin"] = "http://{host}".format(host=self.host)
-        headers["X-Requested-With"] = "XMLHttpRequest"
-        headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
-        url = "http://{host}/game.php".format(host=self.host)
 
-        req = Request(url, data=data, headers=headers)
-        event_msg = str(req.headers) + str(req.data) + str(req.full_url)
-        logging.debug(event_msg)
-        urlopen(req)
 
     def expiration_check(self, html_data):
         """
