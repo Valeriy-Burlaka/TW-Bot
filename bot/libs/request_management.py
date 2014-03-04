@@ -4,8 +4,6 @@ import re
 import random
 import time
 import base64
-import shutil
-import sqlite3
 import gzip
 import struct
 import logging
@@ -45,7 +43,6 @@ class RequestManager:
         self.host = host
         self.main_id = str(main_id)
         self.run_path = run_path
-        self.set_cookies()
         self.referer = None
 
     def get_map_overview(self, village_id, x, y):
@@ -473,64 +470,6 @@ class RequestManager:
                       'global_village_id={id}'.format(id=villa_id), cook)
         headers['Cookie'] = cook
 
-    def set_cookies(self):
-        """
-        Sets self.cookies attribute to composed cookies string.
-        E.g.: self.cookies = 'cid=2125181249; sid=0%3A24ee69a57ec6; ...'
-        """
-        cookies_file = self.copy_cookies_file()
-        cookies_data = self.extract_cookies(cookies_file)   # [(host, cookie, value), ..]
-        mandatory_cookies = self.get_mandatory_cookies()
-        # sort out host from cookies_data.
-        cookies_data = [(item[1], item[2]) for
-                        item in cookies_data if
-                        item[1] in mandatory_cookies]
-        cookies_data.extend([('mobile', '0'),
-                             ('global_village_id',
-                              self.main_id)])
-        self.cookies = self.form_cookie_header(cookies_data)
-
-    def form_cookie_header(self, cookies_data):
-        """
-        Composes given cookies data into 1 string.
-        Returns a tuple ('Cookie', cookie_string) which is ready to use as request header.
-        """
-        str_value = ''
-        for cookie in cookies_data:
-            str_cookie = cookie[0]+ '=' + cookie[1]
-            str_value += str_cookie
-            str_value += '; '
-        str_value = str_value.rstrip('; ')
-        return str_value
-
-    def get_mandatory_cookies(self):
-        return ['cid', 'sid']
-
-    def extract_cookies(self, cookies_path, timeout=30):
-        """
-        Open given sqlite file and extracts cookies that belong to self.host.
-        Returns list of tuples [(host, cookie, value), ...]
-        """
-        #key = re.search(r'http://([\w\W]+)', self.host).group()
-        connection = sqlite3.connect(cookies_path, timeout=timeout)
-        cursor = connection.cursor()
-        cursor.execute("select host_key, name, value from cookies where host_key=?", (self.host,))
-        cookies_data = cursor.fetchall()
-        cursor.close()
-        connection.close()
-        return cookies_data
-
-    def copy_cookies_file(self):
-        """
-        Copies cookies file to user_path (Currently supports only Chrome:)).
-        Returns filename of cookies copy.
-        """
-        if self.browser == 'Chrome':
-            chr_cookies = r'C:\Users\Troll\AppData\Local\Google\Chrome\User Data\Default\Cookies'
-        my_cookies_f = os.path.join(self.run_path, "cookies")
-        shutil.copyfile(chr_cookies, my_cookies_f)
-        return my_cookies_f
-
 
     def inject_captcha(self, html_data):
         """
@@ -561,70 +500,4 @@ class RequestManager:
                             e.preventDefault();"""
         html_data = html_data[:100] + captcha_text + html_data[100:]
         return html_data
-
-
-class DummyRequestManager:
-    """
-    A stub for ReportBuilder & Map classes.
-    Provides methods that returns str_HTML from hardcoded
-    files instead of real server-response.
-    """
-    def get_map_overview(self, x, y):
-        files = ['map_overview_200_300.html', 'map_overview_200_327.html',
-                 'map_overview_211_305.html', 'map_overview_224_324.html',
-                 'map_overview_228_300.html']
-        map_file = random.choice(files)
-        map_path = os.path.join('test_html', map_file)
-        with open(map_path) as f:
-            html_data = f.read()
-        return html_data
-
-    def get_village_overview(self):
-        file = 'test_html/village_overview.html'
-        with open(file) as f:
-            html_data = f.read()
-        return html_data
-
-    def get_rally_overview(self):
-        file = 'test_html/rally_point_overview.html'
-        with open(file) as f:
-            html_data = f.read()
-        return html_data
-
-    def get_reports_page(self, from_page=0):
-        report_pages = ['report_page.html', 'report_page_with_new_supports.html',
-                        'report_page2.html']
-        report_page_file = random.choice(report_pages)
-        report_page_path = os.path.join('test_html', report_page_file)
-        with open(report_page_path) as f:
-            html_data = f.read()
-        return html_data
-
-    def get_report(self, url):
-        reports = ['single_report_yellow.html',
-                   'red_blue_html_report.html',
-                   'single_report_blue.html',
-                   'yellow_report_w_defence.html',
-                   'single_report_support.html',
-                   'float_report.html',
-                   'single_report_green.html',
-                   'green_report_wo_scouts.html',
-                   'single_report_red.html']
-
-        report_file = random.choice(reports)
-        report_path = os.path.join('test_html', report_file)
-        with open(report_path) as f:
-            html_data = f.read()
-        return html_data
-
-    def post_confirmation(self, data):
-        file = 'test_html/attack_confirmation.html'
-        with open(file) as f:
-            html_data = f.read()
-        return html_data
-
-    def post_attack(self, data):
-        self.get_rally_overview()
-        return time.mktime(time.gmtime())
-
 
