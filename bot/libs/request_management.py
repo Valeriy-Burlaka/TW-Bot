@@ -15,6 +15,111 @@ from urllib.error import  HTTPError, URLError
 from http.cookiejar import CookieJar
 
 
+class NewRequestManager:
+
+    def __init__(self, host, initial_cookies):
+        self.cookies = initial_cookies
+        self.data_provider = RequestDataProvider(host, initial_cookies['global_village_id'])
+
+    def __getattr__(self, name):
+        def call_wrapper(*args, **kwargs):
+            if not hasattr(self.data_provider, name):
+                raise NotImplementedError("This method is not implemented yet!")
+            else:
+                request_data = getattr(self.data_provider, name)(**kwargs)
+                print(request_data)
+        return call_wrapper
+
+
+class RequestDataProvider:
+
+    def __init__(self, host, global_id):
+        self.host = host
+        self.global_id = global_id
+
+    def get_map_overview(self, **kwargs):
+        url = 'http://{host}/game.php?village={id}&x={x}&y={y}&' \
+              'screen=map'.format(host=self.host,
+                                  id=kwargs['village_id'],
+                                  x=kwargs['x'],
+                                  y=kwargs['y'])
+        headers = self._get_default_headers(referer=url)
+        data = {'url': url, 'headers': headers}
+        return data
+
+    def get_overviews_screen(self, **kwargs):
+        url = 'http://{host}/game.php?village={id}&' \
+              'screen=overview_villages&mode=combined'.format(host=self.host,
+                                                              id=self.global_id)
+        referer = 'http://{host}/game.php?village={id}&' \
+                  'screen=overview'.format(host=self.host,
+                                           id=self.global_id)
+        headers = self._get_default_headers(referer=referer)
+        data = {'url': url, 'headers': headers}
+        return data
+
+    def get_village_overview(self, **kwargs):
+        url = 'http://{host}/game.php?village={id}&' \
+              'screen=overview'.format(host=self.host, id=kwargs['village_id'])
+        referer = 'http://{host}/game.php?village={id}&' \
+                  'screen=overview_villages'.format(host=self.host,
+                                                    id=kwargs['village_id'])
+        headers = self._get_default_headers(referer=referer)
+        data = {'url': url, 'headers': headers}
+        return data
+
+    def get_train_screen(self, **kwargs):
+        url = 'http://{host}/game.php?village={id}&' \
+              'screen=train'.format(host=self.host, id=kwargs['village_id'])
+        referer = 'http://{host}/game.php?village={id}&' \
+                  'screen=overview'.format(host=self.host, id=kwargs['village_id'])
+        headers = self._get_default_headers(referer=referer)
+        data = {'url': url, 'headers': headers}
+        return data
+
+    def get_rally_overview(self, **kwargs):
+        url = 'http://{host}/game.php?village={id}&' \
+              'screen=place'.format(host=self.host, id=kwargs['village_id'])
+        referer = 'http://{host}/game.php?village={id}&' \
+                  'screen=overview'.format(host=self.host, id=kwargs['village_id'])
+        headers = self._get_default_headers(referer=referer)
+        data = {'url': url, 'headers': headers}
+        return data
+
+    def get_reports_page(self, **kwargs):
+        url = 'http://{host}/game.php?village={id}&mode=all&' \
+              'from={page}&screen=report'.format(host=self.host,
+                                                 id=self.global_id,
+                                                 page=kwargs["from_page"])
+        headers = self._get_default_headers(referer=url)
+        data = {'url': url, 'headers': headers}
+        return data
+
+    def get_report(self, **kwargs):
+        url = 'http://{host}{url}'.format(host=self.host, url=kwargs['url'])
+        referer = "http://{host}/game.php?village={id}&" \
+                  "screen=report".format(host=self.host, id=self.global_id)
+        headers = self._get_default_headers(referer=referer)
+        data = {'url': url, 'headers': headers}
+        return data
+
+    def _get_default_headers(self, referer=None):
+        """
+        Returns headers that are common for each request
+        """
+        default_headers = {'host': '{host}'.format(host=self.host),
+                           'connection': 'keep-alive',
+                           'accept': 'text/html,application/xhtml+xml,'
+                                      'application/xml;q=0.9,image/webp,*/*;q=0.8',
+                           'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) '
+                                          'AppleWebKit/537.36 (KHTML, like Gecko) '
+                                          'Chrome/30.0.1599.101 Safari/537.36',
+                           'accept-encoding': 'gzip,deflate,sdch'}
+        if referer is not None:
+            default_headers['referer'] = referer
+
+        return default_headers
+
 class RequestManager:
     """
     Component responsible for sending requests to TribalWars server.
@@ -45,79 +150,13 @@ class RequestManager:
         self.run_path = run_path
         self.referer = None
 
-    def get_map_overview(self, village_id, x, y):
-        url = 'http://{host}/game.php?village={id}&x={x}&y={y}&' \
-              'screen=map'.format(host=self.host,
-                                  id=village_id, x=x, y=y)
-        self.referer = url
-        headers = self.get_default_headers()
-        req = Request(url, headers=headers)
-        return self.safe_opener(req)
 
-    def get_overviews_screen(self):
-        url = 'http://{host}/game.php?village={id}&' \
-              'screen=overview_villages&mode=combined'.format(host=self.host,
-                                                              id=self.main_id)
-        self.referer = 'http://{host}/game.php?village={id}&' \
-                       'screen=overview'.format(host=self.host,
-                                                id=self.main_id)
-        headers = self.get_default_headers()
-        req = Request(url, headers=headers)
-        return self.safe_opener(req)
-
-    def get_village_overview(self, village_id):
-        url = 'http://{host}/game.php?village={id}&' \
-              'screen=overview'.format(host=self.host, id=village_id)
-        self.referer = 'http://{host}/game.php?village={id}&' \
-                       'screen=overview_villages'.format(host=self.host,
-                                                         id=self.main_id)
-        headers = self.get_default_headers()
-        req = Request(url, headers=headers)
-        return self.safe_opener(req)
-
-    def get_train_screen(self, village_id):
-        url = 'http://{host}/game.php?village={id}&' \
-              'screen=train'.format(host=self.host, id=village_id)
-        self.referer = 'http://{host}/game.php?village={id}&' \
-                       'screen=overview'.format(host=self.host, id=village_id)
-        headers = self.get_default_headers()
-        self.replace_global_id(headers, village_id)
-        req = Request(url, headers=headers)
-        return self.safe_opener(req)
-
-    def get_rally_overview(self, village_id):
-        url = 'http://{host}/game.php?village={id}&' \
-              'screen=place'.format(host=self.host, id=village_id)
-        self.referer = 'http://{host}/game.php?village={id}&' \
-                       'screen=overview'.format(host=self.host, id=village_id)
-        headers = self.get_default_headers()
-        self.replace_global_id(headers, village_id)
-        req = Request(url, headers=headers)
-        return self.safe_opener(req)
-
-    def get_reports_page(self, from_page=0):
-        url = 'http://{host}/game.php?village={id}&mode=all&' \
-              'from={page}&screen=report'.format(host=self.host,
-                                                 id=self.main_id,
-                                                 page=from_page)
-        self.referer = url
-        headers = self.get_default_headers()
-        req = Request(url, headers=headers)
-        return self.safe_opener(req)
-
-    def get_report(self, url):
-        url = 'http://{host}{url}'.format(host=self.host, url=url)
-        self.referer = "http://{host}/game.php?village={id}&" \
-                       "screen=report".format(host=self.host, id=self.main_id)
-        headers = self.get_default_headers()
-        req = Request(url, headers=headers)
-        return self.safe_opener(req)
 
     def post_confirmation(self, village_id, data):
         url = 'http://{host}/game.php?village={id}&' \
-              'try=confirm&screen=place'.format(host=self.host, id=village_id)
+              'try=confirm&screen=place'.format(host=self.host, id=kwargs['village_id'])
         self.referer = 'http://{host}/game.php?village={id}&' \
-                       'screen=place'.format(host=self.host, id=village_id)
+                       'screen=place'.format(host=self.host, id=kwargs['village_id'])
         headers = self.get_default_headers()
         self.replace_global_id(headers, village_id)
         headers['Content-Length'] = len(data)
@@ -127,11 +166,11 @@ class RequestManager:
     def post_attack(self, village_id, data, csrf):
         url = 'http://{host}/game.php?village={id}&' \
               'action=command&h={csrf}&screen=place'.format(host=self.host,
-                                                            id=village_id,
+                                                            id=kwargs['village_id'],
                                                             csrf=csrf)
         self.referer = 'http://{host}/game.php?village={id}&' \
                        'try=confirm&screen=place'.format(host=self.host,
-                                                         id=village_id)
+                                                         id=kwargs['village_id'])
         headers = self.get_default_headers()
         self.replace_global_id(headers, village_id)
         headers['Content-Length'] = len(data)
@@ -447,22 +486,7 @@ class RequestManager:
         cookies_data.append(('global_village_id', self.main_id))
         self.cookies = self.form_cookie_header(cookies_data)
 
-    def get_default_headers(self):
-        """
-        Returns headers that are common for each request
-        """
-        default_headers = [('Host','{host}'.format(host=self.host)),
-                           ('Connection', 'keep-alive'),
-                           ('Accept', 'text/html,application/xhtml+xml,'
-                                      'application/xml;q=0.9,image/webp,*/*;q=0.8'),
-                           ('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64) '
-                                          'AppleWebKit/537.36 (KHTML, like Gecko) '
-                                          'Chrome/30.0.1599.101 Safari/537.36'),
-                           ('Accept-Encoding', 'gzip,deflate,sdch'),
-                           ('Accept-Language', 'en-US,en;q=0.8'),
-                           ('Referer', self.referer),
-                           ('Cookie', self.cookies)]
-        return dict(default_headers)
+
 
     def replace_global_id(self, headers, villa_id):
         cook = headers['Cookie']
