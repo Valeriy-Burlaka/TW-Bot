@@ -1,4 +1,8 @@
 import shelve
+import shutil
+import sqlite3
+import sys
+import os
 
 
 class Storage:
@@ -77,3 +81,61 @@ class LocalStorage:
         returns = storage.get('returns', {})
         storage.close()
         return returns
+
+
+class CookiesExtractor:
+
+    def get_initial_cookies(self, run_path, browser_name, host, names):
+        cookies_filepath = self._get_cookies_filepath(browser_name)
+        if not cookies_filepath:
+            raise NotImplementedError("Sorry, seems that dumb bot doesn't"
+                                      "now how to extract cookies from your"
+                                      "browser!")
+        new_path = self._copy_cookies_file(run_path, cookies_filepath)
+        cookies = self._extract_cookies(browser_name, new_path, host, names)
+        os.remove(new_path)
+        return cookies
+
+    @staticmethod
+    def _get_cookies_filepath(browser_name):
+        filepath = ''
+        platform = sys.platform
+        username = os.getlogin()
+        if platform == 'linux':
+            if browser_name.lower() in ['chrome', 'chromium']:
+                filepath = "/home/{user}/.config/{browser}/Default/Cookies"
+                filepath = filepath.format(user=username,
+                                           browser=browser_name.lower())
+        elif platform == 'win32':
+            if browser_name.lower() == 'chrome':
+                filepath = r'C:\Users\{user}\AppData\Local\Google\{browser}' \
+                           r'\User Data\Default\Cookies'
+                filepath = filepath.format(user=username,
+                                           browser=browser_name.lower().capitalize())
+        return filepath
+
+    @staticmethod
+    def _copy_cookies_file(run_path, cookies_path):
+        new_path = os.path.join(run_path, 'cookies')
+        shutil.copyfile(cookies_path, new_path)
+        return new_path
+
+    @staticmethod
+    def _extract_cookies(browser_name, db_path, host, names, timeout=30):
+        """
+        Open given sqlite file and extracts cookies that belong to host.
+        Returns list of tuples [(host, cookie, value), ...]
+        """
+        connection = sqlite3.connect(db_path, timeout=timeout)
+        cursor = connection.cursor()
+        if browser_name in ['chrome', 'chromium']:
+            query = "select name, value from cookies where host_key=?"
+        elif browser_name == 'mozilla':
+            query = "select name, value from moz_cookies where host=?"
+        cursor.execute(query, (host,))
+        cookies_data = cursor.fetchall()
+        cursor.close()
+        connection.close()
+
+        cookies_data = {cook[0]: cook[1] for cook in cookies_data if cook[0] in names}
+        return cookies_data
