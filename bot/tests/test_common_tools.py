@@ -3,7 +3,7 @@ from unittest import mock
 import os
 import shelve
 
-from bot.libs.common_tools import Storage, LocalStorage
+from bot.libs.common_tools import LocalStorage, Storage
 from bot.tests.helpers import StorageHelper
 from bot.tests.factories import TargetVillageFactory
 

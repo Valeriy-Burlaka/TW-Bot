@@ -261,7 +261,8 @@ class TestAttackHelper(unittest.TestCase):
         self.ah = AttackHelper()
 
     def test_set_confirmation_token(self):
-        filepath = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+        filepath = os.path.join(settings.TEST_DATA_FOLDER,
+                                'html',
                                 'rally_point_screen.html')
         with open(filepath) as f:
             html_data = f.read()
@@ -294,7 +295,8 @@ class TestAttackHelper(unittest.TestCase):
         self.assertEqual(expected_attack_data, actual_data)
 
     def test_get_csrf_token(self):
-        filepath = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+        filepath = os.path.join(settings.TEST_DATA_FOLDER,
+                                'html',
                                 'confirmation_screen.html')
         with open(filepath) as f:
             html_data = f.read()
@@ -303,7 +305,8 @@ class TestAttackHelper(unittest.TestCase):
         self.assertEqual(expected_csrf, actual_csrf)
 
     def test_get_action_id(self):
-        filepath = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+        filepath = os.path.join(settings.TEST_DATA_FOLDER,
+                                'html',
                                 'confirmation_screen.html')
         with open(filepath) as f:
             html_data = f.read()
@@ -312,7 +315,8 @@ class TestAttackHelper(unittest.TestCase):
         self.assertEqual(expected_id, actual_id)
 
     def test_get_ch_token(self):
-        filepath = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+        filepath = os.path.join(settings.TEST_DATA_FOLDER,
+                                'html',
                                 'confirmation_screen.html')
         with open(filepath) as f:
             html_data = f.read()
@@ -321,7 +325,8 @@ class TestAttackHelper(unittest.TestCase):
         self.assertEqual(expected_ch, actual_ch)
 
     def test_get_confirmation_token(self):
-        filepath = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+        filepath = os.path.join(settings.TEST_DATA_FOLDER,
+                                'html',
                                 'rally_point_screen.html')
         expected_token = ("f7f6174edf55e676607197", "5b6e5334f7f617")
         with open(filepath) as f:

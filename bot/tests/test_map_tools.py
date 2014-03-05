@@ -9,7 +9,8 @@ class TestMapParser(unittest.TestCase):
 
     def setUp(self):
         self.parser = MapParser()
-        self.overviews_folder = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+        self.overviews_folder = os.path.join(settings.TEST_DATA_FOLDER,
+                                             'html',
                                              'map_overviews')
 
     def test_get_map_data_against_all_test_data(self):

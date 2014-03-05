@@ -9,7 +9,8 @@ from bot.libs.report_management import ReportManager
 class TestReportManager(unittest.TestCase):
 
     def setUp(self):
-        self.test_data_path = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+        self.test_data_path = os.path.join(settings.TEST_DATA_FOLDER,
+                                           'html',
                                            'reports/report_page_test_set')
 
     def test_get_report_urls(self):
@@ -71,7 +72,8 @@ class TestReportManager(unittest.TestCase):
 
     def test_build_report(self):
         rm = ReportManager(locale={})
-        filepath = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+        filepath = os.path.join(settings.TEST_DATA_FOLDER,
+                                'html',
                                 'reports/single_report_test_set',
                                 'en_report_green.html')
         with open(filepath) as f:
@@ -83,7 +85,8 @@ class TestReportManager(unittest.TestCase):
 class TestAttackReport(unittest.TestCase):
 
     def setUp(self):
-        self.test_data_path = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+        self.test_data_path = os.path.join(settings.TEST_DATA_FOLDER,
+                                           'html',
                                            'reports/single_report_test_set')
 
     def test_green_report(self):
