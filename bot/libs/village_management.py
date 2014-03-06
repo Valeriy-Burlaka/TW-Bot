@@ -148,6 +148,9 @@ class VillageManager:
     def get_attack_targets(self):
         return self.target_villages
 
+    def get_player_villages(self):
+        return self.player_villages
+
     def get_next_attacking_village(self):
         """
         Randomly decides which PlayerVillage from list of active
@@ -177,7 +180,7 @@ class VillageManager:
             attacker.update_troops_count(troops_sent=troops_sent)
         else:
             logging.error("Player Village with id {id} is not in list "
-                            "of farming villages!".format(id=attacker_id))
+                          "of farming villages!".format(id=attacker_id))
 
     def refresh_village_troops(self, villa_id, train_screen_html):
         """

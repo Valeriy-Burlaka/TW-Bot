@@ -13,6 +13,9 @@ import requests
 from bot.libs.common_tools import AutoLogin, AntigateWrapper
 
 
+__all__ = ['RequestManager', 'SessionExpiredError', 'TooManyConnectionAttempts']
+
+
 class SessionExpiredError(Exception):
     """
     Exception for the case if Bot is not asked

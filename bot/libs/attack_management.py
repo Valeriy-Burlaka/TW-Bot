@@ -61,6 +61,9 @@ class AttackManager:
     def save_registered_attacks(self):
         self.attack_observer.save_registered_attacks()
 
+    def get_recent_targets_info(self):
+        return self.attack_queue.villages
+
     def _get_arrival_return_t(self, t_of_attack, t_on_road):
         t_of_attack = self._convert_t_to_seconds(t_of_attack)
         t_of_arrival = t_of_attack + t_on_road
@@ -208,8 +211,8 @@ class DecisionMaker:
                                t_limit, insert_spy):
         """
         Decides if it is possible to attack any target with current amount of
-        troops, if so - returns dict {"troops_amount": int, "t_on_road": int,
-        "coords": (int, int)}, otherwise - None.
+        troops, if so - returns list [{"unit_to_send": int, ...},  t_on_road,,
+        target_coords], otherwise - None.
         """
         t_limit *= 3600  # to seconds
         for target in available_targets:
