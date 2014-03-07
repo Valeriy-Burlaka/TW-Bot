@@ -135,7 +135,7 @@ class CookiesExtractor:
         """
         connection = sqlite3.connect(db_path, timeout=timeout)
         cursor = connection.cursor()
-        if browser_name in ['chrome', 'chromium']:
+        if browser_name.lower() in ['chrome', 'chromium']:
             query = "select name, value from cookies where host_key=?"
         elif browser_name == 'mozilla':
             query = "select name, value from moz_cookies where host=?"
