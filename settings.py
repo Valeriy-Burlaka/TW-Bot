@@ -21,7 +21,7 @@ PASSWORD = 'pO3O09YXXOlHw6Dpucl6'
 ANTIGATE_KEY = 'bd676a60b996da118afcb2f12f3182e0'
 
 # How long bot should mock barbarians (hours)
-FARM_DURATION = 1
+FARM_DURATION = 6
 
 FARM_FREQUENCY = 3
 
@@ -35,7 +35,10 @@ MAIN_VILLAGE_ID = 41940
 # Which villages should be used to farm resources
 FARM_WITH = (41940,)
 
-TRUSTED_TARGETS = []
+TRUSTED_TARGETS = [(502, 304), (502, 308), (504, 303), (501, 309), (505, 307),
+                   (505, 305), (506, 306), (507, 309), (508, 308), (511, 308),
+                   (497, 299), (499, 298), (500, 298), (508, 303), (508, 305),
+                   (509, 313), (502, 313), (500, 313), (500, 314), (510, 313)]
 
 # Whether defensive troops should be used to farm resources
 USE_DEF_TO_FARM = False

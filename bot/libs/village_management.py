@@ -99,13 +99,14 @@ class VillageManager:
             if coords in saved_villages:
                 target_villages[coords] = saved_villages[coords]
                 # Update info about village population
-                target_villages[coords].population = int(village_data[3])
+                population = village_data[3]
+                target_villages[coords].population = int(population.replace('.', ''))
             else:
                 target_villages[coords] = self._build_target_village(coords,
                                                                      village_data,
                                                                      server_speed)
 
-        logging.info("Villages collected upon map "
+        logging.debug("Villages collected upon map "
                      "initialization: {}".format(target_villages))
 
         self.target_villages = target_villages
@@ -162,10 +163,7 @@ class VillageManager:
         if active_farming_villages:
             attackers = list(active_farming_villages.values())
             next_attacker = random.choice(attackers)
-            attacker_id = next_attacker.id
-            attacker_troops = next_attacker.get_troops_count()
-            attacker_targets = next_attacker.attack_targets
-            return attacker_id, attacker_troops, attacker_targets
+            return next_attacker
 
     def disable_farming_village(self, attacker_id):
         self.farming_villages[attacker_id].active = False
@@ -215,7 +213,7 @@ class VillageManager:
         Returns list of tuples (int(villa_id), str(villa_name),
         tuple(villa_coordinates))
         """
-        villa_info_ptrn = re.compile("""(?P<id>\d{6})  # village id
+        villa_info_ptrn = re.compile("""(?P<id>\d{5,6})  # village id
                                         \W+  # closing quote, bracket,
                                              # possible space character
                                         (?P<name>[\w\s]+)  # village name
@@ -546,7 +544,7 @@ class TargetVillage:
                "h-rates => {rates},\n\
                 defended/base_defence? => {defended}/{base_def}, " \
                "total loot => {total},\n\
-                last loot => {last}, " \
+                visits history => {visits}, " \
                "storage => {stor} ".format(coords=self.coords,
                                            visit=time.ctime(self.last_visited),
                                            remaining=self.remaining_capacity,
@@ -556,9 +554,15 @@ class TargetVillage:
                                            defended=self.defended,
                                            base_def=self.base_defence,
                                            total=self.total_loot,
-                                           last=self.visits_history)
+                                           visits=self.visits_history)
 
         return info
 
     def __repr__(self):
         return self.__str__()
+
+
+class EmptyVillage:
+    def __init__(self, village_id, coords):
+        self.id = village_id
+        self.coords = coords

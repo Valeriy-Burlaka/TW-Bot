@@ -10,7 +10,7 @@ import settings
 from bot.libs.map_tools import MapParser, MapMath
 from bot.libs.common_tools import CookiesExtractor
 from bot.libs.request_management import RequestManager
-from bot.libs.village_management import VillageManager
+from bot.libs.village_management import VillageManager, EmptyVillage
 from bot.libs.attack_management import AttackManager, AttackHelper
 from bot.libs.report_management import ReportManager
 
@@ -98,6 +98,7 @@ class Bot(Thread):
 
     def run(self):
         self.active = True
+        logging.info("Started to loot barbarians")
         try:
             while self.active:
                 self.attack_cycle()
@@ -107,42 +108,49 @@ class Bot(Thread):
         except TypeError:
             error_info = traceback.format_exception(*sys.exc_info())
             logging.error(error_info)
+        except KeyError:
+            error_info = traceback.format_exception(*sys.exc_info())
+            logging.error(error_info)
         finally:
-            self._clean_up()
             self.active = False
+            self._clean_up()
+            logging.info("Finished to loot barbarians")
 
     def stop(self):
         self.active = False
-        while self.in_cycle:
-            time.sleep(1)
+        # while self.in_cycle:
+        #     logging.info("Waiting for the end of attack cycle")
+        #     time.sleep(1)
         self._clean_up()
 
     def attack_cycle(self):
         self.in_cycle = True
-        new_arrivals = self.attack_manager.get_arrivals()
+        new_arrivals = self.attack_manager.get_new_arrivals()
         if new_arrivals:
             new_reports = self.get_new_reports(new_arrivals)
             self.attack_manager.update_attack_targets(new_reports)
-        new_returns = self.attack_manager.get_returns()
+
+        new_returns = self.attack_manager.get_new_returns()
         if new_returns:
             for pv_id in new_returns:
                 train_screen = self._get_train_screen(pv_id)
                 self.village_manager.refresh_village_troops(pv_id, train_screen)
-        next_attacker = self.village_manager.get_next_attacker()
+
+        next_attacker = self.village_manager.get_next_attacking_village()
         if not next_attacker:
             # any of player's villages cannot attack
             if not settings.DEBUG:
                 time.sleep(random.random() * 20)
                 return
-        else:
-            attacker_id = next_attacker.id
+
+        attacker_id = next_attacker.id
         next_target = self.attack_manager.\
             get_next_attack_target(next_attacker=next_attacker,
                                    t_limit_to_leave=settings.T_LIMIT_TO_LEAVE,
                                    insert_spy=True)
         if not next_target:
             # given attacker cannot attack any of its targets
-            self.village_manager.disable_attacker(next_attacker)
+            self.village_manager.disable_farming_village(attacker_id)
             event_msg = "Disabling player's village:{id}".format(id=attacker_id)
             logging.info(event_msg)
             if not settings.DEBUG:
@@ -161,9 +169,9 @@ class Bot(Thread):
                                                 t_on_the_road=t_on_road)
             self.village_manager.update_troops_count(attacker_id, troops_to_send)
             event_msg = "Attack sent at: {t1} from: {s} to: {c}. " \
-                        "Troops: {tr}".format(t1=time.ctime(t_of_attack),
-                                              s=attacker_id, c=target_coords,
-                                              tr=troops_to_send,)
+                        "Troops: {tr}".format(t1=t_of_attack, s=attacker_id,
+                                              c=target_coords, tr=troops_to_send)
+
             logging.info(event_msg)
         if not settings.DEBUG:
             time.sleep(random.random() * 5)
@@ -217,6 +225,12 @@ class Bot(Thread):
         resp = self.request_manager.get_overviews_screen()
         return resp['response_text']
 
+    def _get_map_overview(self, village_id, x, y):
+        if not settings.DEBUG:
+            time.sleep(random.random())
+        resp = self.request_manager.get_map_overview(village_id=village_id, x=x, y=y)
+        return resp['response_text']
+
     def _get_village_overview(self, village_id):
         if not settings.DEBUG:
             time.sleep(random.random())
@@ -244,7 +258,7 @@ class Bot(Thread):
     def _get_report(self, report_url):
         if not settings.DEBUG:
             time.sleep(random.random())
-        resp = self.request_manager.get_reports_page(url=report_url)
+        resp = self.request_manager.get_report(url=report_url)
         return resp['response_text']
 
     def _post_confirmation(self, attacker_id, confirm_data):
@@ -286,9 +300,8 @@ class Bot(Thread):
             check_center = distinct_farming_centers[0]
             center_coords = check_center.coords
             center_x, center_y = center_coords[0], center_coords[1]
-            center_id = check_center[1]
-            map_overview_html = self.request_manager.\
-                get_map_overview(village_id=center_id, x=center_x, y=center_y)
+            center_id = check_center.id
+            map_overview_html = self._get_map_overview(center_id, center_x, center_y)
 
             event_msg = "Retrieving map data from ({x},{y}) base point." \
                         "Map depth={depth}".format(x=center_x, y=center_y, depth=map_depth)
@@ -309,7 +322,7 @@ class Bot(Thread):
                 for corner in area_corners:
                     # area_data[(x, y)] - village data, 0 index = str(village_id)
                     corner_id = int(area_data[corner][0])
-                    centers =[(corner, corner_id)]
+                    centers = [EmptyVillage(corner_id, corner)]
                     # Delay between "user" requests of map overview
                     if not settings.DEBUG:
                         time.sleep(random.random() * 6)
@@ -320,7 +333,7 @@ class Bot(Thread):
         return map_data
 
     @staticmethod
-    def _filter_distinct_centers(current_attacker, centers, sectors_data):
+    def _filter_distinct_centers(current_coords, centers, sectors_data):
         """
         Checks to which sector current attacker belongs and
         sorts out all attackers that also belong to the same sector.
@@ -329,10 +342,9 @@ class Bot(Thread):
         """
         distinct_centers = []
         for sector in sectors_data:
-            if current_attacker in sector:
+            if current_coords in sector:
                 for center in centers:
-                    center_coords = center[0]
-                    if center_coords not in sector:
+                    if center.coords not in sector:
                         distinct_centers.append(center)
         return distinct_centers
 

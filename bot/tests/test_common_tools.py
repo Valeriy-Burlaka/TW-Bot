@@ -116,3 +116,4 @@ class TestLocalStorage(unittest.TestCase):
         self.assertEqual(manual_storage['arrivals'], save_data_arrivals)
         self.assertIn('returns', manual_storage)
         self.assertEqual(manual_storage['returns'], save_data_returns)
+

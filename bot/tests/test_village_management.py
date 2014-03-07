@@ -254,8 +254,9 @@ class TestVillageManager(unittest.TestCase):
                                                                      target_coords)
 
     def test_get_villages_data(self):
-        filename = os.path.join(settings.HTML_TEST_DATA_FOLDER,
-                                'villages_overviews.html')
+        filename = os.path.join(settings.TEST_DATA_FOLDER,
+                                'html',
+                                'net_villages_overviews-1.html')
         with open(filename) as f:
             overviews_data = f.read()
         expected_res = [(127591, (211, 305), 'Lounge of trolls'),
@@ -263,6 +264,14 @@ class TestVillageManager(unittest.TestCase):
                         (135083, (211, 306), 'Cave of trolls'),
                         (126583, (211, 307), 'Piles of trolls'),
                         (136329, (212, 305), 'Shame of trolls'),]
+        actual_res = self.village_manager._get_villages_data(overviews_data)
+        self.assertCountEqual(expected_res, actual_res)
+        filename = os.path.join(settings.TEST_DATA_FOLDER,
+                                'html',
+                                'net_villages_overviews-2.html')
+        with open(filename) as f:
+            overviews_data = f.read()
+        expected_res = [(41940, (504, 306), 'ProperBills village')]
         actual_res = self.village_manager._get_villages_data(overviews_data)
         self.assertCountEqual(expected_res, actual_res)
 
@@ -330,7 +339,8 @@ class TestVillageManager(unittest.TestCase):
 class TestPlayerVillage(unittest.TestCase):
 
     def setUp(self):
-        filepath = os.path.join(settings.HTML_TEST_DATA_FOLDER,
+        filepath = os.path.join(settings.TEST_DATA_FOLDER,
+                                'html',
                                 'train_screen.html')
         with open(filepath) as f:
             train_screen_html = f.read()
