@@ -195,6 +195,7 @@ class AttackReport:
         be there if attack was sent with scouts) and sets
         building levels.
         """
+        level_name = self.locale["level_name"]
         espionage = self.soup.find(id="attack_spy")
         if espionage is not None:
             text = espionage.text
@@ -203,20 +204,21 @@ class AttackReport:
         mines = self.locale["mines"]
         mine_levels = []
         for mine in mines:
-            level = self._get_building_level(text, mine)
+            level = self._get_building_level(text, mine, level_name)
             mine_levels.append(level)
             self.mine_levels = mine_levels
         storage = self.locale["storage"]
-        self.storage_level = self._get_building_level(text, storage)
+        self.storage_level = self._get_building_level(text, storage, level_name)
         wall = self.locale["wall"]
-        self.wall_level = self._get_building_level(text, wall)
+        self.wall_level = self._get_building_level(text, wall, level_name)
 
     @staticmethod
-    def _get_building_level(text, building_name):
+    def _get_building_level(text, building_name, level_name):
         """
         Parses input text to get building level.
         """
-        search = r'{building}\s\WLevel\s(\d+)\W'.format(building=building_name)
+        search = r'{building}\s\W{level}\s(\d+)\W'.format(building=building_name,
+                                                          level=level_name)
         match = re.search(search, text)
         if match:
             return int(match.group(1))

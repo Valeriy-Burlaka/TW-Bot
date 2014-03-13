@@ -2,6 +2,7 @@ import unittest
 import os
 
 import settings
+from bot.app import locale
 from bot.libs.report_management import AttackReport
 from bot.libs.report_management import ReportManager
 
@@ -71,7 +72,7 @@ class TestReportManager(unittest.TestCase):
         self.assertCountEqual(expected_urls, actual_urls)
 
     def test_build_report(self):
-        rm = ReportManager(locale={})
+        rm = ReportManager(locale=locale.LOCALE["en"])
         filepath = os.path.join(settings.TEST_DATA_FOLDER,
                                 'html',
                                 'reports/single_report_test_set',
@@ -88,6 +89,7 @@ class TestAttackReport(unittest.TestCase):
         self.test_data_path = os.path.join(settings.TEST_DATA_FOLDER,
                                            'html',
                                            'reports/single_report_test_set')
+        self.locale = locale.LOCALE
 
     def test_green_report(self):
         """
@@ -97,7 +99,7 @@ class TestAttackReport(unittest.TestCase):
         filepath = os.path.join(self.test_data_path, 'en_report_green.html')
         with open(filepath) as f:
             report_data = f.read()
-            rep = AttackReport(report_data)
+            rep = AttackReport(report_data, self.locale["en"])
         self.assertEqual(rep.status, 'green')
         self.assertEqual(rep.coords, (203, 316))
         self.assertEqual(rep.t_of_attack, 1383480117)
@@ -116,7 +118,7 @@ class TestAttackReport(unittest.TestCase):
         filepath = os.path.join(self.test_data_path, 'en_report_yellow.html')
         with open(filepath) as f:
             report_data = f.read()
-            rep = AttackReport(report_data)
+            rep = AttackReport(report_data, self.locale["en"])
         self.assertEqual(rep.status, 'yellow')
         self.assertEqual(rep.coords, (222, 293))
         self.assertEqual(rep.t_of_attack, 1383407341)
@@ -136,7 +138,7 @@ class TestAttackReport(unittest.TestCase):
         filepath = os.path.join(self.test_data_path, 'en_report_red.html')
         with open(filepath) as f:
             report_data = f.read()
-            rep = AttackReport(report_data)
+            rep = AttackReport(report_data, self.locale["en"])
 
         self.assertEqual(rep.status, 'red')
         self.assertEqual(rep.coords, (220, 317))
@@ -155,7 +157,7 @@ class TestAttackReport(unittest.TestCase):
         filepath = os.path.join(self.test_data_path, 'en_report_yellow_w_defence.html')
         with open(filepath) as f:
             report_data = f.read()
-            rep = AttackReport(report_data)
+            rep = AttackReport(report_data, self.locale["en"])
 
         self.assertEqual(rep.status, 'yellow')
         self.assertEqual(rep.coords, (218, 310))
@@ -176,7 +178,7 @@ class TestAttackReport(unittest.TestCase):
         filepath = os.path.join(self.test_data_path, 'en_report_yellow_wo_scouts.html')
         with open(filepath) as f:
             report_data = f.read()
-            rep = AttackReport(report_data)
+            rep = AttackReport(report_data, self.locale["en"])
 
         self.assertEqual(rep.status, 'yellow')
         self.assertEqual(rep.coords, (212, 297))
@@ -195,7 +197,7 @@ class TestAttackReport(unittest.TestCase):
         filepath = os.path.join(self.test_data_path, 'en_report_blue.html')
         with open(filepath) as f:
             report_data = f.read()
-            rep = AttackReport(report_data)
+            rep = AttackReport(report_data, self.locale["en"])
 
         self.assertEqual(rep.status, 'blue')
         self.assertEqual(rep.coords, (215, 301))
@@ -215,7 +217,7 @@ class TestAttackReport(unittest.TestCase):
         filepath = os.path.join(self.test_data_path, 'en_report_red_blue.html')
         with open(filepath) as f:
             report_data = f.read()
-            rep = AttackReport(report_data)
+            rep = AttackReport(report_data, self.locale["en"])
 
         self.assertEqual(rep.status, 'red_blue')
         self.assertEqual(rep.coords, (217, 311))
@@ -236,7 +238,7 @@ class TestAttackReport(unittest.TestCase):
         filepath = os.path.join(self.test_data_path, 'en_report_support.html')
         with open(filepath) as f:
             report_data = f.read()
-            rep = AttackReport(report_data)
+            rep = AttackReport(report_data, self.locale["en"])
 
         self.assertIsNone(rep.status)
         self.assertIsNone(rep.coords)
@@ -252,7 +254,7 @@ class TestAttackReport(unittest.TestCase):
         """
         Checks that AR gracefully handles bad input data
         """
-        rep = AttackReport('foo bar eggs spam!!!!')
+        rep = AttackReport('foo bar eggs spam!!!!', locale=None)
         self.assertIsNone(rep.status)
         self.assertIsNone(rep.coords)
         self.assertIsNone(rep.t_of_attack)
@@ -262,3 +264,22 @@ class TestAttackReport(unittest.TestCase):
         self.assertIsNone(rep.looted_capacity)
         self.assertIsNone(rep.wall_level)
         self.assertIsNone(rep.storage_level)
+
+    def test_fr_scout_report_defended(self):
+        """
+        Only scouts were sent in attack (so nothing was looted)
+        """
+        filepath = os.path.join(self.test_data_path, 'fr_report_blue_defended.html')
+        with open(filepath) as f:
+            report_data = f.read()
+            rep = AttackReport(report_data, self.locale["fr"])
+
+        self.assertEqual(rep.status, 'blue')
+        self.assertEqual(rep.coords, (621, 351))
+        self.assertEqual(rep.t_of_attack, 1394144603)
+        self.assertTrue(rep.defended)
+        self.assertEqual(rep.mine_levels, [3, 2, 1])
+        self.assertEqual(rep.remaining_capacity, 3237)
+        self.assertEqual(rep.looted_capacity, 0)
+        self.assertEqual(rep.wall_level, 1)
+        self.assertEqual(rep.storage_level, 2)
