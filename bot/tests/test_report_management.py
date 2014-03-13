@@ -266,9 +266,6 @@ class TestAttackReport(unittest.TestCase):
         self.assertIsNone(rep.storage_level)
 
     def test_fr_scout_report_defended(self):
-        """
-        Only scouts were sent in attack (so nothing was looted)
-        """
         filepath = os.path.join(self.test_data_path, 'fr_report_blue_defended.html')
         with open(filepath) as f:
             report_data = f.read()
@@ -283,3 +280,63 @@ class TestAttackReport(unittest.TestCase):
         self.assertEqual(rep.looted_capacity, 0)
         self.assertEqual(rep.wall_level, 1)
         self.assertEqual(rep.storage_level, 2)
+
+    def test_fr_report_yellow(self):
+        filepath = os.path.join(self.test_data_path, 'fr_report_yellow.html')
+        with open(filepath) as f:
+            report_data = f.read()
+            rep = AttackReport(report_data, self.locale["fr"])
+        self.assertEqual(rep.status, 'yellow')
+        self.assertEqual(rep.coords, (614, 352))
+        self.assertEqual(rep.t_of_attack, 1394178196)
+        self.assertFalse(rep.defended)
+        self.assertEqual(rep.mine_levels, [6, 2, 1])
+        self.assertEqual(rep.remaining_capacity, 0)
+        self.assertEqual(rep.looted_capacity, 2202)
+        self.assertEqual(rep.wall_level, 5)
+        self.assertEqual(rep.storage_level, 4)
+
+    def test_fr_green_report(self):
+        filepath = os.path.join(self.test_data_path, 'fr_report_green.html')
+        with open(filepath) as f:
+            report_data = f.read()
+            rep = AttackReport(report_data, self.locale["fr"])
+        self.assertEqual(rep.status, 'green')
+        self.assertEqual(rep.coords, (615, 349))
+        self.assertEqual(rep.t_of_attack, 1394182293)
+        self.assertFalse(rep.defended)
+        self.assertEqual(rep.mine_levels, [5, 5, 8])
+        self.assertEqual(rep.remaining_capacity, 3)
+        self.assertEqual(rep.looted_capacity, 1182)
+        self.assertEqual(rep.wall_level, 2)
+        self.assertEqual(rep.storage_level, 6)
+
+    def test_fr_red_report(self):
+        filepath = os.path.join(self.test_data_path, 'fr_report_red.html')
+        with open(filepath) as f:
+            report_data = f.read()
+            rep = AttackReport(report_data, self.locale["fr"])
+        self.assertEqual(rep.status, 'red')
+        self.assertEqual(rep.coords, (617, 352))
+        self.assertEqual(rep.t_of_attack, 1394221465)
+        self.assertTrue(rep.defended)
+        self.assertIsNone(rep.mine_levels)
+        self.assertIsNone(rep.remaining_capacity)
+        self.assertIsNone(rep.looted_capacity)
+        self.assertIsNone(rep.wall_level)
+        self.assertIsNone(rep.storage_level)
+
+    def test_us_red_report(self):
+        filepath = os.path.join(self.test_data_path, 'us_report_red.html')
+        with open(filepath) as f:
+            report_data = f.read()
+            rep = AttackReport(report_data, self.locale["en"])
+        self.assertEqual(rep.status, 'red')
+        self.assertEqual(rep.coords, (673, 511))
+        self.assertEqual(rep.t_of_attack, 1394724838)
+        self.assertTrue(rep.defended)
+        self.assertIsNone(rep.mine_levels)
+        self.assertIsNone(rep.remaining_capacity)
+        self.assertIsNone(rep.looted_capacity)
+        self.assertIsNone(rep.wall_level)
+        self.assertIsNone(rep.storage_level)
