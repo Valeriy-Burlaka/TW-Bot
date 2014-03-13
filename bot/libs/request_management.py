@@ -33,10 +33,10 @@ class TooManyConnectionAttempts(Exception):
 
 class RequestManager:
 
-    def __init__(self, host, initial_cookies, main_id, con_attempts=3,
+    def __init__(self, host, initial_cookies, main_id, locale, con_attempts,
                  reconnect=False, username=None, password=None, antigate_key=None):
-        self.safe_opener = SafeOpener(host, initial_cookies, con_attempts,
-                           reconnect, username, password, antigate_key)
+        self.safe_opener = SafeOpener(host, initial_cookies, locale, con_attempts,
+                                      reconnect, username, password, antigate_key)
         self.data_provider = RequestDataProvider(host, main_id)
 
     def __getattr__(self, name):
@@ -252,10 +252,11 @@ class RequestDataProvider:
 
 class SafeOpener:
 
-    def __init__(self, host, cookies, con_attempts, reconnect, username, password,
-                 antigate_key):
+    def __init__(self, host, cookies, locale, con_attempts, reconnect,
+                 username, password, antigate_key):
         self.host = host
         self.cookies = cookies
+        self.locale = locale
         self.attempts = con_attempts
         self.reconnect = reconnect
         if reconnect:
@@ -334,7 +335,7 @@ class SafeOpener:
                                         "See log file for details.")
 
     def _check_if_session_expire(self, html_data):
-        expiry_text = "Session expired"
+        expiry_text = self.locale["expiration"]
         if expiry_text in html_data:
             logging.warning("Session expired... Don't worry, masta!")
             return True
@@ -343,7 +344,7 @@ class SafeOpener:
         self.cookies = self.auto_login.login_to_server()
 
     def _check_if_captcha_spawned(self, html_data):
-        protection_text = "Bot protection"
+        protection_text = self.locale["protection"]
         if protection_text in html_data:
             logging.warning("Faced Captcha")
             # Extract captcha URL: it is inside JS function and

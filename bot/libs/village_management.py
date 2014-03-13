@@ -30,15 +30,15 @@ class VillageManager:
         input.
         filters map data (exclude non-neutral & non-trusted targets)
         and builds mapping of target villages.
-    set_farming_village(attacker_id, train_screen, use_def, heavy)is_def):
+    set_farming_village(attacker_id, train_screen, use_def, heavy_is_def):
         takes train screen (html string) for a given PlayerVillage
         & farming options.
         configures this PlayerVillage to act as farming village
     get_attack_targets():
-        returns mapping {(x_coordinate, y_coordinate): Village_object, ...}
+        returns mapping {(x_coordinate, y_coordinate): TargetVillage_obj, ...}
     get_next_attacking_village():
         randomly decides who will attack next
-        returns tuple(attacker_id, attacker_troops)
+        returns PlayerVillage_obj
     disable_farming_village(attacker_id):
         marks given village as inactive (so it will not be considered as
         the next possible attacker)

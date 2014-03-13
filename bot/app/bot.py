@@ -7,6 +7,7 @@ import traceback
 from threading import Thread
 
 import settings
+from bot.app import locale
 from bot.libs.map_tools import MapParser, MapMath
 from bot.libs.common_tools import CookiesExtractor
 from bot.libs.request_management import RequestManager
@@ -25,6 +26,7 @@ class Bot(Thread):
         self.report_manager = None
         self.attack_manager = None
         self.attack_helper = None
+        self.locale = self._get_locale()
         self.setup_request_manager()
         self.setup_village_manager()
         self.setup_attack_manager()
@@ -42,6 +44,7 @@ class Bot(Thread):
         request_manager = RequestManager(host=settings.HOST,
                                          initial_cookies=initial_cookies,
                                          main_id=settings.MAIN_VILLAGE_ID,
+                                         locale=self.locale,
                                          con_attempts=5,
                                          reconnect=True,
                                          username=settings.USER,
@@ -87,9 +90,7 @@ class Bot(Thread):
         self.attack_manager = attack_manager
 
     def setup_report_manager(self):
-        # lang = self._detect_server_lang()
-        # locale = bot.app.locale[lang]
-        self.report_manager = ReportManager(locale=None)
+        self.report_manager = ReportManager(locale=self.locale)
 
     def setup_attack_helper(self):
         rally_screen = self._get_rally_overview(settings.MAIN_VILLAGE_ID)
@@ -101,24 +102,9 @@ class Bot(Thread):
         self.active = True
         now = time.mktime(time.gmtime())
         end = now + settings.FARM_DURATION * 3600
-
-        try:
-            while self.active:
-                self.attack_cycle()
-                self.active = time.mktime(time.gmtime()) < end
-        except AttributeError:
-            error_info = traceback.format_exception(*sys.exc_info())
-            logging.error(error_info)
-        except TypeError:
-            error_info = traceback.format_exception(*sys.exc_info())
-            logging.error(error_info)
-        except KeyError:
-            error_info = traceback.format_exception(*sys.exc_info())
-            logging.error(error_info)
-        except Exception:
-            print("Unexpected exception occurred. See error log for more details.")
-            error_info = traceback.format_exception(*sys.exc_info())
-            logging.critical(error_info)
+        while self.active:
+            self.attack_cycle()
+            self.active = time.mktime(time.gmtime()) < end
 
     def stop(self):
         self.active = False
@@ -213,6 +199,12 @@ class Bot(Thread):
             return
         t_of_attack = self._post_attack(attacker_id, csrf, attack_data)
         return t_of_attack
+
+    def _get_locale(self):
+        lang = settings.HOST[:2]
+        if lang == 'us':
+            lang = 'en'
+        self.locale = locale.LOCALE[lang]
 
     def _clean_up(self):
         self.attack_manager.save_registered_attacks()

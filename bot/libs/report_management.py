@@ -72,7 +72,7 @@ class AttackReport:
     attack reports, so using regular expressions instead.
     """
 
-    def __init__(self, str_html, locale=None):
+    def __init__(self, str_html, locale):
         self.data = str_html
         self.locale = locale
         self.status = None
@@ -145,19 +145,33 @@ class AttackReport:
             self.coords = (0, 0)    # set non-existing coordinates
 
     def _set_t_of_attack(self):
-        pattern = re.compile(r"""(\w{3})\s  # abbreviated month name
-                                 (\d{2}),\s  # decimal day
-                                 (\d{4})\s{1,2}  # year
-                                 (\d{2}):(\d{2}):(\d{2})  # hours-minutes-seconds
-                                 # e.g: "Nov 03, 2013  14:01:57"
-                              """,
-                             re.VERBOSE)
+        if self.locale["dateformat"] == "abbreviated":
+            pattern = re.compile(r"""(\w{3})\s  # abbreviated month name
+                                     (\d{2}),\s  # decimal day
+                                     (\d{4})\s{1,2}  # year
+                                     (\d{2}):(\d{2}):(\d{2})  # hours-minutes-seconds
+                                     # e.g: "Nov 03, 2013  14:01:57"
+                                  """,
+                                 re.VERBOSE)
 
-        match = re.search(pattern, self.data)
-        if match:
-            str_t = match.group()
-            struct_t = time.strptime(str_t, "%b %d, %Y %H:%M:%S")
-            self.t_of_attack = round(time.mktime(struct_t))
+            match = re.search(pattern, self.data)
+            if match:
+                str_t = match.group()
+                struct_t = time.strptime(str_t, "%b %d, %Y %H:%M:%S")
+                self.t_of_attack = round(time.mktime(struct_t))
+        elif self.locale["dateformat"] == "numerical":
+            pattern = re.compile(r"""(\d{2})/  # decimal day
+                                     (\d{2})/  # decimal month
+                                     (\d{4})\s{1,2}  # year
+                                     (\d{2}):(\d{2}):(\d{2})  # hours-minutes-seconds
+                                     # e.g: "07/03/2014 00:23:23"
+                                  """,
+                                 re.VERBOSE)
+            match = re.search(pattern, self.data)
+            if match:
+                str_t = match.group()
+                struct_t = time.strptime(str_t, "%d/%m/%Y %H:%M:%S")
+                self.t_of_attack = round(time.mktime(struct_t))
 
     def _set_defence(self):
         """
@@ -181,28 +195,30 @@ class AttackReport:
         be there if attack was sent with scouts) and sets
         building levels.
         """
+        level_name = self.locale["level_name"]
         espionage = self.soup.find(id="attack_spy")
         if espionage is not None:
             text = espionage.text
         else:
             text = ""
-        mines = ["Timber camp", "Clay pit", "Iron mine"]
+        mines = self.locale["mines"]
         mine_levels = []
         for mine in mines:
-            level = self._get_building_level(text, mine)
+            level = self._get_building_level(text, mine, level_name)
             mine_levels.append(level)
             self.mine_levels = mine_levels
-        storage = "Warehouse"
-        self.storage_level = self._get_building_level(text, storage)
-        wall = "Wall"
-        self.wall_level = self._get_building_level(text, wall)
+        storage = self.locale["storage"]
+        self.storage_level = self._get_building_level(text, storage, level_name)
+        wall = self.locale["wall"]
+        self.wall_level = self._get_building_level(text, wall, level_name)
 
     @staticmethod
-    def _get_building_level(text, building_name):
+    def _get_building_level(text, building_name, level_name):
         """
         Parses input text to get building level.
         """
-        search = r'{building}\s\WLevel\s(\d+)\W'.format(building=building_name)
+        search = r'{building}\s\W{level}\s(\d+)\W'.format(building=building_name,
+                                                          level=level_name)
         match = re.search(search, text)
         if match:
             return int(match.group(1))

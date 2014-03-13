@@ -1,6 +1,7 @@
 import sys
 import os
 import logging
+import traceback
 
 from bot.app.bot import Bot
 
@@ -35,6 +36,19 @@ def main(arguments):
         logging.info("Starting to loot barbarians")
         bot.start()
         bot.join()
+    except AttributeError:
+        error_info = traceback.format_exception(*sys.exc_info())
+        logging.error(error_info)
+    except TypeError:
+        error_info = traceback.format_exception(*sys.exc_info())
+        logging.error(error_info)
+    except KeyError:
+        error_info = traceback.format_exception(*sys.exc_info())
+        logging.error(error_info)
+    except Exception:
+        print("Unexpected exception occurred. See error log for more details.")
+        error_info = traceback.format_exception(*sys.exc_info())
+        logging.critical(error_info)
     finally:
         logging.info("Finishing to loot barbarians")
         bot.stop()

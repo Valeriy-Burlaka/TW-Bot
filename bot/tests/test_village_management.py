@@ -42,7 +42,8 @@ class TestVillageManager(unittest.TestCase):
                     (4, 4): ['100003', 5, 'Rohan', '777', 'non-empty', '100']}
         # 1 case, base scenarion: no saved villages, no trusted villages;
         # resulting .target_villages should contain 2 (valid) TargetVillages
-        self.village_manager.build_target_villages(map_data, trusted_targets=(),
+        self.village_manager.build_target_villages(map_data, trusted_targets=[],
+                                                   untrusted_targets=[],
                                                    server_speed=1)
 
         target_villages = self.village_manager.target_villages
@@ -73,7 +74,8 @@ class TestVillageManager(unittest.TestCase):
         self.village_manager.map_storage.get_saved_villages.return_value = \
             saved_villages
 
-        self.village_manager.build_target_villages(map_data, trusted_targets=(),
+        self.village_manager.build_target_villages(map_data, trusted_targets=[],
+                                                   untrusted_targets=[],
                                                    server_speed=1)
 
         target_villages = self.village_manager.target_villages
@@ -103,10 +105,13 @@ class TestVillageManager(unittest.TestCase):
         # villages, that were in .map_data & were saved, have been updated
         never_found_village = TargetVillage((5, 5), 100005, 10)
         saved_villages[(5, 5)] = never_found_village
-        trusted_targets = ((3, 3), (4, 4))
+        self.village_manager.map_storage.get_saved_villages.return_value = \
+            saved_villages
+        trusted_targets = [(3, 3), (4, 4)]
 
         self.village_manager.build_target_villages(map_data,
                                                    trusted_targets=trusted_targets,
+                                                   untrusted_targets=[],
                                                    server_speed=1)
         
         target_villages = self.village_manager.target_villages
@@ -145,6 +150,27 @@ class TestVillageManager(unittest.TestCase):
         self.assertEqual(target_village.coords, (4, 4))
         self.assertEqual(target_village.h_rates, None)
         self.assertEqual(target_village.population, 777)
+        # village that wasn't in map data is not in target list
+        self.assertNotIn((5, 5), target_villages)
+
+        # 4th case: both 'valid' villages are untrusted, both
+        # 'invalid' villages are trusted
+        untrusted_targets = [(1, 1), (2, 2)]
+        self.village_manager.build_target_villages(map_data,
+                                                   trusted_targets=trusted_targets,
+                                                   untrusted_targets=untrusted_targets,
+                                                   server_speed=1)
+        target_villages = self.village_manager.target_villages
+        self.assertNotIn((1, 1), target_villages)
+        self.assertNotIn((2, 2), target_villages)
+        self.assertIn((3, 3), target_villages)
+        target_village = target_villages[(3, 3)]
+        self.assertIsInstance(target_village, TargetVillage)
+        self.assertEqual(target_village.id, 100002)
+        self.assertIn((4, 4), target_villages)
+        target_village = target_villages[(4, 4)]
+        self.assertIsInstance(target_village, TargetVillage)
+        self.assertEqual(target_village.id, 100003)
 
     def test_build_player_villages(self):
         villages_data = [(127591, (211, 305), 'Lounge of trolls'),
@@ -216,9 +242,7 @@ class TestVillageManager(unittest.TestCase):
         self.village_manager.farming_villages = {1000: pv1, 2000: pv2}
 
         attacker = self.village_manager.get_next_attacking_village()
-        self.assertEqual(attacker[0], 2000)
-        self.assertEqual(attacker[1], troops_count)
-        self.assertEqual(attacker[2], attack_targets)
+        self.assertEqual(attacker.id, 2000)
 
         pv2.active = False
         attacker = self.village_manager.get_next_attacking_village()
