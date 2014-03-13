@@ -286,6 +286,9 @@ class SafeOpener:
                     resp = requests.get(url, headers=headers,
                                         cookies=self.cookies)
                 response_text = resp.text
+                # sometimes game server returns empty response
+                if len(response_text) == 0:
+                    continue
                 response_time = resp.headers['date']
                 expiration_check = self._check_if_session_expire(response_text)
                 if expiration_check:
