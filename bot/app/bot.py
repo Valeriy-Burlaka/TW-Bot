@@ -61,6 +61,7 @@ class Bot(Thread):
                                       map_depth=2)
         village_manager.build_target_villages(map_data=map_data,
                                               trusted_targets=settings.TRUSTED_TARGETS,
+                                              untrusted_targets=settings.UNTRUSTED_TARGETS,
                                               server_speed=settings.HOST_SPEED)
         if settings.FARM_WITH:
             farm_with = settings.FARM_WITH
@@ -98,10 +99,13 @@ class Bot(Thread):
 
     def run(self):
         self.active = True
-        logging.info("Started to loot barbarians")
+        now = time.mktime(time.gmtime())
+        end = now + settings.FARM_DURATION * 3600
+
         try:
             while self.active:
                 self.attack_cycle()
+                self.active = time.mktime(time.gmtime()) < end
         except AttributeError:
             error_info = traceback.format_exception(*sys.exc_info())
             logging.error(error_info)
@@ -111,16 +115,13 @@ class Bot(Thread):
         except KeyError:
             error_info = traceback.format_exception(*sys.exc_info())
             logging.error(error_info)
-        finally:
-            self.active = False
-            self._clean_up()
-            logging.info("Finished to loot barbarians")
+        except Exception:
+            print("Unexpected exception occurred. See error log for more details.")
+            error_info = traceback.format_exception(*sys.exc_info())
+            logging.critical(error_info)
 
     def stop(self):
         self.active = False
-        # while self.in_cycle:
-        #     logging.info("Waiting for the end of attack cycle")
-        #     time.sleep(1)
         self._clean_up()
 
     def attack_cycle(self):
@@ -157,9 +158,8 @@ class Bot(Thread):
                 time.sleep(random.random() * 10)
                 return
 
-        troops_to_send, t_on_road, target_coords = next_target[0], \
-                                                   next_target[1], \
-                                                   next_target[2]
+        troops_to_send, t_on_road, target_coords = \
+            next_target[0], next_target[1], next_target[2]
         t_of_attack = self.send_attack(attacker_id, coords=target_coords,
                                        troops=troops_to_send)
         if t_of_attack:

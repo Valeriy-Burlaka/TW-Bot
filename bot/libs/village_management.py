@@ -78,7 +78,8 @@ class VillageManager:
 
         self.player_villages = player_villages
 
-    def build_target_villages(self, map_data, trusted_targets, server_speed):
+    def build_target_villages(self, map_data, trusted_targets, untrusted_targets,
+                              server_speed):
         """
         Returns mapping of valid target villages (that may be farmed):
         1. Retrieves previously stored villages
@@ -94,7 +95,8 @@ class VillageManager:
         # filter out all villages except Barbarian/Bonus and players villages
         # explicitly marked as trusted targets
         map_data = {coords: village_data for coords, village_data in map_data.items()
-                    if self._is_valid_target(village_data) or coords in trusted_targets}
+                    if (self._is_valid_target(village_data) and coords not in untrusted_targets)
+                    or coords in trusted_targets}
         for coords, village_data in map_data.items():
             if coords in saved_villages:
                 target_villages[coords] = saved_villages[coords]

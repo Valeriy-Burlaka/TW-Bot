@@ -1,10 +1,7 @@
-import time
 import sys
 import os
 import logging
-import traceback
 
-import settings
 from bot.app.bot import Bot
 
 
@@ -35,13 +32,11 @@ def main(arguments):
                         datefmt='%d/%b/%Y %H:%M:%S %Z %z')
     try:
         bot = Bot()
+        logging.info("Starting to loot barbarians")
         bot.start()
-        time.sleep(settings.FARM_DURATION * 3600)
-    except Exception:
-        print("Unexpected exception occurred. See error log for more details.")
-        error_info = traceback.format_exception(*sys.exc_info())
-        logging.critical(error_info)
+        bot.join()
     finally:
+        logging.info("Finishing to loot barbarians")
         bot.stop()
         sys.exit()
 
@@ -49,8 +44,6 @@ def main(arguments):
 if __name__ == '__main__':
     try:
         main(sys.argv)
-    except KeyboardInterrupt:
-        print("Interrupted by user")
     except UnboundLocalError:
         logging.error("Bot has died before it's birth!")
     except SystemExit:
