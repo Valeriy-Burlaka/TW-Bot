@@ -338,8 +338,13 @@ class PlayerVillage:
         data_ptrn = re.compile(r'UnitPopup.unit_data\s?=\s?'
                                r'([\w\W]+);[\s]*UnitPopup[\w\W]+')
         match = re.search(data_ptrn, html_data)
-        troops_data = json.loads(match.group(1))
-        return troops_data
+        try:
+            troops_data = json.loads(match.group(1))
+            return troops_data
+        except AttributeError as e:
+            with open("bad_troops_data.html") as f:
+                f.write(html_data)
+            raise(e)
 
     def __str__(self):
         return "PlayerVillage: id: {id}, coords: {coords}, name: {name},\n" \

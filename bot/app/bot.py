@@ -26,7 +26,8 @@ class Bot(Thread):
         self.report_manager = None
         self.attack_manager = None
         self.attack_helper = None
-        self.locale = self._get_locale()
+        self.locale = None
+        self.set_locale()
         self.setup_request_manager()
         self.setup_village_manager()
         self.setup_attack_manager()
@@ -102,9 +103,23 @@ class Bot(Thread):
         self.active = True
         now = time.mktime(time.gmtime())
         end = now + settings.FARM_DURATION * 3600
-        while self.active:
-            self.attack_cycle()
-            self.active = time.mktime(time.gmtime()) < end
+        try:
+            while self.active:
+                self.attack_cycle()
+                self.active = time.mktime(time.gmtime()) < end
+        except AttributeError:
+            error_info = traceback.format_exception(*sys.exc_info())
+            logging.error(error_info)
+        except TypeError:
+            error_info = traceback.format_exception(*sys.exc_info())
+            logging.error(error_info)
+        except KeyError:
+            error_info = traceback.format_exception(*sys.exc_info())
+            logging.error(error_info)
+        except Exception:
+            print("Unexpected exception occurred. See error log for details.")
+            error_info = traceback.format_exception(*sys.exc_info())
+            logging.critical(error_info)
 
     def stop(self):
         self.active = False
@@ -148,6 +163,7 @@ class Bot(Thread):
             next_target[0], next_target[1], next_target[2]
         t_of_attack = self.send_attack(attacker_id, coords=target_coords,
                                        troops=troops_to_send)
+        logging.info("Time of the last attack: {}".format(t_of_attack))
         if t_of_attack:
             self.attack_manager.register_attack(attacker_id=attacker_id,
                                                 target_coords=target_coords,
@@ -200,7 +216,7 @@ class Bot(Thread):
         t_of_attack = self._post_attack(attacker_id, csrf, attack_data)
         return t_of_attack
 
-    def _get_locale(self):
+    def set_locale(self):
         lang = settings.HOST[:2]
         if lang == 'us':
             lang = 'en'

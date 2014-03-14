@@ -243,7 +243,6 @@ class DecisionMaker:
             estimated_capacity = attack_target.estimate_capacity(t_of_arrival)
             units_needed = self._estimate_troops_needed(unit, estimated_capacity)
             if units_needed <= count:
-                self._evaluate_bot_sanity(unit.name, units_needed, attack_target)
                 troops_to_send = {unit.name: units_needed}
                 if insert_spy_in_attack:
                     if 'spy' in troops_count and troops_count['spy'] >= 1:
@@ -276,28 +275,6 @@ class DecisionMaker:
     def _get_time_on_the_road(distance, speed):
         # e.g.: 6 tiles * 10 minutes-per-tile * seconds
         return distance*speed*60
-
-    @staticmethod
-    def _evaluate_bot_sanity(unit_name, count, villa):
-        """
-        Wrote this to catch bug with 1-6 LC attacks
-        and Moon-phase zillion LC attack
-        """
-        bot_sane = True
-        if unit_name == 'axe':
-            if count <= 50 or count >= 2000: bot_sane = False
-        elif unit_name == 'light':
-            if count <= 6 or count >= 300: bot_sane = False
-        elif unit_name == 'marcher':
-            if count <= 10 or count >= 480: bot_sane = False
-        elif unit_name == 'heavy':
-            if count <= 10 or count >= 480: bot_sane = False
-
-        if not bot_sane:
-            logging.warning("Suspect Attack was sent "
-                            "to {coords} with troops "
-                            "{troops})".format(coords=villa.coords,
-                                               troops=(unit_name, count)))
 
 
 class AttackObserver:
