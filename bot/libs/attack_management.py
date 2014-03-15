@@ -24,15 +24,29 @@ class AttackManager:
         self.decision_maker = DecisionMaker()
 
     def build_attack_queue(self, target_villages, farm_frequency):
+        """
+        Asks AttackQueue to build a queue of attack targets considering
+        the targets which wait for arrival of previously sent attacks.
+        """
         self.attack_observer.restore_saved_attacks()
         pending_arrival = self.attack_observer.get_targets_pending_arrival()
         self.attack_queue.build_queue(pending_arrival, target_villages,
                                       farm_frequency)
 
     def update_attack_targets(self, new_reports):
+        """
+        Asks AttackQueue to update its villages with most recent
+        battle reports
+        """
         self.attack_queue.update_villages(new_reports)
 
     def get_next_attack_target(self, next_attacker, t_limit_to_leave, insert_spy):
+        """
+        Asks AttackQueue for a tuple of attack targets available
+        for a given attacker.
+        Asks DecisionMaker to provide next attack target & troops
+        needed to perform attack
+        """
         available_targets = self.attack_queue.get_available_targets(next_attacker)
         if available_targets:
             attacker_troops = next_attacker.get_troops_count()
@@ -52,6 +66,11 @@ class AttackManager:
 
     def register_attack(self, attacker_id, target_coords,
                         t_of_attack, t_on_the_road):
+        """
+        Asks AttackObserver to place time_of_arrival & time_of_return
+        to its queues.
+        Asks AttackQueue to remove attack target from queue.
+        """
         t_of_arrival, t_of_return = self._get_arrival_return_t(t_of_attack,
                                                                t_on_the_road)
         self.attack_observer.register_attack(attacker_id, target_coords,

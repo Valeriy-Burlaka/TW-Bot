@@ -19,7 +19,7 @@ class TargetVillageFactory(factory.Factory):
         return (FuzzyInteger(1, 999).fuzz(), FuzzyInteger(1, 999).fuzz())
 
     @factory.lazy_attribute
-    def id_(self):
+    def village_id(self):
         return FuzzyInteger(1, 10000).fuzz()
 
     @factory.lazy_attribute
@@ -40,7 +40,7 @@ class PlayerVillageFactory(factory.Factory):
         return FuzzyInteger(1, 999).fuzz(), FuzzyInteger(1, 999).fuzz()
 
     @factory.lazy_attribute
-    def id_(self):
+    def village_id(self):
         return FuzzyInteger(1, 10000).fuzz()
 
     @factory.lazy_attribute

@@ -11,7 +11,7 @@ from bot.libs.common_tools import Storage
 from bot.libs.attack_management import Unit
 
 
-__all__ = ['VillageManager', 'TargetVillage', 'PlayerVillage']
+__all__ = ['VillageManager', 'TargetVillage', 'PlayerVillage', 'Village']
 
 
 class VillageManager:
@@ -70,9 +70,9 @@ class VillageManager:
 
         player_villages = {}
         for villa_data in villages_data:
-            villa_id, villa_coords, villa_name = villa_data[0], villa_data[1], villa_data[2]
-            player_village = PlayerVillage(villa_id, villa_coords, villa_name)
-            player_villages[villa_id] = player_village
+            village_id, villa_coords, villa_name = villa_data[0], villa_data[1], villa_data[2]
+            player_village = PlayerVillage(village_id, villa_coords, villa_name)
+            player_villages[village_id] = player_village
 
         logging.debug(player_villages)
 
@@ -254,23 +254,29 @@ class VillageManager:
         """
         Constructs a Village obj from given data
         """
-        id_ = int(village_data[0])
+        village_id = int(village_data[0])
         # dot-separated str, e.g. "4.567" (=4567)
         population = village_data[3]
         population = int(population.replace('.', ''))
         if len(village_data) > 6:
             bonus = village_data[6][0]
-            village = TargetVillage(villa_coords, id_, population,
-                                    bonus=bonus,
+            village = TargetVillage(village_id=village_id, coords=villa_coords,
+                                    population=population, bonus=bonus,
                                     server_speed=server_speed)
         else:
-            village = TargetVillage(villa_coords, id_, population,
-                                    server_speed=server_speed)
+            village = TargetVillage(village_id=village_id, coords=villa_coords,
+                                    population=population, server_speed=server_speed)
 
         return village
 
 
-class PlayerVillage:
+class Village:
+    def __init__(self, village_id, coords):
+        self.id = village_id
+        self.coords = coords
+
+
+class PlayerVillage(Village):
     """
     Component responsible for holding & updating info
     about troops in player's villages.
@@ -289,9 +295,8 @@ class PlayerVillage:
         sets a list of units that will be used to farm.
     """
 
-    def __init__(self, id_, coords, name, flag=None):
-        self.id = id_
-        self.coords = coords
+    def __init__(self, village_id, coords, name, flag=None):
+        Village.__init__(self, village_id, coords)
         self.name = name
         self.flag = flag
         self.troops_to_use = []
@@ -357,7 +362,7 @@ class PlayerVillage:
         return self.__str__()
 
 
-class TargetVillage:
+class TargetVillage(Village):
     """
     Represents a single target village (Bonus/Barbarian or
     other player's village, considered as 'safe' target)
@@ -382,9 +387,8 @@ class TargetVillage:
         on the time of last visit.
     """
 
-    def __init__(self, coords, id_, population, bonus=None, server_speed=1):
-        self.id = id_
-        self.coords = coords    # tuple (x,y)
+    def __init__(self, village_id, coords, population, bonus=None, server_speed=1):
+        Village.__init__(self, village_id, coords)
         self.population = population
         self.bonus = bonus
         self.rate_multiplier = server_speed
@@ -567,9 +571,3 @@ class TargetVillage:
 
     def __repr__(self):
         return self.__str__()
-
-
-class EmptyVillage:
-    def __init__(self, village_id, coords):
-        self.id = village_id
-        self.coords = coords

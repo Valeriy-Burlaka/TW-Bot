@@ -1,7 +1,6 @@
 import sys
 import os
 import logging
-import traceback
 
 from bot.app.bot import Bot
 
@@ -50,4 +49,3 @@ if __name__ == '__main__':
     except SystemExit:
         print("Exiting now")
         os._exit(1)
-

@@ -66,9 +66,9 @@ class TestVillageManager(unittest.TestCase):
         # 'invalid'), no trusted villages.
         # expected: there are 2 villages in .target_villages;
         # target that was saved has updated info
-        valid_saved = TargetVillage((1, 1), 100000, 10)
+        valid_saved = TargetVillage(coords=(1, 1), village_id=100000, population=10)
         valid_saved.h_rates = (10, 10, 10)
-        invalid_saved = TargetVillage((3, 3), 100002, 10)
+        invalid_saved = TargetVillage(coords=(3, 3), village_id=100002, population=10)
         invalid_saved.h_rates = (15, 15, 15)
         saved_villages = {(1, 1): valid_saved, (3, 3): invalid_saved}
         self.village_manager.map_storage.get_saved_villages.return_value = \
@@ -103,7 +103,8 @@ class TestVillageManager(unittest.TestCase):
         # expected: there are 4 villages in .target_villages;
         # village that was not in .map_data is not picked from saved;
         # villages, that were in .map_data & were saved, have been updated
-        never_found_village = TargetVillage((5, 5), 100005, 10)
+        never_found_village = TargetVillage(coords=(5, 5), village_id=100005,
+                                            population=10)
         saved_villages[(5, 5)] = never_found_village
         self.village_manager.map_storage.get_saved_villages.return_value = \
             saved_villages
@@ -416,7 +417,7 @@ class TestVillage(unittest.TestCase):
     method.
     """
     def setUp(self):
-        self.village = TargetVillage(coords=(1, 1), id_=1001, population=100,
+        self.village = TargetVillage(coords=(1, 1), village_id=1001, population=100,
                                      bonus=None, server_speed=1)
 
     def test_update_stats(self):

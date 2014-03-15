@@ -11,7 +11,7 @@ from bot.app import locale
 from bot.libs.map_tools import MapParser, MapMath
 from bot.libs.common_tools import CookiesExtractor
 from bot.libs.request_management import RequestManager
-from bot.libs.village_management import VillageManager, EmptyVillage
+from bot.libs.village_management import VillageManager, Village
 from bot.libs.attack_management import AttackManager, AttackHelper
 from bot.libs.report_management import ReportManager
 
@@ -37,6 +37,14 @@ class Bot(Thread):
         self.in_cycle = False
 
     def setup_request_manager(self):
+        """
+        Breaks creation of RequestManager into 2 parts:
+        1. Asks CookiesExtractor to pull current browser cookies
+        (to get 'live' session ids & so to not supersede user from
+        her current session).
+        2. Inits new RequestManager instance with these cookies &
+        other settings.
+        """
         ce = CookiesExtractor()
         initial_cookies = ce.get_initial_cookies(run_path=settings.DATA_FOLDER,
                                                  browser_name=settings.BROWSER,
@@ -54,6 +62,15 @@ class Bot(Thread):
         self.request_manager = request_manager
 
     def setup_village_manager(self):
+        """
+        Performs basic setup of VillageManager:
+        1. Inits VillageManager
+        2. Asks VM to create PlayerVillages from a specific game page
+        3. Collects map data around the player & asks VM to create &
+        update TargetVillages.
+        4. Asks VM to prepare those PlayerVillages that will act as
+        'farming' villages.
+        """
         storage_filename = os.path.join(settings.DATA_FOLDER, settings.DATA_FILE)
         village_manager = VillageManager(storage_type=settings.DATA_TYPE,
                                          storage_name=storage_filename)
@@ -82,6 +99,10 @@ class Bot(Thread):
         self.village_manager = village_manager
 
     def setup_attack_manager(self):
+        """
+        Performs setup of AttackManager & asks it to build initial
+        queue of attack targets.
+        """
         storage_filename = os.path.join(settings.DATA_FOLDER, settings.DATA_FILE)
         attack_manager = AttackManager(storage_type=settings.DATA_TYPE,
                                        storage_name=storage_filename)
@@ -94,12 +115,19 @@ class Bot(Thread):
         self.report_manager = ReportManager(locale=self.locale)
 
     def setup_attack_helper(self):
+        """
+        Performs setup & configuration of AttackHelper
+        """
         rally_screen = self._get_rally_overview(settings.MAIN_VILLAGE_ID)
         attack_helper = AttackHelper()
         attack_helper.set_confirmation_token(rally_point_html=rally_screen)
         self.attack_helper = attack_helper
 
     def run(self):
+        """
+        The outer flow of farming process: tracks the FARM_DURATION
+        counter and re-iterates attack_cycle() method.
+        """
         self.active = True
         now = time.mktime(time.gmtime())
         end = now + settings.FARM_DURATION * 3600
@@ -126,6 +154,22 @@ class Bot(Thread):
         self._clean_up()
 
     def attack_cycle(self):
+        """
+        Composes the logic of farming with a set of abstract actions:
+        1. We check if some troops have arrived to their targets.
+        If so, there are new battle reports which provide updated info
+        about attack targets.
+        2. We check if some troops have returned to their origins.
+        If so, we could possibly send more new attacks.
+        3. We 'think' which village should attack next. If there no
+        villages that could attack, then we 'sleep'.
+        4. We 'decide' which target we'll attack next. If there no
+        target which our 'attacker' could attack, we 'disable' attacker
+        and 'sleep'..
+        5. We 'send' attack and if it was sent successfully, we 'register'
+        this attack to 'keep an eye' on it. Otherwise, we 'sleep' and
+        exit cycle.
+        """
         self.in_cycle = True
         new_arrivals = self.attack_manager.get_new_arrivals()
         if new_arrivals:
@@ -180,6 +224,10 @@ class Bot(Thread):
         self.in_cycle = False
 
     def get_new_reports(self, new_arrivals):
+        """
+        Retrieves new battle reports from game basing on a given
+        count of arrived attacks.
+        """
         new_battle_reports = []
         # 12 reports on 1 page
         report_pages = new_arrivals // 12
@@ -194,13 +242,24 @@ class Bot(Thread):
                 html_report = self._get_report(report_url)
                 attack_report = self.report_manager.build_report(html_report)
                 if attack_report.status is not None:
+                    # placeholder for specific actions: save bad reports, etc.
                     if attack_report.status in ['red', 'red_blue']:
-                        # fill with specific actions: save bad report, etc.
                         pass
                     new_battle_reports.append(attack_report)
         return new_battle_reports
 
     def send_attack(self, attacker_id, coords, troops):
+        """
+        Composes the actions needed to send an attack:
+        1. We open game Rally Point screen (as a proper, genuine user)
+        2. We pack POST data that is needed to POST attack confirmation
+        (that is when user fills edit-boxes in train screen with units
+        to send and hits 'Attack' button)
+        3. We pack POST data that is needed to POST attack itself
+        (that is when user hits 'OK' button).
+        4. We open game Rally Point once more, like if we were redirected
+        by game automatically.
+        """
         self._get_rally_overview(attacker_id)
         confirm_data = self.attack_helper.get_confirmation_data(coords, troops)
         confirm_response = self._post_confirmation(attacker_id, confirm_data)
@@ -214,6 +273,8 @@ class Bot(Thread):
             self.village_manager.refresh_village_troops(attacker_id, train_screen)
             return
         t_of_attack = self._post_attack(attacker_id, csrf, attack_data)
+        # game automatically redirects user to rally point after attack was sent.
+        self._get_rally_overview(attacker_id, redirect=True)
         return t_of_attack
 
     def set_locale(self):
@@ -223,68 +284,16 @@ class Bot(Thread):
         self.locale = locale.LOCALE[lang]
 
     def _clean_up(self):
+        """
+        Asks AttackManager to save data about attacks that are in-progress
+        (waiting arrival or return)
+        Asks AttackManager for a TargetVillages in AttackQueue (since
+        they were updated with new battle reports during farm)
+        Asks VillageManager to save updated TargetVillages to storage.
+        """
         self.attack_manager.save_registered_attacks()
         recent_targets = self.attack_manager.get_recent_targets_info()
         self.village_manager.update_villages_in_storage(recent_targets)
-
-    def _get_overviews_screen(self):
-        if not settings.DEBUG:
-            time.sleep(random.random())
-        resp = self.request_manager.get_overviews_screen()
-        return resp['response_text']
-
-    def _get_map_overview(self, village_id, x, y):
-        if not settings.DEBUG:
-            time.sleep(random.random())
-        resp = self.request_manager.get_map_overview(village_id=village_id, x=x, y=y)
-        return resp['response_text']
-
-    def _get_village_overview(self, village_id):
-        if not settings.DEBUG:
-            time.sleep(random.random())
-        resp = self.request_manager.get_village_overview(village_id=village_id)
-        return resp['response_text']
-
-    def _get_train_screen(self, village_id):
-        if not settings.DEBUG:
-            time.sleep(random.random() * 2)
-        resp = self.request_manager.get_train_screen(village_id=village_id)
-        return resp['response_text']
-
-    def _get_rally_overview(self, village_id):
-        if not settings.DEBUG:
-            time.sleep(random.random() * 2)
-        resp = self.request_manager.get_rally_overview(village_id=village_id)
-        return resp['response_text']
-
-    def _get_reports_page(self, from_page):
-        if not settings.DEBUG:
-            time.sleep(random.random())
-        resp = self.request_manager.get_reports_page(from_page=from_page)
-        return resp['response_text']
-
-    def _get_report(self, report_url):
-        if not settings.DEBUG:
-            time.sleep(random.random())
-        resp = self.request_manager.get_report(url=report_url)
-        return resp['response_text']
-
-    def _post_confirmation(self, attacker_id, confirm_data):
-        # User hits in fields to select troops to send
-        if not settings.DEBUG:
-            time.sleep(random.random() * 3)
-        resp = self.request_manager.post_confirmation(village_id=attacker_id,
-                                                               post_data=confirm_data)
-        return resp['response_text']
-
-    def _post_attack(self, attacker_id, csrf, request_data):
-        # User just hits OK button
-        if not settings.DEBUG:
-            time.sleep(random.random())
-        resp = self.request_manager.post_attack(village_id=attacker_id,
-                                                csrf=csrf,
-                                                post_data=request_data)
-        return resp['response_time']
 
     def _get_map_data(self, distinct_farming_centers, map_depth):
         """
@@ -330,7 +339,7 @@ class Bot(Thread):
                 for corner in area_corners:
                     # area_data[(x, y)] - village data, 0 index = str(village_id)
                     corner_id = int(area_data[corner][0])
-                    centers = [EmptyVillage(corner_id, corner)]
+                    centers = [Village(corner_id, corner)]
                     # Delay between "user" requests of map overview
                     if not settings.DEBUG:
                         time.sleep(random.random() * 6)
@@ -365,6 +374,65 @@ class Bot(Thread):
         for sector in sectors_data:
             area.update(sector)
         return area
+
+    def _get_overviews_screen(self):
+        if not settings.DEBUG:
+            time.sleep(random.random())
+        resp = self.request_manager.get_overviews_screen()
+        return resp['response_text']
+
+    def _get_map_overview(self, village_id, x, y):
+        if not settings.DEBUG:
+            time.sleep(random.random())
+        resp = self.request_manager.get_map_overview(village_id=village_id, x=x, y=y)
+        return resp['response_text']
+
+    def _get_village_overview(self, village_id):
+        if not settings.DEBUG:
+            time.sleep(random.random())
+        resp = self.request_manager.get_village_overview(village_id=village_id)
+        return resp['response_text']
+
+    def _get_train_screen(self, village_id):
+        if not settings.DEBUG:
+            time.sleep(random.random() * 2)
+        resp = self.request_manager.get_train_screen(village_id=village_id)
+        return resp['response_text']
+
+    def _get_rally_overview(self, village_id, redirect=False):
+        if not redirect and not settings.DEBUG:
+            time.sleep(random.random() * 2)
+        resp = self.request_manager.get_rally_overview(village_id=village_id)
+        return resp['response_text']
+
+    def _get_reports_page(self, from_page):
+        if not settings.DEBUG:
+            time.sleep(random.random())
+        resp = self.request_manager.get_reports_page(from_page=from_page)
+        return resp['response_text']
+
+    def _get_report(self, report_url):
+        if not settings.DEBUG:
+            time.sleep(random.random())
+        resp = self.request_manager.get_report(url=report_url)
+        return resp['response_text']
+
+    def _post_confirmation(self, attacker_id, confirm_data):
+        # User hits in fields to select troops to send
+        if not settings.DEBUG:
+            time.sleep(random.random() * 3)
+        resp = self.request_manager.post_confirmation(village_id=attacker_id,
+                                                               post_data=confirm_data)
+        return resp['response_text']
+
+    def _post_attack(self, attacker_id, csrf, request_data):
+        # User just hits OK button
+        if not settings.DEBUG:
+            time.sleep(random.random())
+        resp = self.request_manager.post_attack(village_id=attacker_id,
+                                                csrf=csrf,
+                                                post_data=request_data)
+        return resp['response_time']
 
 
     # def get_id_of_attack(self, coords, t_of_arrival, attacker_id):

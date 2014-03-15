@@ -13,7 +13,8 @@ import requests
 from bot.libs.common_tools import AutoLogin, AntigateWrapper
 
 
-__all__ = ['RequestManager', 'SessionExpiredError', 'TooManyConnectionAttempts']
+__all__ = ['RequestManager', 'SessionExpiredError', 'TooManyConnectionAttempts',
+           'RequestDataProvider', 'SafeOpener']
 
 
 class SessionExpiredError(Exception):
