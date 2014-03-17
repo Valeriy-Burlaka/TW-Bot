@@ -74,7 +74,7 @@ class VillageManager:
             player_village = PlayerVillage(village_id, villa_coords, villa_name)
             player_villages[village_id] = player_village
 
-        logging.debug(player_villages)
+        logging.debug("Player villages: ".format(player_villages))
 
         self.player_villages = player_villages
 
@@ -109,7 +109,7 @@ class VillageManager:
                                                                      server_speed)
 
         logging.debug("Villages collected upon map "
-                     "initialization: {}".format(target_villages))
+                      "initialization: {}".format(target_villages))
 
         self.target_villages = target_villages
 
@@ -213,9 +213,16 @@ class VillageManager:
         """
         Parses "Overviews" game screen to extract player's villages.
         Returns list of tuples (int(villa_id), str(villa_name),
-        tuple(villa_coordinates))
+        tuple(villa_coordinates)).
+        After some silent update of the game, villages_overviews
+        screen may look differently, so logic was temporary branched.
         """
-        villa_info_ptrn = re.compile("""(?P<id>\d{5,6})  # village id
+
+        villages_data = []
+        soup = Soup(html_data)
+        villages_info = soup.findAll(id=re.compile('label_text_\d+'))
+        if villages_info:
+            villa_info_ptrn = re.compile("""(?P<id>\d{5,6})  # village id
                                         \W+  # closing quote, bracket,
                                              # possible space character
                                         (?P<name>[\w\s]+)  # village name
@@ -224,16 +231,28 @@ class VillageManager:
                                         \|  # delimiter between x & y
                                         (?P<ycoord>\d{3})  # village y
                                      """, re.VERBOSE)
-        villages_data = []
-        soup = Soup(html_data)
-        villages_info = soup.findAll(id=re.compile('label_text_\d+'))
-        for village in villages_info:
-            text = str(village)
-            data = re.search(villa_info_ptrn, text)
-            village_id = int(data.group('id'))
-            village_name = data.group('name').rstrip()
-            village_coords = int(data.group('xcoord')), int(data.group('ycoord'))
-            villages_data.append((village_id, village_coords, village_name))
+            for village in villages_info:
+                text = str(village)
+                village_data = re.search(villa_info_ptrn, text)
+                village_id = int(village_data.group('id'))
+                village_name = village_data.group('name').strip()
+                village_coords = int(village_data.group('xcoord')), int(village_data.group('ycoord'))
+                villages_data.append((village_id, village_coords, village_name))
+        else:
+            villages_info = soup.findAll("span", attrs={"data-id": re.compile(r'\d{5,6}')})
+            villa_info_ptrn = re.compile("""(?P<name>[\w\s]+)  # village name
+                                         \W  # bracket before coordinates
+                                         (?P<xcoord>\d{3})  # village x
+                                         \|  # delimiter between x & y
+                                         (?P<ycoord>\d{3})  # village y
+                                         """, re.VERBOSE)
+            for village in villages_info:
+                village_id = int(village.attrs["data-id"])
+                text = village.text
+                village_data = re.search(villa_info_ptrn, text)
+                village_name = village_data.group('name').strip()
+                village_coords = int(village_data.group('xcoord')), int(village_data.group('ycoord'))
+                villages_data.append((village_id, village_coords, village_name))
 
         return villages_data
 
@@ -347,9 +366,13 @@ class PlayerVillage(Village):
             troops_data = json.loads(match.group(1))
             return troops_data
         except AttributeError as e:
-            with open("bad_troops_data.html") as f:
+            with open('bad_report_data_troops.html', 'w') as f:
                 f.write(html_data)
-            raise(e)
+                raise e
+            # there are (really rare) cases when game returns train_screen
+            # w/o json data, it's 'cheaper' to pass and re-try to refresh
+            # troops in the next attack cycle
+            pass
 
     def __str__(self):
         return "PlayerVillage: id: {id}, coords: {coords}, name: {name},\n" \

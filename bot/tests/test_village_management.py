@@ -291,9 +291,19 @@ class TestVillageManager(unittest.TestCase):
                         (136329, (212, 305), 'Shame of trolls'),]
         actual_res = self.village_manager._get_villages_data(overviews_data)
         self.assertCountEqual(expected_res, actual_res)
+
         filename = os.path.join(settings.TEST_DATA_FOLDER,
                                 'html',
                                 'net_villages_overviews-2.html')
+        with open(filename) as f:
+            overviews_data = f.read()
+        expected_res = [(41940, (504, 306), 'ProperBills village')]
+        actual_res = self.village_manager._get_villages_data(overviews_data)
+        self.assertCountEqual(expected_res, actual_res)
+
+        filename = os.path.join(settings.TEST_DATA_FOLDER,
+                                'html',
+                                'net_villages_overviews-3(newstyle).html')
         with open(filename) as f:
             overviews_data = f.read()
         expected_res = [(41940, (504, 306), 'ProperBills village')]
