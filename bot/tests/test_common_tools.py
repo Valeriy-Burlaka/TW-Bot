@@ -2,8 +2,12 @@ import unittest
 from unittest import mock
 import os
 import shelve
+import shutil
 
-from bot.libs.common_tools import LocalStorage, Storage
+import settings
+from bot.libs.common_tools import LocalStorage
+from bot.libs.common_tools import Storage
+from bot.libs.common_tools import CookiesExtractor
 from bot.tests.helpers import StorageHelper
 from bot.tests.factories import TargetVillageFactory
 
@@ -116,4 +120,25 @@ class TestLocalStorage(unittest.TestCase):
         self.assertEqual(manual_storage['arrivals'], save_data_arrivals)
         self.assertIn('returns', manual_storage)
         self.assertEqual(manual_storage['returns'], save_data_returns)
+
+
+class TestCookiesExtractor(unittest.TestCase):
+
+    def test_get_initial_cookies(self):
+        source_path = os.path.join(settings.TEST_DATA_FOLDER, 'cookies')
+        ce = CookiesExtractor()
+        source_file = os.path.join(source_path, 'cookies_chromium')
+        ce._get_cookies_filepath = mock.Mock(return_value=source_file)
+        dst_file = os.path.join(settings.DATA_FOLDER, 'cookies')
+        ce._copy_cookies_file = mock.Mock(return_value=dst_file)
+        shutil.copyfile(source_file, dst_file)
+
+        expected_cookies = {'cid': '2134605859', 'sid': '0%3Af5e21b1189c1',
+                            'mobile': '0'}
+        initial_cookies = ce.get_initial_cookies(settings.DATA_FOLDER,
+                                                 browser_name='Chromium',
+                                                 host='en73.tribalwars.net',
+                                                 names=['cid', 'sid', 'mobile'])
+        self.assertEqual(expected_cookies, initial_cookies)
+
 
