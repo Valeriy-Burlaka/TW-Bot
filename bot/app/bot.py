@@ -17,6 +17,16 @@ from bot.libs.report_management import ReportManager
 
 
 class Bot(Thread):
+    """
+    Composite class that uses smaller manager-classes to perform in-game
+    farming logic.
+    Upon initialization creates all needed manager-classes and performs
+    basic setup.
+    Overrides threading.Thread.run() method: starts a loop which perform
+    'attack cycles' & tracks settings.FARM_DURATION 'counter'.
+    Provides .stop() method which saves the data collected during farm
+    session to data storage & terminates farm process.
+    """
 
     def __init__(self):
         Thread.__init__(self)
@@ -42,7 +52,7 @@ class Bot(Thread):
         1. Asks CookiesExtractor to pull current browser cookies
         (to get 'live' session ids & so to not supersede user from
         her current session).
-        2. Inits new RequestManager instance with these cookies &
+        2. Initializes new RequestManager instance with these cookies &
         other settings.
         """
         ce = CookiesExtractor()
@@ -64,7 +74,7 @@ class Bot(Thread):
     def setup_village_manager(self):
         """
         Performs basic setup of VillageManager:
-        1. Inits VillageManager
+        1. Initializes VillageManager
         2. Asks VM to create PlayerVillages from a specific game page
         3. Collects map data around the player & asks VM to create &
         update TargetVillages.

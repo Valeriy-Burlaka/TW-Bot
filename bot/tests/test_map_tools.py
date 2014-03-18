@@ -35,6 +35,7 @@ class TestMapParser(unittest.TestCase):
         self.assertIn((207, 305), first_sector)
         self.assertEqual(first_sector[(207, 305)][0], '135534')
 
+
 class TestMapMath(unittest.TestCase):
 
     def test_get_area_corners(self):

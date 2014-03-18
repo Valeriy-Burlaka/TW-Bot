@@ -372,7 +372,6 @@ class PlayerVillage(Village):
         troops_data = json.loads(match.group(1))
         return troops_data
 
-
     def __str__(self):
         return "PlayerVillage: id: {id}, coords: {coords}, name: {name},\n" \
                "current_troops: {troops}".format(id=self.id,

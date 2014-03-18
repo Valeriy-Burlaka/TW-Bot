@@ -141,11 +141,7 @@ class AttackReport:
             target_element = self.soup.find(id='labelText')
             text = target_element.text
         except AttributeError:
-            error_info = traceback.format_exception(*sys.exc_info())
-            logging.error(error_info)
             try:
-                logging.warning("Unable to extract target coords with old-style"
-                                "parsing strategy, using new-style instead")
                 target_element = self.soup.find("span", class_="quickedit-label")
                 text = target_element.text
             except AttributeError as e:
