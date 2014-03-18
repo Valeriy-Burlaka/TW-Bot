@@ -91,11 +91,20 @@ class LocalStorage:
 
 
 class CookiesExtractor:
-
+    """
+    Class responsible for extraction of game cookies directly
+    from a browser database (sqlite file).
+    """
     def get_initial_cookies(self, run_path, browser_name, host, names):
+        """
+        run_path  - a folder to work in (to where copy a cookies file)
+        browser_name - a browser name (e.g. 'Chrome')
+        host - name of game server (e.g 'en73.tribalwars.net')
+        names - cookies that should be extracted (e.g. 'sid')
+        """
         cookies_filepath = self._get_cookies_filepath(browser_name)
         if not cookies_filepath:
-            raise NotImplementedError("Sorry, seems that dumb bot doesn't"
+            raise NotImplementedError("Sorry, seems that damn bot doesn't"
                                       "now how to extract cookies from your"
                                       "browser!")
         new_path = self._copy_cookies_file(run_path, cookies_filepath)
@@ -108,18 +117,24 @@ class CookiesExtractor:
         filepath = ''
         platform = sys.platform
         username = os.getlogin()
+        browser_name = browser_name.lower()
         if platform == 'linux':
-            if browser_name.lower() in ['chrome', 'chromium']:
+            if browser_name == 'chrome':
                 filepath = "/home/{user}/.config/{browser}/Default/Cookies"
                 filepath = filepath.format(user=username,
-                                           browser=browser_name.lower())
+                                           browser='google-chrome')
+            elif browser_name == 'chromium':
+                filepath = "/home/{user}/.config/{browser}/Default/Cookies"
+                filepath = filepath.format(user=username,
+                                           browser='chromium')
         elif platform == 'win32':
             if browser_name.lower() == 'chrome':
                 filepath = r'C:\Users\{user}\AppData\Local\Google\{browser}' \
                            r'\User Data\Default\Cookies'
                 filepath = filepath.format(user=username,
                                            browser=browser_name.lower().capitalize())
-        return filepath
+        if os.path.isfile(filepath):
+            return filepath
 
     @staticmethod
     def _copy_cookies_file(run_path, cookies_path):
@@ -130,14 +145,15 @@ class CookiesExtractor:
     @staticmethod
     def _extract_cookies(browser_name, db_path, host, names, timeout=30):
         """
-        Open given sqlite file and extracts cookies that belong to host.
+        Opens given sqlite file and extracts cookies that belong to host.
         Returns list of tuples [(host, cookie, value), ...]
         """
+        browser_name = browser_name.lower()
         connection = sqlite3.connect(db_path, timeout=timeout)
         cursor = connection.cursor()
-        if browser_name.lower() in ['chrome', 'chromium']:
+        if browser_name in ['chrome', 'chromium']:
             query = "select name, value from cookies where host_key=?"
-        elif browser_name == 'mozilla':
+        elif browser_name in ['mozilla', 'firefox']:
             query = "select name, value from moz_cookies where host=?"
         cursor.execute(query, (host,))
         cookies_data = cursor.fetchall()
@@ -149,7 +165,9 @@ class CookiesExtractor:
 
 
 class AutoLogin:
-
+    """
+    Re-logins to game host using given username & password
+    """
     def __init__(self, host, username, password):
         self.host = host
         self.global_host = self._get_global_hostname()
@@ -157,6 +175,15 @@ class AutoLogin:
         self.password = password
 
     def login_to_server(self):
+        """
+        Login procedure consists of few stages:
+        1. User enters username & password and hits 'Connect':
+        AJAX request is sent to game server, response contains
+        list of available hosts & hashed username and password.
+        2. User selects host and confirms connection:
+        hashed credentials are sent to game server & user 'follows'
+        chain of re-directs & one of re-directs sets needed cookies.
+        """
         post_data = self._get_server_selection_data()
         response = self._show_server_selection(post_data)
         encrypt_pass = self._get_enc_password(response.text)
