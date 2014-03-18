@@ -2,11 +2,11 @@
 # and spoof the game by acting like real user. Thus, real user
 # can continue to play in parallel with farming bot and not to
 # be superseded from his session.
-BROWSER = 'Chromium'
+BROWSER = ''
 
-# Game host
-HOST = 'en73.tribalwars.net'
-HOST_SPEED = 1.5
+# Game host (e.g.: 'en73.tribalwars.net')
+HOST = ''
+HOST_SPEED = 1
 
 # Set to True to disable time.sleep() calls inside the code
 # (e.g. to run tests or to receive game-ban)
@@ -14,32 +14,29 @@ DEBUG = False
 
 # Tribal Wars user data (account & password, needed to re-connect
 # user when session expired
-USER = 'ProperBill'
-PASSWORD = 'pO3O09YXXOlHw6Dpucl6'
+USER = ''
+PASSWORD = ''
 
 # Antigate service API key
-ANTIGATE_KEY = 'bd676a60b996da118afcb2f12f3182e0'
+ANTIGATE_KEY = ''
 
 # How long bot should mock barbarians (hours)
-FARM_DURATION = 0.25
+FARM_DURATION = 1
 
-FARM_FREQUENCY = 2
+FARM_FREQUENCY = 1
 
 # X|Y coordinates of player's main village
-BASE_X = 504
-BASE_Y = 306
+BASE_X = 100
+BASE_Y = 100
 # Id of first user's village is needed as base point to perform
 # some requests
-MAIN_VILLAGE_ID = 41940
+MAIN_VILLAGE_ID = 10000
 
 # Which villages should be used to farm resources
-FARM_WITH = (41940,)
+FARM_WITH = ()
 
-TRUSTED_TARGETS = [(502, 304), (502, 308), (504, 303), (501, 309), (505, 307),
-                   (496, 308), (506, 306), (507, 309), (508, 308), (511, 308),
-                   (497, 299), (499, 298), (500, 298), (508, 303), (508, 305),
-                   (509, 313), (502, 313), (500, 313), (500, 314), (510, 313)]
-UNTRUSTED_TARGETS = [(510, 298)]
+TRUSTED_TARGETS = []
+UNTRUSTED_TARGETS = []
 
 # Whether defensive troops should be used to farm resources
 USE_DEF_TO_FARM = False
@@ -48,18 +45,7 @@ USE_DEF_TO_FARM = False
 HEAVY_IS_DEF = False
 
 # Maximum allowed time for troops to leave their villages (hours)
-T_LIMIT_TO_LEAVE = 3
-
-# Uncomment this setting if you wish to post attack id numbers to
-# tribal forum
-# SUBMIT_ID_INFO = {"forum_id": 37442,
-#                   "thread_id": 135582,
-#                   "frequency": 1500,  # seconds
-#                   "delay": 300}    # seconds
-# if SUBMIT_ID_INFO:
-#     SUBMIT_IDS = SUBMIT_ID_INFO
-# else:
-#     SUBMIT_IDS = False
+T_LIMIT_TO_LEAVE = 4
 
 # Test & source data location
 DATA_FOLDER = 'bot/runtime_data'
