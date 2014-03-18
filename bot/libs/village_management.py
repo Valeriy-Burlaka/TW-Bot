@@ -325,7 +325,14 @@ class PlayerVillage(Village):
 
     def update_troops_count(self, html_data=None, troops_sent=None):
         if html_data:
-            troops_data = self._get_troops_data(html_data)
+            try:
+                troops_data = self._get_troops_data(html_data)
+            except AttributeError:
+            # there are (really rare) cases when game returns train_screen
+            # w/o json data, it's 'cheaper' to pass and re-try to refresh
+            # troops in the next attack cycle
+                logging.warning("Unable to extract troops data, skipping.")
+                return
             troops_count = {}
             for unit_name in self.troops_to_use:
                 if unit_name in troops_data:
@@ -362,17 +369,9 @@ class PlayerVillage(Village):
         data_ptrn = re.compile(r'UnitPopup.unit_data\s?=\s?'
                                r'([\w\W]+);[\s]*UnitPopup[\w\W]+')
         match = re.search(data_ptrn, html_data)
-        try:
-            troops_data = json.loads(match.group(1))
-            return troops_data
-        except AttributeError as e:
-            with open('bad_report_data_troops.html', 'w') as f:
-                f.write(html_data)
-                raise e
-            # there are (really rare) cases when game returns train_screen
-            # w/o json data, it's 'cheaper' to pass and re-try to refresh
-            # troops in the next attack cycle
-            pass
+        troops_data = json.loads(match.group(1))
+        return troops_data
+
 
     def __str__(self):
         return "PlayerVillage: id: {id}, coords: {coords}, name: {name},\n" \

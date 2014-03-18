@@ -1,5 +1,8 @@
+import sys
 import re
 import time
+import logging
+import traceback
 
 from bs4 import BeautifulSoup as Soup
 
@@ -134,8 +137,21 @@ class AttackReport:
         Sets target coordinates
         """
         # span with report header (e.g. foo attacks barBs (220|317))
-        target_element = self.soup.find(id='labelText')
-        text = target_element.text
+        try:
+            target_element = self.soup.find(id='labelText')
+            text = target_element.text
+        except AttributeError:
+            error_info = traceback.format_exception(*sys.exc_info())
+            logging.error(error_info)
+            try:
+                logging.warning("Unable to extract target coords with old-style"
+                                "parsing strategy, using new-style instead")
+                target_element = self.soup.find("span", class_="quickedit-label")
+                text = target_element.text
+            except AttributeError as e:
+                with open('bad_report_data_coords.html', 'w') as f:
+                    f.write(str(self.soup))
+                raise e
         coords_ptrn = re.compile(r"(\d{3})\|(\d{3})")
         match = re.search(coords_ptrn, text)
         if match:
@@ -180,7 +196,14 @@ class AttackReport:
         in DOM and count cells with non-zero unit quantities.
         """
         defender_troops_table = self.soup.find(id="attack_info_def_units")
-        defender_troops_quantity = defender_troops_table.findAll('tr')[1]
+        # catch for a game response with corrupted data:
+        try:
+            defender_troops_quantity = defender_troops_table.findAll('tr')[1]
+        except IndexError:
+            with open('bad_report_data_troops.html', 'w') as f:
+                f.write(str(self.soup))
+            self.defended = False
+            return
         # each unit has its own <td> cell. If unit count == 0, <td> class
         # will be "unit-item hidden"
         empty_slots = defender_troops_quantity.findAll("td", "unit-item hidden")
