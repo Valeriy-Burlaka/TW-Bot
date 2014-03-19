@@ -68,11 +68,8 @@ class ReportManager:
 
 class AttackReport:
     """
-    Extracts valuable data from a HTML string for
+    Extracts valuable data from a HTML str data for
     a particular attack report.
-    Neither xml.etree.ElementTree nor xml.dom.minidom
-    in-build DOM parsers were able to parse TribalWars
-    attack reports, so using regular expressions instead.
     """
 
     def __init__(self, str_html, locale):
