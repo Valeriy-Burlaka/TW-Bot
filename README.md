@@ -4,6 +4,9 @@ Can be configured to run on different server-groups:
 1. Language-specific data is controlled in 'bot.app.locale.py'.
 2. Server-specific data (server speed, etc.) is controlled in 'settings.py'.
 
+To automatically handle the CAPTCHA, bot uses Antigate service (antigate.com),
+so valid Antigate API key should be set in 'settings.py'.
+
 To run the bot:
 
 1. Python3 is needed.
