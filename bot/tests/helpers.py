@@ -12,7 +12,7 @@ class StorageHelper:
         self.storage_path = None
 
     def create_test_storage(self, sub_folder='test'):
-        self.storage_path = os.path.join(settings.DATA_FOLDER, sub_folder)
+        self.storage_path = os.path.join(settings.TEST_DATA_FOLDER, sub_folder)
         if not os.path.exists(self.storage_path):
             os.makedirs(self.storage_path)
         return self.storage_path
