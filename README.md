@@ -1,17 +1,5 @@
-### This thingy was created solely in educaional purposes and should not be used, intentionally or not.
+## This project is now archived  
 
-#### About thingy:
-* Farming bot for TW-1 browser game
-* Buildings & their levels are parsed with BSoup (set language-specific names in 'bot.app.locale.py')
-* Server-specific settings (server speed, etc.): 'settings.py'.
-* Thingy doesn't use clicks, but only requests to game API. 
-* Thingy uses dirty & fragile mechanic of getting session-key (from local browser cookies). Thus, user is not superseded from her current session and could observe how thingy performs.
-* Thingy was tested last time in March 2014 with those days Chromium-like browsers & Windows/Debian OSs. 
-* Thingy handles CAPTCHA through [Antigate service] (http://anti-captcha.com). Valid Antigate API key is need to be set in 'settings.py'.
-
-#### Thingy requires:
-1. Python3.
-2. "pip install -r requirements.txt".
-3. carefully edited "settings.py" file.
-4. successful "python runner.py" command.
-
+This project was a farming bot for browser MMO strategy game "Travian 1".
+I created this project in 2013-2014 solely for educational purposes and you should never run it for real. Not only it can provide an unfair advantage in the game but it also would probably violate Travian UELA, which can cause a ban of a User account.
+This project helped me to strengthen my Python programming skills and to learn a ton about how the Web is functioning overall.
